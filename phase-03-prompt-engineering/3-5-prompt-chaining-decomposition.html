@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.5 Prompt chaining &amp; decomposition | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.chain-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.chain-steps { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.chain-step { flex: 1; min-width: 130px; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; text-align: center; font-size: 12px; opacity: 0.4; transition: all 0.3s; }
+.chain-step.active { opacity: 1; border-color: var(--accent); background: var(--accent-bg); }
+.chain-step.done { opacity: 1; border-color: var(--success); }
+.chain-step .n { font-weight: 700; display: block; margin-bottom: 4px; }
+.chain-output { background: var(--code-bg); border: 1px solid var(--border-strong); border-radius: 8px; padding: 14px 16px; font-family: var(--font-mono); font-size: 13px; min-height: 60px; white-space: pre-wrap; margin-bottom: 12px; }
+.chain-gate { font-size: 12px; padding: 6px 10px; border-radius: 6px; display: inline-block; margin-top: 6px; }
+.chain-gate.pass { background: rgba(62,207,142,0.12); color: var(--success); }
+.chain-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.chain-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.5</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 3 · Prompt engineering deep dive</div>
+  <h1>3.5 Prompt chaining &amp; task decomposition</h1>
+  <p class="subtitle">Divide and conquer, applied to LLM calls instead of algorithms.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Instead of asking one LLM call to solve a complex, multi-part task in a single monolithic
+    prompt, prompt chaining breaks it into a sequence of smaller calls &mdash; each with a narrow,
+    well-defined job, each passing its output forward as the next step's input. Research comparing
+    this to single-prompt approaches has found accuracy improvements as large as
+    <strong>15.6%</strong> on multi-step tasks. The trade-off is latency and cost &mdash; more calls
+    means more round trips &mdash; so chaining earns its complexity on tasks that are genuinely
+    sequential, not on tasks a single well-structured prompt already handles fine.
+  </div>
+
+  <h2>Try it: step through a real chain</h2>
+  <p>
+    Below is a 4-step chain for turning a raw customer call transcript into a structured follow-up
+    action plan &mdash; a task too broad for one clean prompt, natural to decompose into stages.
+    Click through each step.
+  </p>
+
+  <div class="chain-box">
+    <div class="chain-steps" id="chain-steps"></div>
+    <div class="chain-output" id="chain-output">Click "Run next step" to begin the chain.</div>
+    <button class="chain-btn" id="chain-next">Run next step &rarr;</button>
+  </div>
+
+  <h2>Why decomposition beats one giant prompt</h2>
+  <ul>
+    <li><strong>Each step is simpler.</strong> A prompt with one narrow job is easier to get right, easier to debug, and less likely to silently drop part of a compound instruction the way an overloaded single prompt can.</li>
+    <li><strong>Intermediate results are inspectable.</strong> When something goes wrong, you can see exactly which stage produced the bad output, instead of debugging one long, opaque final response.</li>
+    <li><strong>Different steps can use different models or settings.</strong> A cheap, fast model can handle an easy extraction step; a stronger model can be reserved for the step that actually needs deep reasoning &mdash; this is the seed of the multi-LLM orchestration in Phase 7.</li>
+    <li><strong>Structured output between steps acts like an API contract.</strong> If step 1 emits a defined JSON shape rather than loose prose, step 2 can consume it reliably &mdash; unstructured text passed between steps is fragile and prone to silent misinterpretation.</li>
+  </ul>
+
+  <h2>Validation gates between steps</h2>
+  <p>
+    A chain without checks between steps just moves the "hope it worked" problem further down the
+    pipeline. The stronger pattern adds a <strong>gate</strong> after each step &mdash; either a
+    programmatic check (does the output match the expected schema? is a required field non-empty?)
+    or an LLM-based check (does this summary actually reflect the source content?) &mdash; that
+    catches a bad intermediate result before it propagates into every downstream step and quietly
+    corrupts the final output.
+  </p>
+
+  <div class="figure" id="fig-chain"></div>
+
+  <h2>When chaining is the wrong tool</h2>
+  <p>
+    Chaining assumes the steps are genuinely sequential &mdash; each one depends on the previous
+    step's output before it can meaningfully begin. Two adjacent mistakes worth naming:
+  </p>
+  <ul>
+    <li><strong>Don't chain independent subtasks that could run in parallel.</strong> If step 2 and step 3 don't actually need each other's output, forcing them into a sequence just adds latency for no benefit &mdash; that's a parallelization problem, not a chaining one.</li>
+    <li><strong>Don't chain what a single well-structured prompt already handles.</strong> If a task genuinely fits in one prompt with clear role/context/task/format (1.3) and doesn't require intermediate decisions, added chain steps are pure overhead &mdash; more latency, more cost, more places to fail, no accuracy benefit.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. What is the core mechanism of prompt chaining?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Running the same prompt multiple times and averaging the results</button>
+        <button class="q-option" data-correct="true">Breaking a task into sequential steps where each step's output feeds into the next step's input</button>
+        <button class="q-option" data-correct="false">Sending one enormous prompt containing every instruction at once</button>
+      </div>
+      <div class="q-explain">Chaining is explicitly sequential and modular — a series of narrow, purpose-built prompts, not repeated sampling of one prompt (that's self-consistency, 3.1) and not a single monolithic instruction.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. What does a validation gate between chain steps protect against?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A bad intermediate result silently propagating through every downstream step</button>
+        <button class="q-option" data-correct="false">The model running out of context window</button>
+        <button class="q-option" data-correct="false">API rate limits being exceeded</button>
+      </div>
+      <div class="q-explain">Without a check between steps, an error in step 1 flows unnoticed into steps 2, 3, and 4 — a gate catches it early, before it corrupts the whole pipeline's output.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. When is prompt chaining the wrong choice?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">When the subtasks are actually independent (better parallelized) or when one well-structured prompt already handles the whole task</button>
+        <button class="q-option" data-correct="false">Whenever a task involves more than one sentence of instructions</button>
+        <button class="q-option" data-correct="false">Chaining is always the correct choice for any multi-part task</button>
+      </div>
+      <div class="q-explain">Chaining specifically fits genuinely sequential dependencies. Forcing independent subtasks into a sequence adds latency for no benefit, and adding chain steps to a task a single prompt already solves just adds cost and failure points.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Anthropic, AWS, and Google's published guidance on prompt chaining (via PromptEssor's
+    2026 synthesis); Agentic Design Patterns reference on chaining accuracy gains; "The Hitchhiker's
+    Guide to Agentic AI" (arXiv, 2026) on chaining with quality gates.
+  </p>
+
+  <div class="pager">
+    <a href="3-4-prompt-injection-security.html">&larr; 3.4 Prompt injection &amp; security risks</a>
+    <a href="../phase-04-llm-apis/4-1-streaming-responses.html">4.1 Streaming responses &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Interactive chain step-through ---
+const CHAIN = [
+  {
+    name: "1. Transcribe cleanup",
+    output: `"uh so basically the customer said their, uh, dashboard widget thing keeps crashing when they add more than like 10 items to it, and they need it fixed before their board meeting Friday"\n\n→ cleaned:\n"Customer reports the dashboard widget crashes when more than 10 items are added. Needs resolution before Friday's board meeting."`,
+    gate: "Gate: non-empty, no filler words remaining ✓"
+  },
+  {
+    name: "2. Extract structured fields",
+    output: `{\n  "issue": "dashboard widget crashes above 10 items",\n  "urgency": "high",\n  "deadline": "Friday",\n  "customer_context": "board meeting"\n}`,
+    gate: "Gate: valid JSON, required fields present ✓"
+  },
+  {
+    name: "3. Classify & route",
+    output: `{\n  "category": "BUG_REPORT",\n  "team": "frontend-dashboard",\n  "priority": "P1 (deadline-driven)"\n}`,
+    gate: "Gate: category matches known enum ✓"
+  },
+  {
+    name: "4. Draft follow-up",
+    output: `"Hi [Customer], thanks for flagging this. We've filed this as a P1 bug with our frontend team given your Friday deadline — the widget crash above 10 items is now being investigated. We'll update you by end of day tomorrow."`,
+    gate: "Gate: mentions deadline, no placeholder text left unfilled ✓"
+  },
+];
+let chainIdx = 0;
+
+function renderChainSteps() {
+  const container = document.getElementById('chain-steps');
+  container.innerHTML = CHAIN.map((s, i) => `
+    <div class="chain-step ${i < chainIdx ? 'done' : i === chainIdx ? 'active' : ''}">
+      <span class="n">${s.name.split('.')[0]}</span>
+      ${s.name.split('. ')[1]}
+    </div>
+  `).join('');
+}
+renderChainSteps();
+
+document.getElementById('chain-next').addEventListener('click', () => {
+  if (chainIdx >= CHAIN.length) return;
+  const step = CHAIN[chainIdx];
+  document.getElementById('chain-output').textContent = step.output + '\n\n';
+  const gateEl = document.createElement('span');
+  gateEl.className = 'chain-gate pass';
+  gateEl.textContent = step.gate;
+  document.getElementById('chain-output').appendChild(gateEl);
+  chainIdx++;
+  renderChainSteps();
+  if (chainIdx >= CHAIN.length) {
+    document.getElementById('chain-next').disabled = true;
+    document.getElementById('chain-next').textContent = 'Chain complete';
+  }
+});
+
+document.getElementById('fig-chain').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: prompt chain with validation gates between each step">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 12px; font-weight: 600; }
+    .gate { font-size: 10px; fill: #3ecf8e; }
+  </style>
+  <rect x="10" y="50" width="140" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="80" y="80" class="lbl" text-anchor="middle">Step 1</text>
+  <text x="185" y="70" class="gate" text-anchor="middle">gate ✓</text>
+  <line x1="150" y1="75" x2="220" y2="75" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a6)"/>
+
+  <rect x="220" y="50" width="140" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="290" y="80" class="lbl" text-anchor="middle">Step 2</text>
+  <text x="395" y="70" class="gate" text-anchor="middle">gate ✓</text>
+  <line x1="360" y1="75" x2="430" y2="75" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a6)"/>
+
+  <rect x="430" y="50" width="140" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="500" y="80" class="lbl" text-anchor="middle">Step 3</text>
+  <text x="605" y="70" class="gate" text-anchor="middle">gate ✓</text>
+  <line x1="570" y1="75" x2="640" y2="75" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a6)"/>
+
+  <text x="340" y="130" font-size="12" fill="#9aa4b5" text-anchor="middle">A gate can reject and retry the step before a bad result reaches the next one</text>
+  <defs><marker id="a6" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+
+</body>
+</html>

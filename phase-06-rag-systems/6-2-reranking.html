@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 Reranking | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.rr-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.rr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.rr-item { padding: 10px 12px; background: var(--surface-2); border-radius: 6px; margin-bottom: 8px; font-size: 13px; display: flex; justify-content: space-between; transition: all 0.4s; }
+.rr-item .score { font-weight: 700; color: var(--text-muted); }
+.rr-item.top { border: 1px solid var(--success); }
+.rr-item.top .score { color: var(--success); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · RAG systems</div>
+  <h1>6.2 Reranking</h1>
+  <p class="subtitle">A cheap first pass casts a wide net. A second, pricier pass decides what actually matters.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Initial vector retrieval uses a <strong>bi-encoder</strong> — it embeds the query and every
+    document independently, then compares vectors, which is fast but approximate. A
+    <strong>cross-encoder reranker</strong> takes each retrieved candidate together with the query,
+    processes them jointly with full attention between the two, and produces a much more precise
+    relevance score — at meaningfully higher cost per pair, which is exactly why it's applied only
+    to a small pre-filtered candidate set, not the whole corpus. Reported production lifts are
+    substantial: NDCG@10 improvements commonly in the 5&ndash;15 point range, 20+ on lexically hard
+    datasets, for under 200ms of added latency.
+  </div>
+
+  <h2>Try it: watch reranking reorder the same 5 candidates</h2>
+  <div class="rr-box">
+    <div class="rr-cols">
+      <div>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">Initial retrieval (bi-encoder, by vector similarity)</p>
+        <div id="rr-before"></div>
+      </div>
+      <div>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">After cross-encoder reranking</p>
+        <div id="rr-after"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Why bi-encoders and cross-encoders trade off differently</h2>
+  <ul>
+    <li><strong>Bi-encoder (initial retrieval)</strong> — query and each document are embedded completely separately, ahead of time for documents, at query time for the query. This is what makes million-document vector search fast: documents are pre-embedded once, and search is just comparing the query vector against pre-computed document vectors.</li>
+    <li><strong>Cross-encoder (reranking)</strong> — query and document are fed into the model <em>together</em>, letting attention operate across both simultaneously. This produces much more nuanced relevance judgments, but can't be precomputed — every query/document pair needs its own forward pass, so it doesn't scale to searching an entire corpus directly.</li>
+  </ul>
+  <p>
+    The standard production pattern combines both: retrieve a wide candidate set cheaply (say, top
+    20-50 via bi-encoder/hybrid search), then rerank just that candidate set with the expensive
+    cross-encoder down to the final top 3-5 that actually go into the prompt.
+  </p>
+
+  <div class="figure" id="fig-rerank"></div>
+
+  <h2>The nuance the research surfaces: LLM-based reranking vs. cross-encoders</h2>
+  <p>
+    A 2026 systematic evaluation comparing lightweight cross-encoder rerankers against using an
+    LLM itself as the reranker found a real trade-off, not a clean winner: cross-encoder rerankers
+    offer meaningfully lower latency and cost, but showed a measurable decline in downstream answer
+    faithfulness compared to LLM-based reranking in that study. The practical implication: "add a
+    reranker" isn't a single decision — cheaper cross-encoders and pricier LLM-based reranking sit
+    at different points on the same cost/quality curve, and the right choice depends on how much
+    latency and cost budget the application actually has.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't a cross-encoder be used for the entire initial retrieval over a large corpus?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It needs a separate forward pass per query-document pair, so it can't be precomputed the way document embeddings can</button>
+        <button class="q-option" data-correct="false">Cross-encoders can only process one document at a time regardless of use case</button>
+        <button class="q-option" data-correct="false">Cross-encoders produce lower-quality relevance scores than bi-encoders</button>
+      </div>
+      <div class="q-explain">Bi-encoders can pre-embed every document once and reuse those vectors for every future query; a cross-encoder must jointly process the query and each specific document together, which doesn't scale to searching millions of documents directly.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the standard production pattern for combining retrieval and reranking?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Retrieve a wide candidate set cheaply, then rerank just that smaller set with the more expensive method</button>
+        <button class="q-option" data-correct="false">Rerank the entire corpus on every query, skipping initial retrieval</button>
+        <button class="q-option" data-correct="false">Use reranking only, never bi-encoder retrieval</button>
+      </div>
+      <div class="q-explain">This two-stage pattern is exactly why reranking is affordable in practice — it's applied to a pre-filtered handful of candidates (e.g. top 20-50), not the full corpus.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What did the 2026 research comparing cross-encoder and LLM-based reranking find?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Cross-encoders were cheaper and faster but showed lower answer faithfulness than LLM-based reranking in that study</button>
+        <button class="q-option" data-correct="false">Cross-encoders and LLM-based reranking performed identically in every respect</button>
+        <button class="q-option" data-correct="false">LLM-based reranking was strictly worse in every dimension measured</button>
+      </div>
+      <div class="q-explain">The finding was a genuine trade-off, not a clean winner — cost/latency favored cross-encoders, faithfulness favored the LLM-based approach in that study, meaning the right choice depends on the specific application's constraints.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: BigDataBoutique "RAG Reranking" (2026); Elkiran &amp; Rasheed, "Evaluating retriever reranker pairings in RAG" (Discover Computing, 2026); DEV Community "RAG Is Not Dead" (2026).</p>
+
+  <div class="pager">
+    <a href="6-1-rag-architecture-end-to-end.html">&larr; 6.1 RAG architecture end-to-end</a>
+    <a href="6-3-hyde-query-transformation.html">6.3 HyDE &amp; query transformation &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const BEFORE = [
+  { text: "General guide to API authentication methods", score: 0.81 },
+  { text: "How to rotate an expired OAuth token", score: 0.79 },
+  { text: "Setting up SSO for enterprise accounts", score: 0.77 },
+  { text: "Troubleshooting 401 errors on token refresh", score: 0.75 },
+  { text: "API rate limit documentation overview", score: 0.71 },
+];
+const AFTER = [
+  { text: "Troubleshooting 401 errors on token refresh", score: 0.94 },
+  { text: "How to rotate an expired OAuth token", score: 0.89 },
+  { text: "Setting up SSO for enterprise accounts", score: 0.62 },
+  { text: "General guide to API authentication methods", score: 0.58 },
+  { text: "API rate limit documentation overview", score: 0.31 },
+];
+function renderList(id, items) {
+  document.getElementById(id).innerHTML = items.map((it,i) =>
+    `<div class="rr-item ${i===0?'top':''}"><span>${it.text}</span><span class="score">${it.score.toFixed(2)}</span></div>`
+  ).join('');
+}
+renderList('rr-before', BEFORE);
+renderList('rr-after', AFTER);
+
+document.getElementById('fig-rerank').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: bi-encoder retrieves wide candidate set cheaply, cross-encoder reranks a small subset precisely">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } .s{font-size:11px; fill:#9aa4b5; font-weight:400;} </style>
+  <rect x="20" y="40" width="180" height="60" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="110" y="65" text-anchor="middle">Bi-encoder retrieval</text>
+  <text x="110" y="83" text-anchor="middle" class="s">top 20-50 candidates, fast</text>
+  <line x1="200" y1="70" x2="260" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a7)"/>
+  <rect x="260" y="40" width="180" height="60" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="350" y="65" text-anchor="middle" fill="#a9c1ff">Cross-encoder rerank</text>
+  <text x="350" y="83" text-anchor="middle" class="s" fill="#7891c9">precise, only on candidates</text>
+  <line x1="440" y1="70" x2="500" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a7)"/>
+  <rect x="500" y="40" width="160" height="60" rx="8" fill="#1a2029" stroke="#3ecf8e"/>
+  <text x="580" y="65" text-anchor="middle" fill="#3ecf8e">Top 3-5 to prompt</text>
+  <defs><marker id="a7" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

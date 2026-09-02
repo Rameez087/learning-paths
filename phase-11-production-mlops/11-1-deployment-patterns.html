@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.1 Deployment patterns | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dp-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.dp-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.dp-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.dp-traffic-bar { height: 30px; border-radius: 6px; overflow: hidden; display: flex; margin-bottom: 8px; }
+.dp-seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Production &amp; MLOps</div>
+  <h1>11.1 Deployment patterns</h1>
+  <p class="subtitle">A model can return a valid, successful HTTP response while being substantively wrong. That single fact breaks most traditional deployment playbooks.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    LLM systems can fail silently: a candidate model or prompt change can return valid 200-status
+    responses while quietly lowering task-completion rate or breaking output format. This makes
+    naive "flip 100% of traffic and watch for errors" deployment dangerous for AI systems in a way
+    it isn't for typical software. The standard progression: <strong>shadow</strong> (mirror real
+    traffic to the candidate with zero user impact, compare offline) &rarr;
+    <strong>canary</strong> (route a small, real percentage of live traffic, monitor quality
+    metrics not just uptime) &rarr; gradual ramp to full rollout, with an explicit rollback
+    trigger defined before you start, not improvised mid-incident.
+  </div>
+
+  <h2>Try it: watch a rollout progress through stages</h2>
+  <div class="dp-box">
+    <div class="dp-toggle">
+      <div class="dp-toggle-btn active" data-s="shadow">Shadow</div>
+      <div class="dp-toggle-btn" data-s="canary1">Canary 1%</div>
+      <div class="dp-toggle-btn" data-s="canary25">Canary 25%</div>
+      <div class="dp-toggle-btn" data-s="full">Full rollout</div>
+    </div>
+    <div class="dp-traffic-bar" id="dp-bar"></div>
+    <p id="dp-desc" style="font-size:13px; color:var(--text-secondary);"></p>
+  </div>
+
+  <h2>Three patterns, three different jobs</h2>
+  <ul>
+    <li><strong>Shadow / traffic mirroring</strong> — production requests get asynchronously copied to the candidate, which processes them without its response ever reaching a real user. Zero production risk, and specifically catches prompt or model regressions on the real request distribution before any user sees a candidate response. This is the cheap, mandatory first step most teams are warned not to skip.</li>
+    <li><strong>Canary deployment</strong> — a small, real percentage of live traffic actually gets routed to the candidate. Unlike shadow, users are genuinely affected, so this needs faster detection and a tighter rollback path than shadow does. Route-level control matters for agentic systems specifically — you might canary only a single low-risk intent, or one enterprise tenant, rather than a flat percentage across everything.</li>
+    <li><strong>Blue-green</strong> — two complete, identical environments; a full switch, not a gradual ramp. Best suited for near-zero-downtime infrastructure switches with simple state and an instant rollback need, rather than for gradually validating a change in model behavior.</li>
+  </ul>
+
+  <h2>The real incident pattern this is designed to prevent</h2>
+  <p>
+    A documented, illustrative shape of failure: a team completes a migration to a newer model.
+    Offline evals look good, cost looks better, and the team flips 100% of traffic at once. By
+    noon, a specific task-completion metric on one high-value agent has dropped measurably; by
+    early afternoon, a refusal rate on a different agent has climbed. The root cause, on
+    post-mortem: the offline evaluation set under-represented the real production traffic
+    distribution, and there was no per-cohort live monitor or canary gate that would have caught
+    the regression before it reached everyone. This is precisely the gap shadow and canary stages
+    exist to close — offline evals are necessary, but not sufficient on their own.
+  </p>
+
+  <h2>Measure quality, not just uptime</h2>
+  <p>
+    A specifically flagged common mistake: measuring only HTTP success rate during a canary window.
+    A model can return valid 200 responses while its task-completion rate quietly drops or its
+    JSON output stops validating against the expected schema (3.2) — infrastructure-level health
+    checks won't catch either. AI canary monitoring needs quality signals layered on top of
+    infrastructure metrics: task completion, output validity, cost per request, and latency,
+    tracked per cohort, not aggregated across a mixed population of very different users.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is shadow deployment run before canary, rather than going straight to canary?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Shadow catches regressions on real production traffic with zero user impact, before any real user is ever exposed to the candidate</button>
+        <button class="q-option" data-correct="false">Shadow deployment is required by law for AI systems</button>
+        <button class="q-option" data-correct="false">Canary deployment cannot technically be configured without a prior shadow stage</button>
+      </div>
+      <div class="q-explain">Shadow is the cost-bounded, zero-risk signal-gathering stage — it's cheap and catches many issues before spending the higher-stakes canary stage's "budget" of real user exposure.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can measuring only HTTP success rate during a canary window miss a real regression?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A model can return a valid 200 response while its task-completion rate or output format quality has quietly degraded</button>
+        <button class="q-option" data-correct="false">HTTP status codes are not generated by LLM APIs</button>
+        <button class="q-option" data-correct="false">Success rate always perfectly tracks output quality for AI systems</button>
+      </div>
+      <div class="q-explain">This is the core distinguishing risk of AI deployments versus typical software — a "successful" response at the infrastructure level says nothing about whether the actual content was correct or useful.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What went wrong in the illustrative incident described above, according to its post-mortem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The offline eval set didn't represent the real traffic distribution, and there was no per-cohort live monitor or canary gate to catch the gap before full rollout</button>
+        <button class="q-option" data-correct="false">The new model was simply worse on every possible metric from the very first offline test</button>
+        <button class="q-option" data-correct="false">The team never ran any evaluation at all before deploying</button>
+      </div>
+      <div class="q-explain">The failure wasn't a lack of testing — offline evals looked good — it was that offline testing alone can't substitute for a live, staged rollout with real quality monitoring at each stage.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: FutureAGI "What Is Canary Deployment? LLM Gateway Guide (2026)" and "LLM Eval with Shadow Traffic and Canary Deployment in 2026"; MLflow "Canary Deployment for AI Models: A 2026 Guide"; TianPan.co "Releasing AI Features Without Breaking Production" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-10-fine-tuning/10-4-fine-tuning-workflow.html">&larr; 10.4 Fine-tuning workflow &amp; failure modes</a>
+    <a href="11-2-monitoring-observability.html">11.2 Monitoring &amp; observability &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const STAGES = {
+  shadow: { baseline: 100, candidate: 0, mirrored: true, desc: "100% of real traffic still served by baseline. The candidate silently receives a mirrored copy of the same requests and its responses are compared offline — zero user impact." },
+  canary1: { baseline: 99, candidate: 1, mirrored: false, desc: "1% of live traffic now genuinely routed to the candidate. Real users are affected. Quality metrics (not just uptime) are watched closely per cohort." },
+  canary25: { baseline: 75, candidate: 25, mirrored: false, desc: "Ramped to 25% after the 1% stage showed no regression. Still watching per-cohort quality metrics with a defined rollback trigger ready." },
+  full: { baseline: 0, candidate: 100, mirrored: false, desc: "Full rollout — the former candidate is now the baseline. Monitoring continues, since production-scale traffic can still surface issues the smaller canary stages didn't." },
+};
+function renderStage(key) {
+  const s = STAGES[key];
+  const bar = document.getElementById('dp-bar');
+  bar.innerHTML = '';
+  if (s.baseline > 0) {
+    const b = document.createElement('div');
+    b.className = 'dp-seg';
+    b.style.cssText = `width:${s.baseline}%; background:#1a2029; border:1px solid #262d3a; color:#9aa4b5;`;
+    b.textContent = s.baseline + '% baseline';
+    bar.appendChild(b);
+  }
+  if (s.candidate > 0) {
+    const c = document.createElement('div');
+    c.className = 'dp-seg';
+    c.style.cssText = `width:${s.candidate}%; background:#182238; border:1px solid #5b8cff; color:#a9c1ff;`;
+    c.textContent = s.candidate + '% candidate';
+    bar.appendChild(c);
+  }
+  if (s.mirrored) {
+    const m = document.createElement('div');
+    m.className = 'dp-seg';
+    m.style.cssText = 'width:0%; position:relative;';
+    bar.style.position = 'relative';
+  }
+  document.getElementById('dp-desc').textContent = s.desc;
+}
+document.querySelectorAll('.dp-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dp-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderStage(btn.dataset.s);
+  });
+});
+renderStage('shadow');
+</script>
+</body>
+</html>

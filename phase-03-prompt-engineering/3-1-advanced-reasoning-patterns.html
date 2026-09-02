@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 Advanced reasoning patterns | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.sc-path { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 13px; opacity: 0; transform: translateX(-8px); transition: opacity 0.3s, transform 0.3s; }
+.sc-path.shown { opacity: 1; transform: translateX(0); }
+.sc-path:last-child { border-bottom: none; }
+.sc-path .n { color: var(--text-muted); width: 24px; }
+.sc-path .ans { font-weight: 700; padding: 3px 10px; border-radius: 6px; background: var(--surface-2); }
+.sc-path .ans.majority { background: var(--bg-accent, #182238); color: var(--accent-text); }
+.sc-controls { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.sc-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.sc-result { margin-top: 16px; padding: 14px 18px; background: var(--surface-2); border-radius: 8px; font-size: 14px; display:none; }
+.sc-result.show { display: block; }
+.tot-slider-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.tot-slider-row input[type=range] { flex: 1; }
+.tot-bars { margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.1</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 3 · Prompt engineering deep dive</div>
+  <h1>3.1 Advanced reasoning patterns</h1>
+  <p class="subtitle">Self-consistency and Tree of Thoughts &mdash; real accuracy gains, real cost, and where the line between them sits.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Self-consistency</strong> runs the same chain-of-thought prompt several times and
+    takes the majority answer &mdash; cheap, and it closes most of the accuracy gap on math and
+    reasoning tasks. <strong>Tree of Thoughts (ToT)</strong> goes further: it branches at each
+    reasoning step, evaluates each branch, and prunes the weak ones &mdash; far more powerful on
+    genuinely hard search problems, and far more expensive. The 2026 rule of thumb from
+    practitioners: reach for self-consistency first; only escalate to full ToT when self-consistency
+    demonstrably isn't enough, because most of the time it is.
+  </div>
+
+  <h2>Try it: self-consistency in action</h2>
+  <p>
+    Below is a real failure case, drawn from the paper that introduced this technique: a single
+    greedy chain-of-thought pass gets this arithmetic problem wrong. Run it several times with
+    independent reasoning paths and take the majority vote instead.
+  </p>
+
+  <div class="sc-box">
+    <p style="font-weight:600; margin-bottom:4px;">Q: When I was 6, my sister was half my age. Now I'm 70. How old is my sister?</p>
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">(Correct answer: 67 — the age gap is fixed at 3 years, not a ratio.)</p>
+    <div id="sc-paths"></div>
+    <div class="sc-controls">
+      <button class="sc-btn" id="sc-run">Sample 5 independent reasoning paths</button>
+    </div>
+    <div class="sc-result" id="sc-result"></div>
+  </div>
+
+  <p>
+    On the exact benchmarks reported in the original paper, self-consistency lifted accuracy by
+    <strong>+17.9 points</strong> on GSM8K (grade-school math) and <strong>+12.2 points</strong> on
+    AQuA (algebra word problems), just by sampling multiple paths and voting &mdash; no fine-tuning,
+    no extra training, no evaluator model required.
+  </p>
+
+  <h2>Tree of Thoughts: search instead of voting</h2>
+  <p>
+    Self-consistency samples several complete reasoning paths independently and votes at the end.
+    Tree of Thoughts is a different structure entirely: at <em>each individual step</em>, the model
+    generates several possible next moves, an evaluator scores them, and the weak branches get
+    pruned before continuing &mdash; genuine search through a tree of partial solutions, not
+    parallel full attempts.
+  </p>
+  <p>
+    On the "Game of 24" puzzle (combine four numbers with arithmetic to reach 24) from the paper
+    that introduced ToT, a single chain-of-thought prompt solved it <strong>4% of the time</strong>.
+    Wrapped in Tree of Thoughts &mdash; branching at each numeric step, pruning under a value
+    prompt &mdash; the same underlying model solved it <strong>74% of the time</strong>.
+  </p>
+
+  <div class="sc-box">
+    <p style="font-weight:600; margin-bottom:12px;">Illustrative: search tree width vs. solve rate</p>
+    <div class="tot-slider-row">
+      <label style="font-size:14px; color:var(--text-secondary); min-width:110px;">Branches explored</label>
+      <input type="range" id="tot-slider" min="1" max="8" value="1">
+      <span id="tot-readout" style="font-weight:700; min-width:20px;">1</span>
+    </div>
+    <div class="tot-bars">
+      <div class="att-bar-row" style="display:flex; align-items:center; gap:12px; margin-top:14px;">
+        <div style="width:90px; font-size:13px;">Solve rate</div>
+        <div style="flex:1; height:22px; background:var(--surface-2); border-radius:4px; overflow:hidden;">
+          <div id="tot-fill" style="height:100%; background:#5b8cff; border-radius:4px; transition:width 0.3s ease; width:4%;"></div>
+        </div>
+        <div id="tot-pct" style="width:46px; font-size:13px; text-align:right;">4%</div>
+      </div>
+      <div class="att-bar-row" style="display:flex; align-items:center; gap:12px; margin-top:10px;">
+        <div style="width:90px; font-size:13px;">Relative cost</div>
+        <div style="flex:1; height:22px; background:var(--surface-2); border-radius:4px; overflow:hidden;">
+          <div id="tot-cost-fill" style="height:100%; background:#f2b84b; border-radius:4px; transition:width 0.3s ease; width:5%;"></div>
+        </div>
+        <div id="tot-cost-pct" style="width:46px; font-size:13px; text-align:right;">1x</div>
+      </div>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">Illustrative curve calibrated to the paper's reported 4% (1 path) → 74% (branching search) result — actual solve rate depends heavily on the specific task and evaluator quality.</p>
+  </div>
+
+  <h2>When each technique is overkill</h2>
+  <ul>
+    <li><strong>Self-consistency is overkill</strong> for general content generation, casual Q&amp;A, or anything where a single wrong answer is low-stakes and cheap to correct. It earns its cost when a wrong answer is significantly more expensive than a few extra inference calls &mdash; financial calculations, legal analysis, medical-adjacent reasoning support.</li>
+    <li><strong>Tree of Thoughts is overkill</strong> for anything self-consistency already handles well. Its deliberate branching search is expensive per call, so it's reserved for problems requiring genuine multi-step exploration with clear intermediate states to evaluate &mdash; puzzle-like search problems, not everyday reasoning tasks.</li>
+    <li><strong>A cheaper alternative to both, when it applies:</strong> replace an LLM-based evaluator with a deterministic checker whenever the task allows one &mdash; schema validation, arithmetic verification, unit tests, regex matching. This keeps search quality high while cutting per-step cost substantially.</li>
+  </ul>
+
+  <div class="callout paper">
+    <div class="callout-label">Landmark papers</div>
+    <strong>Self-Consistency Improves Chain of Thought Reasoning in Language Models</strong> &mdash;
+    Wang et al., 2022 (Google Research).
+    <a href="https://arxiv.org/abs/2203.11171" target="_blank" rel="noopener">arxiv.org/abs/2203.11171</a><br><br>
+    <strong>Tree of Thoughts: Deliberate Problem Solving with Large Language Models</strong> &mdash;
+    Yao et al., NeurIPS 2023.
+    <a href="https://arxiv.org/abs/2305.10601" target="_blank" rel="noopener">arxiv.org/abs/2305.10601</a>
+  </div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. How does self-consistency decide on a final answer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It always takes the first reasoning path generated</button>
+        <button class="q-option" data-correct="true">It samples multiple independent reasoning paths and takes the majority answer</button>
+        <button class="q-option" data-correct="false">It uses a separate model to grade each path</button>
+      </div>
+      <div class="q-explain">Self-consistency replaces greedy single-path decoding with multiple independent samples, then a simple majority vote across the final answers — no separate evaluator model required.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. What's the key structural difference between Tree of Thoughts and self-consistency?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">ToT branches and evaluates at each intermediate step; self-consistency samples full paths independently and votes at the end</button>
+        <button class="q-option" data-correct="false">ToT is cheaper because it uses fewer total model calls</button>
+        <button class="q-option" data-correct="false">They are functionally identical techniques with different names</button>
+      </div>
+      <div class="q-explain">Self-consistency's paths never interact until the final vote; ToT actively prunes weak branches mid-reasoning using an evaluator, making it more powerful on search-like problems but considerably more expensive.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. When should you replace an LLM-based evaluator with a deterministic checker in a ToT-style pipeline?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Whenever the task allows one — e.g. schema validation, arithmetic checks, unit tests, regex matching</button>
+        <button class="q-option" data-correct="false">Never — LLM judges are always more accurate</button>
+        <button class="q-option" data-correct="false">Only when the task involves creative writing</button>
+      </div>
+      <div class="q-explain">A deterministic checker is both cheaper and more reliable than an LLM judge whenever the correctness criterion can be checked mechanically — this is a straightforward cost and quality win wherever it's available.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Wang et al. (2022), "Self-Consistency Improves Chain of Thought Reasoning"; Yao et al.
+    (2023), "Tree of Thoughts"; FutureAGI 2026 production guidance on ToT cost trade-offs.
+  </p>
+
+  <div class="pager">
+    <a href="../phase-02-transformers/2-5-context-windows-models.html">&larr; 2.5 Context windows &amp; model families</a>
+    <a href="3-2-structured-output-schemas.html">3.2 Structured output &amp; schemas &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Self-consistency simulator ---
+const PATHS = [
+  { text: "Sister's age = my age ÷ 2 = 70 ÷ 2 =", answer: "35" },
+  { text: "Age gap when I was 6: sister was 3. Gap stays 3 forever. 70 + 3 =", answer: "73" },
+  { text: "Age gap when I was 6: sister was 3 (half of 6). Gap is fixed at 3. 70 − 3 =", answer: "67" },
+  { text: "Fixed gap of 3 years. I'm 70 now, so sister is 70 −", answer: "67" },
+  { text: "At age 6, sister = 3, so gap = 3. Now: 70 − 3 =", answer: "67" },
+];
+document.getElementById('sc-run').addEventListener('click', () => {
+  const container = document.getElementById('sc-paths');
+  container.innerHTML = '';
+  document.getElementById('sc-result').classList.remove('show');
+  const counts = {};
+  PATHS.forEach((p, i) => {
+    counts[p.answer] = (counts[p.answer] || 0) + 1;
+    const row = document.createElement('div');
+    row.className = 'sc-path';
+    row.innerHTML = `<span class="n">${i+1}.</span><span>${p.text}</span><span class="ans">${p.answer}</span>`;
+    container.appendChild(row);
+    setTimeout(() => row.classList.add('shown'), i * 220);
+  });
+  const majority = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  setTimeout(() => {
+    document.querySelectorAll('#sc-paths .ans').forEach(el => {
+      if (el.textContent === majority[0]) el.classList.add('majority');
+    });
+    document.getElementById('sc-result').innerHTML = `Majority vote: <strong>${majority[0]}</strong> (${majority[1]} of ${PATHS.length} paths agree) — the correct answer, even though the single greedy pass at the top of this page got it wrong.`;
+    document.getElementById('sc-result').classList.add('show');
+  }, PATHS.length * 220 + 200);
+});
+
+// --- ToT branch slider (illustrative curve calibrated to 4% -> 74%) ---
+function totCurve(branches) {
+  // logistic-ish interpolation from 4% at 1 branch to 74% at 8 branches
+  const t = (branches - 1) / 7;
+  return Math.round(4 + (74 - 4) * (1 - Math.pow(1 - t, 1.6)));
+}
+function totCost(branches) {
+  return Math.round(5 + branches * 12);
+}
+function renderTot() {
+  const b = parseInt(document.getElementById('tot-slider').value, 10);
+  document.getElementById('tot-readout').textContent = b;
+  const rate = totCurve(b);
+  const cost = totCost(b);
+  document.getElementById('tot-fill').style.width = rate + '%';
+  document.getElementById('tot-pct').textContent = rate + '%';
+  document.getElementById('tot-cost-fill').style.width = Math.min(cost, 100) + '%';
+  document.getElementById('tot-cost-pct').textContent = (b) + 'x';
+}
+document.getElementById('tot-slider').addEventListener('input', renderTot);
+renderTot();
+</script>
+
+</body>
+</html>

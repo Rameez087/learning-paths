@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.3 Async &amp; concurrent requests | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.conc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.conc-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 16px; }
+.conc-cell { height: 22px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border-strong); transition: background 0.2s; }
+.conc-cell.active { background: var(--fill-warning, #f2b84b); border-color: var(--fill-warning, #f2b84b); }
+.conc-cell.done { background: var(--success, #3ecf8e); border-color: var(--success, #3ecf8e); }
+.conc-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.conc-slider-row input[type=range] { flex: 1; }
+.conc-readout { display: flex; gap: 24px; margin-top: 12px; }
+.conc-readout .metric { background: var(--surface-2); border-radius: 8px; padding: 10px 16px; text-align: center; }
+.conc-readout .n { font-size: 20px; font-weight: 700; }
+.conc-readout .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Working with LLM APIs</div>
+  <h1>4.3 Async &amp; concurrent requests</h1>
+  <p class="subtitle">30 sequential API calls take a minute. The same 30 calls, concurrent, take a few seconds.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An LLM API call spends almost all its time waiting on the network, not using your CPU — which
+    makes it a textbook case for <code>async</code>/<code>await</code> concurrency. Firing 30
+    independent calls one at a time (sequentially) versus concurrently via
+    <code>asyncio.gather()</code> is the difference between roughly 40&ndash;65 seconds and
+    roughly 2&ndash;4 seconds in real published benchmarks, for identical work. The catch:
+    unbounded concurrency slams into provider rate limits, so production code caps concurrency
+    with a <strong>semaphore</strong> and layers in retry-with-backoff for when limits are hit anyway.
+  </div>
+
+  <h2>Try it: sequential vs. concurrent, same 20 calls</h2>
+  <div class="conc-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">Sequential (one at a time)</p>
+    <div class="conc-grid" id="seq-grid"></div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">Concurrent, capped by a semaphore</p>
+    <div class="conc-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">Concurrency limit</label>
+      <input type="range" id="conc-slider" min="1" max="20" value="5">
+      <span id="conc-readout-val" style="font-weight:700; min-width:24px;">5</span>
+    </div>
+    <div class="conc-grid" id="conc-grid"></div>
+    <button class="stream-btn tool-btn" id="conc-run" style="padding:8px 16px; background:var(--accent-bg); border:1px solid var(--accent); color:var(--accent-text); border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; font-family:var(--font-sans); margin-top:8px;">Run both</button>
+    <div class="conc-readout">
+      <div class="metric"><div class="n" id="seq-time">&mdash;</div><div class="l">sequential time</div></div>
+      <div class="metric"><div class="n" id="conc-time">&mdash;</div><div class="l">concurrent time</div></div>
+    </div>
+  </div>
+
+  <h2>The core pattern: gather + semaphore</h2>
+  <pre><code>import asyncio
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
+SEMAPHORE = asyncio.Semaphore(5)  # never more than 5 requests in flight
+
+async def call_one(prompt: str) -> str:
+    async with SEMAPHORE:
+        resp = await client.chat.completions.create(
+            model="gpt-5-nano",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return resp.choices[0].message.content
+
+results = await asyncio.gather(
+    *(call_one(p) for p in prompts),
+    return_exceptions=True   # one failed call shouldn't crash the whole batch
+)</code></pre>
+  <p>
+    The semaphore is doing real work here: without it, <code>asyncio.gather()</code> would fire
+    every request at once, and a batch of a few hundred prompts would immediately trip the
+    provider's rate limits. The semaphore caps how many requests are ever "in flight"
+    simultaneously, regardless of how many total tasks are queued up.
+  </p>
+
+  <h2>What gather() alone doesn't give you</h2>
+  <p>
+    A semaphore plus <code>gather()</code> is genuinely enough for a small script. It is not
+    enough for a production batch pipeline, which typically also needs:
+  </p>
+  <ul>
+    <li><strong>Coordinated rate-limit cooldowns</strong> &mdash; when a 429 (rate limited) error comes back, backing off just that request isn't enough if every other concurrent task keeps hammering the same throttled endpoint.</li>
+    <li><strong>Retry with exponential backoff</strong> &mdash; on a rate-limit or transient error, wait progressively longer between retries rather than immediately re-firing.</li>
+    <li><strong>Token and cost accounting for failed attempts</strong> &mdash; a naive setup only tracks tokens for successful calls, silently under-counting real spend.</li>
+    <li><strong>Bounded memory for very large batches</strong> &mdash; <code>gather()</code> builds every coroutine up front; streaming a million prompts through constant memory needs a different structure (a bounded queue of workers, not one giant gather call).</li>
+  </ul>
+
+  <div class="figure" id="fig-async"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why are LLM API calls a good fit for async concurrency specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each call spends most of its time waiting on network I/O, not using CPU — concurrency lets other work happen during that wait</button>
+        <button class="q-option" data-correct="false">LLM calls use very little memory</button>
+        <button class="q-option" data-correct="false">Async is required by every LLM provider's API</button>
+      </div>
+      <div class="q-explain">Async concurrency shines specifically for I/O-bound work — while one request is waiting on the network, the event loop can be making progress on other requests instead of sitting idle.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What problem does a semaphore solve in concurrent LLM calls?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It makes each individual API call faster</button>
+        <button class="q-option" data-correct="true">It caps how many requests are in flight simultaneously, preventing the provider's rate limits from being tripped</button>
+        <button class="q-option" data-correct="false">It converts synchronous code into asynchronous code automatically</button>
+      </div>
+      <div class="q-explain">Without a concurrency cap, gather() would fire every task's request at once — a semaphore limits how many can be actively running, regardless of the total number queued.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's a real limitation of plain asyncio.gather() for a large production batch?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It materializes every coroutine up front, which doesn't scale to very large batches under constant memory</button>
+        <button class="q-option" data-correct="false">gather() cannot be used with any LLM provider's SDK</button>
+        <button class="q-option" data-correct="false">gather() only supports a maximum of 10 concurrent tasks</button>
+      </div>
+      <div class="q-explain">gather() builds the full list of coroutines before running them — for a genuinely huge batch (hundreds of thousands of prompts), that doesn't fit in bounded memory, which is why production tools use a bounded worker-queue pattern instead.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: async-batch-llm project documentation and published benchmarks (2026); Unite.AI async LLM API guide; Medium "Scaling LLM Calls" (2025).</p>
+
+  <div class="pager">
+    <a href="4-2-function-calling-tool-use.html">&larr; 4.2 Function calling &amp; tool use</a>
+    <a href="4-4-cost-token-accounting.html">4.4 Cost &amp; token accounting &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TOTAL_CALLS = 20;
+const CALL_TIME = 400; // ms, illustrative per-call latency
+
+function buildGrid(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  for (let i = 0; i < TOTAL_CALLS; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'conc-cell';
+    el.appendChild(cell);
+  }
+}
+buildGrid('seq-grid');
+buildGrid('conc-grid');
+
+document.getElementById('conc-slider').addEventListener('input', (e) => {
+  document.getElementById('conc-readout-val').textContent = e.target.value;
+});
+
+document.getElementById('conc-run').addEventListener('click', async () => {
+  buildGrid('seq-grid');
+  buildGrid('conc-grid');
+  document.getElementById('seq-time').textContent = '—';
+  document.getElementById('conc-time').textContent = '—';
+
+  const concurrency = parseInt(document.getElementById('conc-slider').value, 10);
+  const seqCells = document.querySelectorAll('#seq-grid .conc-cell');
+  const concCells = document.querySelectorAll('#conc-grid .conc-cell');
+
+  // Sequential simulation
+  const seqStart = Date.now();
+  async function runSeq() {
+    for (let i = 0; i < TOTAL_CALLS; i++) {
+      seqCells[i].classList.add('active');
+      await new Promise(r => setTimeout(r, CALL_TIME / 4)); // sped up for demo
+      seqCells[i].classList.remove('active');
+      seqCells[i].classList.add('done');
+    }
+    document.getElementById('seq-time').textContent = ((Date.now()-seqStart)/1000).toFixed(1) + 's';
+  }
+
+  // Concurrent simulation with semaphore
+  const concStart = Date.now();
+  async function runConcurrent() {
+    let idx = 0;
+    let active = 0;
+    return new Promise(resolve => {
+      function tryStart() {
+        while (active < concurrency && idx < TOTAL_CALLS) {
+          const myIdx = idx++;
+          active++;
+          concCells[myIdx].classList.add('active');
+          setTimeout(() => {
+            concCells[myIdx].classList.remove('active');
+            concCells[myIdx].classList.add('done');
+            active--;
+            if (idx >= TOTAL_CALLS && active === 0) {
+              document.getElementById('conc-time').textContent = ((Date.now()-concStart)/1000).toFixed(1) + 's';
+              resolve();
+            } else {
+              tryStart();
+            }
+          }, CALL_TIME / 4);
+        }
+      }
+      tryStart();
+    });
+  }
+
+  runSeq();
+  runConcurrent();
+});
+
+document.getElementById('fig-async').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: sequential calls run one after another while concurrent calls overlap in time">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size: 12px; } </style>
+  <text x="20" y="30" font-size="13" font-weight="600">Sequential</text>
+  <rect x="20" y="40" width="60" height="20" rx="4" fill="#1a2029" stroke="#262d3a"/>
+  <rect x="90" y="40" width="60" height="20" rx="4" fill="#1a2029" stroke="#262d3a"/>
+  <rect x="160" y="40" width="60" height="20" rx="4" fill="#1a2029" stroke="#262d3a"/>
+  <rect x="230" y="40" width="60" height="20" rx="4" fill="#1a2029" stroke="#262d3a"/>
+  <text x="350" y="55" fill="#9aa4b5">→ each waits for the previous to finish</text>
+
+  <text x="20" y="100" font-size="13" font-weight="600">Concurrent (semaphore = 4)</text>
+  <rect x="20" y="110" width="60" height="20" rx="4" fill="#182238" stroke="#5b8cff"/>
+  <rect x="20" y="135" width="60" height="20" rx="4" fill="#182238" stroke="#5b8cff"/>
+  <rect x="20" y="160" width="60" height="20" rx="4" fill="#182238" stroke="#5b8cff"/>
+  <text x="90" y="145" fill="#a9c1ff">→ all overlap in time, bounded by the cap</text>
+</svg>
+`;
+</script>
+</body>
+</html>

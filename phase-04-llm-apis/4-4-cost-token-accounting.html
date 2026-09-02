@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.4 Cost &amp; token accounting | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cost-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cost-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.cost-row label { font-size: 13px; color: var(--text-secondary); min-width: 150px; }
+.cost-row input[type=range] { flex: 1; }
+.cost-toggle { display: flex; gap: 8px; }
+.cost-toggle-btn { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer; font-size: 12px; }
+.cost-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.cost-result { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+.cost-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.cost-metric .n { font-size: 22px; font-weight: 700; }
+.cost-metric .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Working with LLM APIs</div>
+  <h1>4.4 Cost &amp; token accounting</h1>
+  <p class="subtitle">A $10,000/month bill dropping to $2,000 usually comes from three specific changes, not general belt-tightening.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Three techniques account for most of the achievable savings in production LLM costs:
+    <strong>prompt caching</strong> (up to 90% off repeated input tokens), <strong>model
+    routing</strong> (sending easy tasks to a cheaper model instead of your best one), and
+    <strong>batch processing</strong> (roughly 50% off when results don't need to come back
+    immediately). Combined, these three commonly cut total spend by 70%+ without a quality
+    trade-off &mdash; because none of them change what the model produces, only how efficiently
+    you're paying for it.
+  </div>
+
+  <h2>Try it: see where your money actually goes</h2>
+  <div class="cost-box">
+    <div class="cost-row">
+      <label>Requests / day</label>
+      <input type="range" id="cost-requests" min="100" max="50000" step="100" value="5000">
+      <span id="cost-requests-val" style="font-weight:600; min-width:60px; text-align:right;">5,000</span>
+    </div>
+    <div class="cost-row">
+      <label>System prompt size</label>
+      <input type="range" id="cost-sysprompt" min="200" max="8000" step="100" value="2000">
+      <span id="cost-sysprompt-val" style="font-weight:600; min-width:70px; text-align:right;">2,000 tok</span>
+    </div>
+    <div class="cost-row">
+      <label>Prompt caching</label>
+      <div class="cost-toggle">
+        <div class="cost-toggle-btn active" data-cache="off">Off</div>
+        <div class="cost-toggle-btn" data-cache="on">On (90% off repeats)</div>
+      </div>
+    </div>
+    <div class="cost-row">
+      <label>Model tier</label>
+      <div class="cost-toggle">
+        <div class="cost-toggle-btn active" data-tier="premium">Premium ($3/$15 per M)</div>
+        <div class="cost-toggle-btn" data-tier="budget">Budget ($0.25/$1.25 per M)</div>
+      </div>
+    </div>
+    <div class="cost-result" id="cost-result"></div>
+  </div>
+
+  <h2>Prompt caching: the highest-leverage lever</h2>
+  <p>
+    Every LLM call recomputes attention key-value tensors for every input token. Prompt caching
+    stores those computed tensors server-side, so if your next request starts with the same
+    prefix, the model skips recomputation entirely and loads the cached result instead. On
+    Anthropic's API, a cache read costs roughly <strong>10% of the standard input rate</strong>
+    &mdash; a 90% discount on any repeated prefix. This is why 3.1's "static content first,
+    variable content last" ordering advice isn't just tidy structure &mdash; it's the difference
+    between a cache hit and a cache miss on every single call.
+  </p>
+  <p>
+    A concrete illustrative case from real reported usage: a pipeline resending a 3,500-token
+    system prompt roughly 12,000 times a month was paying about $180/month just on that redundant
+    input. Turning on caching and moving latency-tolerant work to the batch API cut that same
+    pipeline's bill by 61% &mdash; with byte-identical output quality.
+  </p>
+
+  <h2>Model routing: not every task needs your best model</h2>
+  <p>
+    Reported industry estimates put roughly 80% of routine production tasks as handleable by a
+    cheap, fast model without measurably hurting output quality &mdash; classification, simple
+    extraction, short summarization. Reserving an expensive premium model for the genuinely hard
+    20% (deep reasoning, nuanced writing, high-stakes decisions) is the single highest-ROI change
+    most teams can make, often described as a few lines of routing logic. This is the practical,
+    cost-driven version of the multi-LLM orchestration we'll build out fully in Phase 7.
+  </p>
+
+  <h2>What to actually monitor</h2>
+  <ul>
+    <li><strong>Input vs. output token ratio.</strong> Output tokens commonly cost 2&ndash;5x more than input tokens per token &mdash; capping <code>max_tokens</code> aggressively on tasks that don't need long responses is free money.</li>
+    <li><strong>Cache hit rate.</strong> Most providers surface this directly in the response (e.g. a <code>cached_tokens</code> field) &mdash; wire it into monitoring so a silent regression (a prompt structure change that breaks caching) triggers an alert instead of a surprise invoice.</li>
+    <li><strong>Cost on failed attempts.</strong> A naive tracking setup only counts tokens spent on successful calls, quietly under-reporting real spend from retries and validation failures.</li>
+    <li><strong>Token counts across model generations aren't directly comparable.</strong> A newer tokenizer can produce meaningfully more tokens for identical text than an older one from the same vendor &mdash; always re-measure with the actual model in use rather than assuming last quarter's per-token estimate still holds.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does prompt caching require static content first, variable content last (from 3.1)?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Caching works on a matching prefix — if the start of the prompt changes between calls, the cache can't hit</button>
+        <button class="q-option" data-correct="false">It's a purely stylistic convention with no cost impact</button>
+        <button class="q-option" data-correct="false">Variable content must always come first for the API to accept the request</button>
+      </div>
+      <div class="q-explain">Prompt caching stores computed tensors for a prefix — if the user's variable query sits at the start, no two calls share an identical prefix, and the cache never gets a chance to hit.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does model routing save money by doing?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Sending easy, routine tasks to a cheaper model and reserving the expensive model for genuinely hard tasks</button>
+        <button class="q-option" data-correct="false">Reducing the number of tokens in every prompt regardless of task</button>
+        <button class="q-option" data-correct="false">Always using the cheapest available model for every request</button>
+      </div>
+      <div class="q-explain">Routing is selective, not uniform — the savings come from matching task difficulty to model cost, not from downgrading everything to the cheapest tier regardless of what the task needs.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is it risky to compare token-based cost estimates across different model generations from the same vendor?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A newer tokenizer can produce a meaningfully different token count for identical text than an older one</button>
+        <button class="q-option" data-correct="false">Token counts are standardized across all models and vendors</button>
+        <button class="q-option" data-correct="false">Newer models always use fewer tokens than older ones</button>
+      </div>
+      <div class="q-explain">Applying a price-per-token from one model generation to a token count measured on a different generation's tokenizer can leave a budget estimate off by a meaningful margin — always re-measure with the actual model in use.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: TECHSY "12 Ways to Reduce LLM API Costs" (2026); DevToolLab prompt caching guide (2026); CloudInsight LLM API cost optimization strategies (2026).</p>
+
+  <div class="pager">
+    <a href="4-3-async-concurrent-requests.html">&larr; 4.3 Async &amp; concurrent requests</a>
+    <a href="../phase-05-embeddings-vector-search/5-1-embedding-models-practice.html">5.1 Embedding models in practice &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let cacheOn = false;
+let tier = 'premium';
+document.querySelectorAll('[data-cache]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-cache]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    cacheOn = btn.dataset.cache === 'on';
+    calcCost();
+  });
+});
+document.querySelectorAll('[data-tier]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-tier]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tier = btn.dataset.tier;
+    calcCost();
+  });
+});
+
+function calcCost() {
+  const requests = parseInt(document.getElementById('cost-requests').value, 10);
+  const sysPrompt = parseInt(document.getElementById('cost-sysprompt').value, 10);
+  document.getElementById('cost-requests-val').textContent = requests.toLocaleString();
+  document.getElementById('cost-sysprompt-val').textContent = sysPrompt.toLocaleString() + ' tok';
+
+  const rates = tier === 'premium' ? { input: 3, output: 15 } : { input: 0.25, output: 1.25 };
+  const userQueryTokens = 150; // illustrative
+  const outputTokens = 300; // illustrative
+
+  const inputRate = cacheOn ? rates.input * 0.1 : rates.input;
+  const dailyInputTokens = requests * (sysPrompt + userQueryTokens);
+  const dailyOutputTokens = requests * outputTokens;
+
+  const dailyCost = (dailyInputTokens / 1e6) * inputRate + (dailyOutputTokens / 1e6) * rates.output;
+  const monthlyCost = dailyCost * 30;
+
+  const noOptCost = ((requests * (sysPrompt + userQueryTokens) / 1e6) * 3 + (dailyOutputTokens/1e6) * 15) * 30;
+  const savings = noOptCost > 0 ? Math.round((1 - monthlyCost / noOptCost) * 100) : 0;
+
+  document.getElementById('cost-result').innerHTML = `
+    <div class="cost-metric"><div class="n">$${monthlyCost.toFixed(0).toLocaleString()}</div><div class="l">est. monthly cost</div></div>
+    <div class="cost-metric"><div class="n">${savings}%</div><div class="l">vs. no optimization</div></div>
+    <div class="cost-metric"><div class="n">${(dailyInputTokens/1e6).toFixed(1)}M</div><div class="l">input tokens / day</div></div>
+  `;
+}
+document.getElementById('cost-requests').addEventListener('input', calcCost);
+document.getElementById('cost-sysprompt').addEventListener('input', calcCost);
+calcCost();
+</script>
+</body>
+</html>

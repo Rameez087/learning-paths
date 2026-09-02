@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.3 Alignment: DPO vs. RLHF | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.al-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.al-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.al-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.al-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.al-stage { padding: 10px 14px; background: var(--surface-2); border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Fine-tuning &amp; adaptation</div>
+  <h1>10.3 Alignment: DPO vs. RLHF</h1>
+  <p class="subtitle">Both teach a model to prefer one response over another. They disagree on how many moving parts that requires.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    RLHF (Reinforcement Learning from Human Feedback) is a three-stage pipeline: supervised
+    fine-tuning, then training a separate <strong>reward model</strong> on human preference pairs,
+    then using reinforcement learning (typically PPO) to optimize the policy against that reward
+    model. <strong>DPO (Direct Preference Optimization)</strong> collapses the last two stages into
+    a single supervised loss — it trains directly on chosen/rejected response pairs, with no
+    separate reward model and no RL loop at all. DPO is simpler, more stable, and the recommended
+    default starting point for most teams; RLHF offers a higher performance ceiling for teams
+    willing to invest in tuning it, particularly on tasks with complex or noisy preference signals.
+  </div>
+
+  <h2>Try it: compare the two pipelines</h2>
+  <div class="al-box">
+    <div class="al-toggle">
+      <div class="al-toggle-btn active" data-m="rlhf">RLHF pipeline</div>
+      <div class="al-toggle-btn" data-m="dpo">DPO pipeline</div>
+    </div>
+    <div id="al-stages"></div>
+  </div>
+
+  <h2>Why DPO simplifies the pipeline so much</h2>
+  <p>
+    RLHF's reward model exists to convert messy human preference data into a single scalar
+    reward signal, which reinforcement learning can then optimize against. DPO's key insight:
+    that reward model is a middleman that can be removed entirely. Using a specific mathematical
+    reformulation (built on the Bradley-Terry preference model), DPO derives a loss function that
+    goes directly from preference pairs to policy updates — comparing how the current model and a
+    frozen reference copy of it score the chosen versus rejected response, and adjusting so the
+    preferred response becomes more likely. No reward model, no online generation loop, no PPO
+    instability to debug.
+  </p>
+
+  <h2>Where RLHF's extra complexity still earns its keep</h2>
+  <ul>
+    <li><strong>Noisy or complex preference signals.</strong> A learned reward model can generalize from noisy human preferences better than DPO's more direct optimization — the reward model acts as a denoising layer between raw, sometimes inconsistent preferences and the actual policy update.</li>
+    <li><strong>Distribution shift during training.</strong> RLHF generates fresh responses from the current policy during training (on-policy data), which keeps the reward signal relevant even as the model's behavior meaningfully changes over the course of training — DPO trains on a fixed, pre-collected preference dataset instead.</li>
+    <li><strong>Reusable reward model.</strong> Once trained, a reward model has other uses beyond the original RLHF run — as a standalone evaluator, a filter for synthetic data generation, or a scoring component in best-of-N sampling at inference time.</li>
+  </ul>
+
+  <h2>An honest, contested empirical picture</h2>
+  <p>
+    The original DPO paper reported it matching or exceeding PPO-based RLHF on tasks like
+    sentiment control and summarization, while being simpler to train. But independent follow-up
+    comparisons have found the outcome varies by task type, data quality, and model scale — some
+    research specifically argues DPO underperforms reward-based RLHF on harder alignment tasks due
+    to a limitation in how it implicitly represents reward. The practical, non-dogmatic takeaway
+    used across current guides: start with DPO as the simpler, cheaper default; if it
+    underperforms, the preference data quality or a distribution mismatch is the likely
+    bottleneck — and that's the signal to consider investing in the added complexity of RLHF.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does DPO eliminate compared to standard RLHF?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The separate reward model and the reinforcement learning (PPO) loop, replacing both with a single supervised loss</button>
+        <button class="q-option" data-correct="false">The need for any human preference data at all</button>
+        <button class="q-option" data-correct="false">The supervised fine-tuning stage that both approaches share</button>
+      </div>
+      <div class="q-explain">Both DPO and RLHF still start from SFT and still require human preference data — DPO specifically removes the reward-model-training and RL-optimization stages that sit between the preference data and the final policy.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might RLHF's separate reward model help more than DPO on noisy preference data?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The reward model acts as a denoising layer, generalizing across noisy preferences before that signal drives policy updates</button>
+        <button class="q-option" data-correct="false">RLHF doesn't use human preference data at all, avoiding the noise entirely</button>
+        <button class="q-option" data-correct="false">DPO cannot process any preference data with inconsistencies</button>
+      </div>
+      <div class="q-explain">DPO optimizes more directly on the raw preference pairs, while RLHF's reward model sits in between and can smooth over noisy or inconsistent signal before it reaches the policy update step.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the recommended practical starting point according to current guidance?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Start with DPO as the simpler default; investigate RLHF only if DPO underperforms after ruling out data quality issues</button>
+        <button class="q-option" data-correct="false">Always start with full RLHF since it's strictly better in every case</button>
+        <button class="q-option" data-correct="false">Neither approach is usable without a PhD-level ML team</button>
+      </div>
+      <div class="q-explain">This reflects the pragmatic, cost-conscious escalation pattern seen throughout this phase — try the simpler, cheaper, more stable option first, and only add complexity once there's real evidence it's needed.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Rafailov et al. (2023/2024), "Direct Preference Optimization"; Mercor "DPO vs RLHF: Comparison and When to Use Each" (2026); Patsnap "RLHF vs DPO in LLM fine-tuning: 60+ patent analysis" (2026).</p>
+
+  <div class="pager">
+    <a href="10-2-lora-qlora-peft.html">&larr; 10.2 LoRA, QLoRA &amp; PEFT</a>
+    <a href="10-4-fine-tuning-workflow.html">10.4 Fine-tuning workflow &amp; failure modes &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const AL_STAGES = {
+  rlhf: [
+    "1. Supervised fine-tuning (SFT) on demonstration data",
+    "2. Train a separate reward model on human preference pairs",
+    "3. Run PPO reinforcement learning, generating new samples each step, optimizing against the reward model",
+    "→ 4 model instances active simultaneously by the RL stage: policy, reference, reward model, and value function"
+  ],
+  dpo: [
+    "1. Supervised fine-tuning (SFT) on demonstration data",
+    "2. Train directly on chosen/rejected preference pairs using a single supervised loss — compares policy vs. frozen reference model scores",
+    "→ No reward model. No RL loop. No online generation during training."
+  ]
+};
+function renderAl(key) {
+  document.getElementById('al-stages').innerHTML = AL_STAGES[key].map(s => `<div class="al-stage">${s}</div>`).join('');
+}
+document.querySelectorAll('.al-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.al-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAl(btn.dataset.m);
+  });
+});
+renderAl('rlhf');
+</script>
+</body>
+</html>

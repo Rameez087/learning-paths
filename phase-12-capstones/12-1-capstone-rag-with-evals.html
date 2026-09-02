@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.1 Capstone: RAG system with evaluation | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone projects</div>
+  <h1>12.1 Capstone: RAG system with evaluation</h1>
+  <p class="subtitle">Everything from Phases 2, 3, 5, 6, and 9, assembled into one thing you actually built and can show.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build a retrieval-augmented question-answering system over a real document set of your choosing
+    (your own notes, a public dataset, technical documentation), with a genuine evaluation harness
+    behind it — not just a demo that looks good on three cherry-picked queries. The evaluation is
+    what separates this from a weekend toy project: without it, you have no way to know whether
+    your chunking choice, your embedding model, or your prompt actually made things better or worse.
+  </div>
+
+  <h2>What to build</h2>
+  <ul>
+    <li>A document ingestion pipeline: parse, chunk (5.3), embed (5.1), and index (5.2) a real document set of at least a few hundred pages.</li>
+    <li>A query pipeline: embed the incoming question, retrieve top candidates, optionally rerank (6.2), assemble a prompt (Phase 3) with the retrieved context, generate an answer (Phase 4).</li>
+    <li>A golden dataset (9.1) of at least 30-50 real question/answer pairs against your actual document set — not generic questions, ones you'd genuinely want answered.</li>
+    <li>An evaluation script computing context precision, context recall, faithfulness, and answer relevancy (6.4) against that golden set.</li>
+    <li>At least one deliberate experiment: change chunk size, or add hybrid search (5.4), or add a reranker (6.2) — and show the eval numbers before and after, not just an assertion that it's better.</li>
+  </ul>
+
+  <h2>Track your progress</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <p>
+    A README documenting: what document set you used and why, your chunking and embedding choices
+    and why you made them, your golden dataset (or a representative sample of it), your evaluation
+    results before and after your one deliberate experiment, and an honest paragraph on what still
+    doesn't work well and why. That last part matters — a capstone that only shows success stories
+    reads as incomplete to anyone technical reviewing it; showing you know exactly where the system
+    still fails is a stronger signal than pretending it doesn't.
+  </p>
+
+  <h2>Common places this goes wrong</h2>
+  <ul>
+    <li><strong>Skipping the golden dataset and eyeballing quality instead.</strong> Without numbers, "I improved retrieval" is just a claim, not a demonstrated result.</li>
+    <li><strong>Testing on the same handful of queries you developed against.</strong> This measures whether you overfit to your own test cases, not whether the system generalizes.</li>
+    <li><strong>Reporting only faithfulness, not context recall.</strong> Recall 6.4's central lesson — a generator can look faithful while the retriever is quietly missing information.</li>
+  </ul>
+
+  <p class="sources" style="margin-top:32px">This capstone synthesizes Phases 2 (embeddings), 3 (prompting), 5 (vector search), 6 (RAG), and 9 (evaluation) into a single working project.</p>
+
+  <div class="pager">
+    <a href="../phase-11-production-mlops/11-4-incident-response.html">&larr; 11.4 Incident response &amp; production readiness</a>
+    <a href="12-2-capstone-tool-using-agent.html">12.2 Capstone: Tool-using agent &rarr;</a>
+  </div>
+</main>
+<script>
+const ITEMS = [
+  "Document ingestion pipeline built (parse → chunk → embed → index)",
+  "Query pipeline built (retrieve → optionally rerank → generate)",
+  "Golden dataset of 30-50 real Q&A pairs against your own documents",
+  "Evaluation script computing all four RAGAS-style metrics (6.4)",
+  "One deliberate experiment run with before/after eval numbers",
+  "README documenting choices, results, and known limitations",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} milestones checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

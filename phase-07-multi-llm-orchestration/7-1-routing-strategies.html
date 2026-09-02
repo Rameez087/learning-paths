@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.1 Routing strategies | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.route-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.route-query-btn { padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 10px; text-align: left; }
+.route-query-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.route-result { display: flex; align-items: center; gap: 16px; margin-top: 16px; padding: 16px; background: var(--code-bg); border-radius: 8px; }
+.route-model { font-weight: 700; font-size: 16px; }
+.route-reason { font-size: 13px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Multi-LLM orchestration</div>
+  <h1>7.1 Routing strategies</h1>
+  <p class="subtitle">Access to frontier models is now a commodity. The advantage is in how intelligently you route across them.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A router sits between your application and multiple models, deciding which model handles each
+    incoming request based on task complexity, cost budget, latency requirements, or data
+    sensitivity. This is distinct from orchestration (coordinating multiple steps or tools across
+    a longer workflow, Phase 8) — routing is specifically about picking the right model for a
+    single request. A well-designed router sending roughly 80% of easy, routine requests to cheap,
+    fast models while reserving expensive frontier compute for the genuinely hard 20% commonly
+    outperforms a single-model architecture on cost, latency, and throughput simultaneously —
+    often without sacrificing quality on the easy majority of requests.
+  </div>
+
+  <h2>Try it: watch a router make decisions</h2>
+  <div class="route-box">
+    <div class="route-query-btn active" data-q="classify">"Classify this support ticket into a category"</div>
+    <div class="route-query-btn" data-q="legal">"Analyze this 40-page merger agreement for liability risks"</div>
+    <div class="route-query-btn" data-q="creative">"Write a short, playful product tagline"</div>
+    <div class="route-query-btn" data-q="code">"Debug why this recursive function causes a stack overflow"</div>
+    <div class="route-result" id="route-result"></div>
+  </div>
+
+  <h2>What a router actually weighs</h2>
+  <ul>
+    <li><strong>Task complexity</strong> — classification, extraction, and simple formatting rarely need a frontier model; multi-step reasoning, nuanced writing, and high-stakes analysis often do.</li>
+    <li><strong>Cost budget</strong> — a cheap model handling 80% of volume changes the total bill dramatically, even if the remaining 20% still uses an expensive model.</li>
+    <li><strong>Latency requirements</strong> — a real-time chat interface has a much tighter latency budget than a nightly batch job.</li>
+    <li><strong>Data sensitivity</strong> — some organizations route sensitive data only to models or providers meeting specific compliance or hosting requirements.</li>
+  </ul>
+
+  <h2>Beyond a single routing decision: cascades and ensembles</h2>
+  <p>
+    Two more sophisticated patterns build on basic routing:
+  </p>
+  <ul>
+    <li><strong>Cascade chains</strong> — a request flows through a sequence of increasingly capable (and expensive) models, stopping as soon as a quality threshold is met. Cheap models handle easy cases outright; escalation to a stronger model only happens when the cheap model's output fails a check.</li>
+    <li><strong>Parallel debate / ensemble routing</strong> — for high-stakes decisions, multiple models generate independent responses simultaneously, and a judge model synthesizes them. This can meaningfully reduce hallucination rates on factual tasks, at the cost of running several models per request instead of one.</li>
+  </ul>
+
+  <h2>A practical warning: keep the router simple</h2>
+  <p>
+    Practitioner reporting from 2026 production systems converges on a specific caution: the most
+    common mistake is making the routing logic itself too complex — reaching for a fancy AI-based
+    router when simple rules (task type, a lightweight classifier, or explicit keyword matching)
+    handle the large majority of cases reliably. Most teams report a basic routing setup taking
+    less than a day to implement.
+  </p>
+
+  <div class="figure" id="fig-cascade"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the distinction between routing and orchestration?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Routing picks which model handles a single request; orchestration coordinates multiple steps, tools, or models across a longer workflow</button>
+        <button class="q-option" data-correct="false">They are the same concept with different names</button>
+        <button class="q-option" data-correct="false">Routing only applies to open-source models</button>
+      </div>
+      <div class="q-explain">Routing is the narrower, single-decision concept; orchestration (Phase 8's territory) is the broader coordination of an entire multi-step workflow, which may itself involve several routing decisions along the way.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. In a cascade chain, when does a request escalate to a more expensive model?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Only when the cheaper model's output fails to meet a defined quality threshold</button>
+        <button class="q-option" data-correct="false">On every single request, regardless of the cheap model's output</button>
+        <button class="q-option" data-correct="false">Randomly, to distribute load evenly</button>
+      </div>
+      <div class="q-explain">The whole value of a cascade is that expensive compute is reserved for cases that actually need it — escalation is conditional on the cheap model's result failing a check, not automatic or random.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the most commonly reported mistake in building a routing system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Making the routing logic itself unnecessarily complex when simple rules would work</button>
+        <button class="q-option" data-correct="false">Using too few models in the routing pool</button>
+        <button class="q-option" data-correct="false">Routing every request to the cheapest available model</button>
+      </div>
+      <div class="q-explain">2026 practitioner reporting specifically flags over-engineering the router itself — most task classification can be handled with simple rules or a lightweight classifier rather than an elaborate AI-based routing decision.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Mindra "Beyond the Monolith: Multi-Model Routing in 2026"; ScalaCode multi-model LLM routing guide (2026); DEV Community "Multi-provider LLM orchestration in production" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-06-rag-systems/6-4-evaluating-retrieval-quality.html">&larr; 6.4 Evaluating retrieval quality</a>
+    <a href="7-2-fallback-chains.html">7.2 Fallback chains &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ROUTES = {
+  classify: { model: "Haiku-class (cheap, fast)", reason: "Simple classification task — no deep reasoning needed. Routing here instead of a frontier model saves the most money with the least quality risk." },
+  legal: { model: "Opus-class (frontier)", reason: "High-stakes, nuanced legal analysis over a long document — the cost of a wrong answer far outweighs the price difference between model tiers." },
+  creative: { model: "Sonnet-class (mid-tier)", reason: "Creative writing benefits from stronger language quality than the cheapest tier, but doesn't need frontier-level reasoning depth." },
+  code: { model: "Sonnet-class (mid-tier) → escalate if needed", reason: "Debugging often needs solid reasoning; a mid-tier model handles most cases, with a cascade escalation to a stronger model if the fix doesn't resolve the issue." },
+};
+function renderRoute(key) {
+  const r = ROUTES[key];
+  document.getElementById('route-result').innerHTML = `
+    <div>
+      <div class="route-model">→ ${r.model}</div>
+      <div class="route-reason">${r.reason}</div>
+    </div>
+  `;
+}
+document.querySelectorAll('.route-query-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.route-query-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderRoute(btn.dataset.q);
+  });
+});
+renderRoute('classify');
+
+document.getElementById('fig-cascade').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: cascade chain escalating from cheap to expensive model only when a quality check fails">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } .s{font-size:11px; fill:#9aa4b5; font-weight:400;} </style>
+  <rect x="20" y="40" width="150" height="55" rx="8" fill="#1a2029" stroke="#3ecf8e"/>
+  <text x="95" y="65" text-anchor="middle" fill="#3ecf8e">Cheap model</text>
+  <text x="95" y="82" text-anchor="middle" class="s">handles most requests</text>
+  <line x1="170" y1="67" x2="220" y2="67" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a8)"/>
+  <rect x="220" y="40" width="130" height="55" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="285" y="65" text-anchor="middle">Quality gate</text>
+  <text x="285" y="82" text-anchor="middle" class="s">pass or fail?</text>
+  <line x1="350" y1="67" x2="400" y2="67" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a8f)"/>
+  <text x="375" y="55" fill="#f2b84b" font-size="10">fail</text>
+  <rect x="400" y="40" width="150" height="55" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="475" y="65" text-anchor="middle" fill="#a9c1ff">Frontier model</text>
+  <text x="475" y="82" text-anchor="middle" class="s" fill="#7891c9">only when escalated</text>
+  <line x1="285" y1="95" x2="285" y2="115" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a8)"/>
+  <text x="285" y="130" text-anchor="middle" fill="#3ecf8e" font-size="11">pass → return result</text>
+  <defs>
+    <marker id="a8" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a8f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

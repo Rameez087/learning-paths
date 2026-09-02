@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.3 Drift detection | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dr-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dr-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; margin-bottom: 12px; }
+.dr-bar { flex: 1; background: #5b8cff; border-radius: 3px 3px 0 0; position: relative; transition: height 0.3s; }
+.dr-bar.low { background: #e5484d; }
+.dr-day-label { font-size: 9px; color: var(--text-muted); text-align: center; margin-top: 4px; }
+.dr-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.dr-toggle-btn { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.dr-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Production &amp; MLOps</div>
+  <h1>11.3 Drift detection</h1>
+  <p class="subtitle">Nothing in your logs is broken. Nothing in your APM dashboard is firing. The model is quietly getting worse anyway.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    LLM drift is unintended change in production behavior over time, and it comes in several
+    distinct flavors: <strong>data drift</strong> (the input distribution shifts — users start
+    asking about things the system wasn't built for), <strong>concept drift</strong> (the
+    relationship between input and correct output changes — the same question now warrants a
+    different answer), <strong>model drift</strong> (a provider silently updates the underlying
+    model's weights, and behavior shifts without any change on your side), and <strong>eval-score
+    drift</strong> (a rolling quality score trends down for any combination of the above reasons).
+    Crucially, drift is invisible to error-rate dashboards and infrastructure monitoring — it's
+    visible only to a system that's actively scoring production traces over time.
+  </div>
+
+  <h2>Try it: watch a groundedness score quietly decay</h2>
+  <div class="dr-box">
+    <div class="dr-chart" id="dr-chart"></div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:8px;" id="dr-caption"></p>
+  </div>
+
+  <h2>The illustrative incident this reflects</h2>
+  <p>
+    A support agent scores 89% groundedness in production one day. The next day it's at 81%. The
+    prompt hasn't changed. The model ID in the config hasn't changed. The document corpus feeding
+    retrieval hasn't changed. Latency is normal, error rate is zero, and nothing in the standard
+    APM dashboard is firing. The only visible signal is a rolling-mean groundedness score computed
+    from evaluated production traces — and by the end of the week it's down to 76%. The eventual
+    finding: the model provider quietly rolled out a weight update mid-week. Nothing in the
+    application changed at all; the underlying model itself did.
+  </p>
+
+  <h2>Data drift vs. concept drift — a real, useful distinction</h2>
+  <ul>
+    <li><strong>Data drift (covariate shift)</strong> — the input distribution changes, but the correct mapping from input to output hasn't. Users start asking about a new product category the system wasn't built for. This can exist without actually harming the model, if the shift happens to be in something the model doesn't rely on.</li>
+    <li><strong>Concept drift</strong> — the underlying rule mapping inputs to correct outputs itself changes. A returns policy changes, so the same customer question now warrants a genuinely different correct answer than it did last month. This is harder to detect because the input distribution can look completely stable while the model quietly gets more wrong answers.</li>
+  </ul>
+
+  <h2>Reducing alert noise: joint conditions</h2>
+  <p>
+    A single drift signal in isolation — input distribution shift alone, or a quality score dip
+    alone — generates a lot of false-positive noise on its own. Current guidance recommends
+    alerting on the <strong>joint condition</strong>: both an input distribution shift and a
+    corresponding evaluator score drop together, which cuts alert noise sharply compared to firing
+    on either signal independently.
+  </p>
+
+  <h2>The one piece of restraint that shows up consistently in 2026 guidance</h2>
+  <p>
+    Detecting drift is only useful if it changes what you actually do next — and the most
+    consistently repeated advice across current practitioner sources is specifically restraint:
+    don't retrain or roll back reflexively the moment drift is flagged. Confirm the drift is real,
+    and confirm it's genuinely degrading a meaningful evaluation metric, before taking action. A
+    false-positive-driven retrain or rollback wastes real engineering effort and can introduce its
+    own regression.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why was the illustrative groundedness-score drop invisible to standard APM dashboards?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Latency, error rate, and uptime were all normal — the only signal was a quality metric computed from scoring production traces, which APM doesn't track</button>
+        <button class="q-option" data-correct="false">The company had no monitoring tools installed at all</button>
+        <button class="q-option" data-correct="false">APM dashboards always detect model quality issues automatically</button>
+      </div>
+      <div class="q-explain">This is the central point of drift detection — infrastructure health metrics and content quality metrics are entirely separate signals, and drift specifically shows up only in the latter.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What makes concept drift harder to detect than data drift?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The input distribution can look completely stable even as the correct output for that input has genuinely changed</button>
+        <button class="q-option" data-correct="false">Concept drift only happens once a year, making it rare to observe</button>
+        <button class="q-option" data-correct="false">Concept drift always causes an immediate spike in error rate</button>
+      </div>
+      <div class="q-explain">Because the inputs themselves haven't visibly shifted, monitoring input distributions alone won't catch concept drift — it requires actually checking output correctness against the current, possibly-changed ground truth.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is alerting on a joint condition (input shift AND score drop) recommended over either signal alone?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It cuts false-positive alert noise sharply, since either signal alone can fire without representing a genuine, harmful drift</button>
+        <button class="q-option" data-correct="false">Joint conditions are required by regulation for AI monitoring systems</button>
+        <button class="q-option" data-correct="false">A single signal can never indicate real drift under any circumstances</button>
+      </div>
+      <div class="q-explain">Data drift alone can be harmless if it's in a feature the model doesn't rely on — requiring both signals together is a practical filter for genuinely actionable drift versus noise.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: FutureAGI "What is LLM Drift? Prompt, Model, and Eval-Score Drift in 2026" and "Model vs Data Drift" (2026); Scaler "What Is Model Drift?" (2026); Orq.ai "Understanding Model Drift and Data Drift in LLMs" (2026).</p>
+
+  <div class="pager">
+    <a href="11-2-monitoring-observability.html">&larr; 11.2 Monitoring &amp; observability</a>
+    <a href="11-4-incident-response.html">11.4 Incident response &amp; production readiness &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SCORES = [89, 88, 87, 84, 81, 79, 76];
+const DAYS = ["Mon", "Tue", "Wed*", "Thu", "Fri", "Sat", "Sun"];
+document.getElementById('dr-chart').innerHTML = SCORES.map((s,i) => `
+  <div style="display:flex; flex-direction:column; align-items:center; flex:1;">
+    <div style="font-size:11px; margin-bottom:4px; color:${s<80?'#ff8b8f':'var(--text-secondary)'}">${s}%</div>
+    <div class="dr-bar${s<80?' low':''}" style="height:${s}px; width:100%;"></div>
+    <div class="dr-day-label">${DAYS[i]}</div>
+  </div>
+`).join('');
+document.getElementById('dr-caption').textContent = '* Provider silently rolled out a weight update on Wednesday — the drop starts here, but nothing in the app or infra changed on this side.';
+</script>
+</body>
+</html>

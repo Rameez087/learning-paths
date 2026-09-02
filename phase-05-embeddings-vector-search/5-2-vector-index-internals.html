@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.2 Vector index internals: HNSW vs IVF | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.idx-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.idx-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.idx-toggle-btn { padding: 10px 18px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
+.idx-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.idx-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; }
+.idx-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.idx-metric .n { font-size: 18px; font-weight: 700; }
+.idx-metric .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Embeddings &amp; vector search</div>
+  <h1>5.2 Vector index internals: HNSW vs IVF</h1>
+  <p class="subtitle">Searching a million vectors one at a time would take forever — here's how it actually stays fast.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Comparing your query vector against every single stored vector (exact search) doesn't scale
+    past a small collection. Production vector databases use <strong>approximate nearest neighbor
+    (ANN)</strong> indexes instead — trading a small amount of accuracy for enormous speed gains.
+    The two dominant approaches: <strong>HNSW</strong> (a navigable graph structure, fast queries,
+    memory-hungry) and <strong>IVF</strong> (partitioning vectors into clusters searched
+    selectively, far less memory, better suited to very large collections). Most production
+    databases default to HNSW unless memory becomes the binding constraint.
+  </div>
+
+  <h2>Try it: compare the two approaches</h2>
+  <div class="idx-box">
+    <div class="idx-toggle">
+      <div class="idx-toggle-btn active" data-idx="hnsw">HNSW</div>
+      <div class="idx-toggle-btn" data-idx="ivf">IVF</div>
+    </div>
+    <div class="idx-metrics" id="idx-metrics"></div>
+    <p id="idx-desc" style="font-size:13px; color:var(--text-secondary); margin-top:14px;"></p>
+  </div>
+
+  <h2>HNSW: navigable small-world graphs</h2>
+  <p>
+    HNSW (Hierarchical Navigable Small World) builds a multi-layer graph where each vector is a
+    node connected to its approximate neighbors. A search starts at a sparse top layer and
+    "zooms in" through progressively denser layers, following the graph's edges toward the query's
+    actual nearest neighbors — similar in spirit to how a highway system lets you get roughly to
+    the right city fast before switching to local roads for the final approach. This produces very
+    fast, high-recall queries, at the cost of memory: HNSW maintains many edges per node, and that
+    graph structure has to live in memory for fast traversal.
+  </p>
+
+  <h2>IVF: cluster first, search selectively</h2>
+  <p>
+    IVF (Inverted File index) takes a different approach: it partitions the entire vector space into
+    a number of clusters ahead of time (via a clustering algorithm like k-means). At query time,
+    instead of searching everything, it identifies the handful of clusters closest to the query
+    vector and only searches inside those — skipping the vast majority of the collection entirely.
+    This uses meaningfully less memory than HNSW, because it stores far fewer connections per
+    vector, which is why IVF is often the choice for very large corpora where an HNSW graph simply
+    wouldn't fit comfortably in memory.
+  </p>
+
+  <h2>Hybrid indexes: getting both</h2>
+  <p>
+    Some production systems combine a vector index (HNSW or IVF) with a traditional keyword index
+    (like BM25, an inverted index over exact terms) in the same query path — this is the
+    foundation of hybrid search, covered next in 5.3, because vector search alone genuinely
+    struggles with exact-match queries like error codes, IDs, or specific numbers that don't carry
+    rich "semantic meaning" the way prose does.
+  </p>
+
+  <div class="figure" id="fig-idx"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do production vector databases use approximate nearest neighbor search instead of exact search?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Comparing a query against every stored vector doesn't scale to large collections — ANN trades a small accuracy loss for large speed gains</button>
+        <button class="q-option" data-correct="false">Exact search is illegal in most jurisdictions</button>
+        <button class="q-option" data-correct="false">Approximate search is always more accurate than exact search</button>
+      </div>
+      <div class="q-explain">ANN indexes are explicitly a speed/accuracy trade-off — they sacrifice a small, usually acceptable amount of recall for search times that make million-plus vector collections practical to query in real time.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the core mechanism that makes IVF use less memory than HNSW?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">IVF stores far fewer connections per vector — clustering ahead of time, rather than a densely-connected graph</button>
+        <button class="q-option" data-correct="false">IVF compresses each vector to half its original size</button>
+        <button class="q-option" data-correct="false">IVF stores vectors on disk instead of in memory, always</button>
+      </div>
+      <div class="q-explain">HNSW's memory cost comes from maintaining many graph edges per node; IVF's clustering approach doesn't need that dense connectivity, which is the direct source of its lower memory footprint.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does vector search alone struggle with a query like an exact error code?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Vector search captures semantic/conceptual similarity, which doesn't reliably preserve exact-match precision for codes, IDs, or specific numbers</button>
+        <button class="q-option" data-correct="false">Vector databases cannot store numeric values at all</button>
+        <button class="q-option" data-correct="false">Error codes are too short to be embedded</button>
+      </div>
+      <div class="q-explain">An embedding captures meaning, not exact tokens — a query for a specific error code can retrieve semantically related but not textually matching content, which is exactly the gap hybrid search (combining vector + keyword search) is designed to close.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Oracle AI Vector Search indexing guidelines (2026); Anil Goyal, "Inside Vector Databases for RAG" (2026); StackViv RAG vector database guide (2026).</p>
+
+  <div class="pager">
+    <a href="5-1-embedding-models-practice.html">&larr; 5.1 Embedding models in practice</a>
+    <a href="5-3-chunking-strategies.html">5.3 Chunking strategies &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const IDX_DATA = {
+  hnsw: { latency: "~6ms p50", memory: "high", scale: "millions", desc: "Graph-based, very fast queries, high recall. Memory grows with the number of edges per node — the right default unless memory is the binding constraint." },
+  ivf: { latency: "~15-30ms p50", memory: "low", scale: "billions", desc: "Cluster-based, less memory per vector, scales further on constrained hardware. Slightly higher latency since it must first identify the right clusters to search." },
+};
+function renderIdx(key) {
+  const d = IDX_DATA[key];
+  document.getElementById('idx-metrics').innerHTML = `
+    <div class="idx-metric"><div class="n">${d.latency}</div><div class="l">typical query latency</div></div>
+    <div class="idx-metric"><div class="n">${d.memory}</div><div class="l">memory footprint</div></div>
+    <div class="idx-metric"><div class="n">${d.scale}</div><div class="l">practical scale</div></div>
+  `;
+  document.getElementById('idx-desc').textContent = d.desc;
+}
+document.querySelectorAll('.idx-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.idx-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderIdx(btn.dataset.idx);
+  });
+});
+renderIdx('hnsw');
+
+document.getElementById('fig-idx').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: HNSW graph traversal versus IVF cluster partitioning">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; } </style>
+  <text x="20" y="25" font-size="13" font-weight="600">HNSW: graph traversal</text>
+  <circle cx="60" cy="60" r="5" fill="#5b8cff"/><circle cx="110" cy="45" r="5" fill="#5b8cff"/>
+  <circle cx="150" cy="80" r="5" fill="#5b8cff"/><circle cx="90" cy="100" r="5" fill="#f2b84b"/>
+  <circle cx="180" cy="55" r="5" fill="#5b8cff"/>
+  <line x1="60" y1="60" x2="110" y2="45" stroke="#6b7386" stroke-width="1"/>
+  <line x1="110" y1="45" x2="150" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="60" y1="60" x2="90" y2="100" stroke="#6b7386" stroke-width="1"/>
+  <line x1="150" y1="80" x2="180" y2="55" stroke="#6b7386" stroke-width="1"/>
+  <line x1="90" y1="100" x2="150" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <text x="90" y="125" fill="#f2b84b">query enters here, follows edges to nearest match</text>
+
+  <text x="380" y="25" font-size="13" font-weight="600">IVF: cluster then search</text>
+  <circle cx="420" cy="60" r="30" fill="none" stroke="#262d3a" stroke-width="1"/>
+  <circle cx="500" cy="70" r="25" fill="none" stroke="#5b8cff" stroke-width="1.5"/>
+  <circle cx="580" cy="55" r="28" fill="none" stroke="#262d3a" stroke-width="1"/>
+  <circle cx="500" cy="70" r="4" fill="#f2b84b"/>
+  <text x="440" y="130" fill="#a9c1ff">query only searches the nearest cluster(s)</text>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.3 Offline vs. online evals | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.oo-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.oo-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.oo-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.oo-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.oo-item { padding: 10px 12px; background: var(--surface-2); border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Evaluation</div>
+  <h1>9.3 Offline vs. online evals</h1>
+  <p class="subtitle">A pre-release gate and a production dashboard are two different tools with two different jobs.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Offline evaluation</strong> runs before a change ships — against the golden dataset
+    (9.1), gating a deployment based on whether metrics hold or regress. <strong>Online
+    evaluation</strong> runs continuously against real production traffic after a change has
+    shipped, watching for drift, sampling low-confidence cases into human review, and feeding
+    genuinely new failures back into the golden dataset. Neither replaces the other: offline evals
+    catch regressions before users see them; online evals catch the failure modes that only show
+    up once real, unpredictable users start using the system.
+  </div>
+
+  <h2>Try it: compare what each catches</h2>
+  <div class="oo-box">
+    <div class="oo-toggle">
+      <div class="oo-toggle-btn active" data-t="offline">Offline eval</div>
+      <div class="oo-toggle-btn" data-t="online">Online eval</div>
+    </div>
+    <div id="oo-content"></div>
+  </div>
+
+  <h2>Where each fits in the development lifecycle</h2>
+  <ul>
+    <li><strong>Pre-release / CI gate</strong> — before any new model version or major prompt change ships, run offline evals against both the golden dataset (catching known failure patterns) and a red-team dataset covering adversarial inputs and known attack patterns from 3.4. The golden dataset covers failures already seen; adversarial pre-release testing is specifically for finding the ones that haven't been seen yet.</li>
+    <li><strong>Continuous production monitoring</strong> — once shipped, online evals (often using the same reference-free LLM-judge metrics from 9.2) sample real traffic, track quality metrics over time, and specifically watch for drift: quality degrading gradually in a way a single offline snapshot would never catch.</li>
+  </ul>
+
+  <h2>The closed loop that makes both stronger over time</h2>
+  <p>
+    The two aren't independent — production monitoring is what feeds the next golden dataset.
+    Low-confidence or low-scoring cases sampled from real traffic get routed to human review, and
+    every meaningful production failure identified this way becomes a future regression test case
+    added to the golden set. This closes the loop: offline evals get better specifically because
+    online monitoring keeps surfacing gaps the current golden dataset doesn't cover.
+  </p>
+
+  <div class="figure" id="fig-loop"></div>
+
+  <h2>What a CI gate actually checks</h2>
+  <p>
+    A deployment gate compares the candidate version's metrics against the current production
+    version's baseline on the same golden dataset — not against an absolute pass/fail threshold in
+    isolation, but as a regression check. A metric holding steady or improving passes; a metric
+    regressing beyond an agreed tolerance blocks the deployment until investigated. This is exactly
+    analogous to a software test suite blocking a merge, except the "tests" here are quality
+    metrics computed by deterministic checks and calibrated LLM judges rather than assertions on
+    exact output.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the primary purpose of an offline eval in the deployment lifecycle?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Gating a deployment before it ships, by checking metrics against the golden dataset for regressions</button>
+        <button class="q-option" data-correct="false">Continuously monitoring live user traffic after deployment</button>
+        <button class="q-option" data-correct="false">Replacing the need for a golden dataset entirely</button>
+      </div>
+      <div class="q-explain">Offline evaluation is specifically a pre-release check against a known, curated dataset — its job is to catch a regression before real users ever see it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What kind of failure can online evaluation catch that offline evaluation typically cannot?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Gradual quality drift over time, and failure modes that only emerge from real, unpredictable production traffic</button>
+        <button class="q-option" data-correct="false">Whether the JSON output parses correctly</button>
+        <button class="q-option" data-correct="false">Whether the model passes a fixed benchmark score</button>
+      </div>
+      <div class="q-explain">A golden dataset is fixed and known in advance — it can't capture novel failure patterns real users produce, or a slow quality decline that only shows up when watched continuously over time.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does online evaluation make offline evaluation better over time?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Genuinely new production failures identified through monitoring get promoted into the golden dataset as future regression tests</button>
+        <button class="q-option" data-correct="false">Online and offline evaluation operate completely independently with no relationship</button>
+        <button class="q-option" data-correct="false">Online evaluation eventually replaces the need for offline evaluation</button>
+      </div>
+      <div class="q-explain">This closed loop is central to why evaluation programs improve — real failures surfaced in production become the next generation of regression tests, keeping the golden dataset representative of what actually goes wrong.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Galtea "The complete guide for LLM evaluations in 2026"; DeepEval "LLM-as-a-Judge in 2026" (production monitoring section); FutureAGI "LLM Evaluation Best Practices Checklist for 2026".</p>
+
+  <div class="pager">
+    <a href="9-2-llm-as-judge.html">&larr; 9.2 LLM-as-judge</a>
+    <a href="9-4-building-eval-pipeline.html">9.4 Building an eval pipeline &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const OO_CONTENT = {
+  offline: `
+    <div class="oo-item">✓ Runs before a change ships (CI gate)</div>
+    <div class="oo-item">✓ Uses the fixed golden dataset (9.1)</div>
+    <div class="oo-item">✓ Catches known regression patterns from prior failures</div>
+    <div class="oo-item">✗ Cannot see failure modes that haven't happened yet</div>
+    <div class="oo-item">✗ Cannot detect gradual drift over weeks or months</div>
+  `,
+  online: `
+    <div class="oo-item">✓ Runs continuously against real, live production traffic</div>
+    <div class="oo-item">✓ Detects drift and gradual quality decline</div>
+    <div class="oo-item">✓ Surfaces genuinely novel failure patterns from real users</div>
+    <div class="oo-item">✗ Cannot block a bad deployment before users are affected</div>
+    <div class="oo-item">✗ Usually reference-free — no golden answer to compare against</div>
+  `
+};
+document.querySelectorAll('.oo-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.oo-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('oo-content').innerHTML = OO_CONTENT[btn.dataset.t];
+  });
+});
+document.getElementById('oo-content').innerHTML = OO_CONTENT.offline;
+
+document.getElementById('fig-loop').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: closed loop between offline eval gating deployment and online eval feeding new failures back to golden dataset">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <rect x="20" y="70" width="150" height="55" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="95" y="100" text-anchor="middle" fill="#a9c1ff">Golden dataset</text>
+  <line x1="170" y1="97" x2="230" y2="97" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a13)"/>
+  <rect x="230" y="70" width="150" height="55" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="305" y="100" text-anchor="middle">Offline eval → ship</text>
+  <line x1="380" y1="97" x2="440" y2="97" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a13)"/>
+  <rect x="440" y="70" width="150" height="55" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="515" y="100" text-anchor="middle">Online eval (production)</text>
+  <path d="M 515 125 C 515 170, 95 170, 95 128" fill="none" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a13g)"/>
+  <text x="305" y="155" text-anchor="middle" fill="#3ecf8e" font-size="11">new failures feed back into the golden dataset</text>
+  <defs>
+    <marker id="a13" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a13g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

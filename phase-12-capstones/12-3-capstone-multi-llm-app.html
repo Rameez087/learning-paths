@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.3 Capstone: Multi-LLM orchestrated app | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+.done-banner { background: linear-gradient(135deg, #182238, #0e2820); border: 1px solid var(--success); border-radius: var(--radius); padding: 24px; margin-top: 48px; text-align: center; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone projects</div>
+  <h1>12.3 Capstone: Multi-LLM orchestrated app</h1>
+  <p class="subtitle">Phase 7, made concrete: an app that routes intelligently instead of sending every request to one model.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build an application that routes requests across at least two different models based on task
+    complexity or cost, with a fallback chain (7.2) for when a provider fails, and real observed
+    cost/latency numbers proving the routing actually helped — not just an architecture diagram
+    claiming it should.
+  </div>
+
+  <h2>What to build</h2>
+  <ul>
+    <li>An application with at least two genuinely different request types — e.g. simple classification/extraction versus open-ended reasoning or writing.</li>
+    <li>A router (7.1) sending each request type to an appropriately-sized model — a cheap, fast model for the easy majority, a stronger model reserved for the harder minority.</li>
+    <li>A fallback chain (7.2) that activates when the primary model for a request type fails or times out, ordered sensibly by cost (not just "whatever's available").</li>
+    <li>Basic caching (7.4) — even simple exact-match prompt caching counts, semantic caching if you want to go further.</li>
+    <li>A short benchmark: total cost and average latency with routing enabled, versus what it would have cost to send every request to your most capable model. Real numbers, not an estimate.</li>
+  </ul>
+
+  <h2>Track your progress</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <p>
+    A README with your routing logic explained (and kept intentionally simple, per 7.1's specific
+    warning against over-engineering the router), your fallback chain and why you ordered it the
+    way you did, and a small table: cost and latency with your routing setup versus the
+    single-model baseline. This last part is the whole point of the capstone — it's the concrete
+    evidence that orchestration decisions produce measurable outcomes, not just architectural
+    elegance.
+  </p>
+
+  <h2>Common places this goes wrong</h2>
+  <ul>
+    <li><strong>A router too clever for the task.</strong> Simple rules (task type, a lightweight classifier) usually beat an elaborate AI-based routing decision — this was 7.1's most specific warning.</li>
+    <li><strong>No real before/after numbers.</strong> "This should save money" is a hypothesis; a measured comparison is a result.</li>
+    <li><strong>A fallback chain ordered only by preference, not cost.</strong> Recall 7.2 — an outage that fallback-jumps straight to your most expensive model quietly triples your cost on top of the disruption itself.</li>
+  </ul>
+
+  <div class="done-banner">
+    <h2 style="margin-top:0; border:none; font-size:20px;">🎉 Track complete</h2>
+    <p style="margin-bottom:0;">
+      Twelve phases, from what an AI engineer actually does through a working multi-LLM
+      orchestrated application — 52 pages, verified against current sources, each with a real
+      interactive element and a self-graded quiz. Everything here is yours to publish, extend, and
+      keep improving as the field moves.
+    </p>
+  </div>
+
+  <div class="pager">
+    <a href="12-2-capstone-tool-using-agent.html">&larr; 12.2 Capstone: Tool-using agent</a>
+    <a href="../index.html">Back to overview</a>
+  </div>
+</main>
+<script>
+const ITEMS = [
+  "At least two request types identified with different complexity profiles",
+  "Router implemented sending each type to an appropriately-sized model",
+  "Fallback chain implemented and ordered by cost, not just preference",
+  "Basic caching implemented (exact-match at minimum)",
+  "Real before/after cost and latency numbers measured and recorded",
+  "README documenting routing logic, fallback ordering, and benchmark results",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} milestones checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

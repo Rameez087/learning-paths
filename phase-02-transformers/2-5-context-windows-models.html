@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.5 Context windows &amp; model families | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ctx-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.ctx-slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.ctx-slider-row input[type=range] { flex: 1; }
+.ctx-readout { font-size: 20px; font-weight: 700; min-width: 110px; text-align: right; }
+.ctx-equivs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.ctx-equiv-card { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.ctx-equiv-card .n { font-size: 20px; font-weight: 700; }
+.ctx-equiv-card .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 4px; }
+.ctx-cost-bar { height: 26px; background: var(--surface-2); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.ctx-cost-fill { height: 100%; background: linear-gradient(90deg, #5b8cff, #f2b84b); transition: width 0.25s ease; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.5</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 2 · Transformers &amp; foundation models</div>
+  <h1>2.5 Context windows &amp; model families</h1>
+  <p class="subtitle">The number everyone quotes, and why bigger isn't automatically better.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A context window is the maximum number of tokens a model can process in one request &mdash;
+    system prompt, conversation history, retrieved documents, and the response, all combined.
+    Windows have grown from roughly 4K tokens (2023) to 1M+ tokens on multiple frontier models by
+    2026. But because attention cost grows quadratically (2.4), a bigger window costs
+    disproportionately more to fill, and research consistently shows models get less reliable at
+    using information buried in the middle of a very long context &mdash; a bigger window is
+    capacity, not automatically better comprehension.
+  </div>
+
+  <h2>Try it: drag the slider, watch capacity and cost scale</h2>
+
+  <div class="ctx-box">
+    <div class="ctx-slider-row">
+      <label style="font-size:14px; color:var(--text-secondary); min-width:90px;">Context size</label>
+      <input type="range" id="ctx-slider" min="0" max="4" step="1" value="1">
+      <span class="ctx-readout" id="ctx-readout">128K tokens</span>
+    </div>
+    <div class="ctx-equivs" id="ctx-equivs"></div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">Relative attention compute cost to fill this window (quadratic, not linear):</p>
+    <div class="ctx-cost-bar"><div class="ctx-cost-fill" id="ctx-cost-fill"></div></div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:6px;" id="ctx-cost-label"></p>
+  </div>
+
+  <h2>Where the 2026 landscape actually sits</h2>
+  <p>
+    As of 2026, most frontier models &mdash; Claude, GPT, Gemini &mdash; cluster in the 200K to
+    1M+ token range, up from roughly 4K&ndash;8K tokens as recently as 2023. A handful of models
+    advertise even larger windows (multiple millions of tokens), but multiple independent 2026
+    benchmarks note a consistent gap between a model's <em>advertised</em> window and its
+    <em>effective</em> context &mdash; the length over which retrieval quality actually holds up.
+    Exact numbers shift model to model and month to month, so treat any specific figure as a
+    snapshot, not a permanent fact.
+  </p>
+
+  <h2>Why "just use the biggest window" is bad default advice</h2>
+  <ul>
+    <li><strong>Cost scales worse than linearly.</strong> Filling a 1M-token window doesn't cost roughly 8x a 128K window &mdash; it costs substantially more than that, because attention compute grows quadratically with sequence length (2.4). Several providers also apply long-context pricing surcharges specifically above certain thresholds.</li>
+    <li><strong>The "lost in the middle" effect.</strong> Multiple studies on long-context retrieval find models are most reliable at using information near the start or end of a long context, and measurably less reliable at retrieving facts buried in the middle &mdash; even well within the advertised window size.</li>
+    <li><strong>Latency compounds this.</strong> More tokens to attend over means slower generation, which matters directly for any user-facing application with a response-time budget.</li>
+  </ul>
+  <p>
+    The practical implication, which becomes central once we reach RAG in Phase 6: retrieving
+    <em>only</em> the most relevant few thousand tokens for a query and feeding just those to the
+    model usually beats dumping an entire 500-page document into a million-token window, both on
+    cost and on answer quality.
+  </p>
+
+  <div class="figure" id="fig-tiers"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. What does a model's context window actually include, besides your latest message?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Only the current user message, nothing else</button>
+        <button class="q-option" data-correct="true">System prompt, full conversation history, retrieved documents, and the response &mdash; all combined</button>
+        <button class="q-option" data-correct="false">Only text explicitly marked as "context" by the developer</button>
+      </div>
+      <div class="q-explain">Everything the model attends over — instructions, history, retrieved content, and its own generated output — shares the same token budget defined by the context window.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. Why does doubling a model's context window cost more than double to fully utilize?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Attention compute scales quadratically with sequence length</button>
+        <button class="q-option" data-correct="false">Providers arbitrarily double their prices for marketing reasons</button>
+        <button class="q-option" data-correct="false">Longer context windows use a completely different model architecture</button>
+      </div>
+      <div class="q-explain">Because every token attends to every other token, cost grows roughly with the square of the sequence length — this is a direct consequence of how attention works, covered in 2.3–2.4.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. What does the "lost in the middle" finding suggest about long-context usage?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Models cannot process long contexts at all</button>
+        <button class="q-option" data-correct="true">Models are less reliable at retrieving information buried in the middle of a very long context, even within the advertised window</button>
+        <button class="q-option" data-correct="false">Longer contexts always improve retrieval accuracy uniformly</button>
+      </div>
+      <div class="q-explain">This is why retrieval (RAG, Phase 6) — surfacing only the most relevant chunks instead of stuffing an entire document into context — often outperforms simply using a bigger window.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: 2026 context-window comparison reports (Morph, DataNorth, Adaptive Recall, PromptQuorum) —
+    note figures vary by source and change frequently, so treat cited numbers as illustrative of
+    scale and trend rather than fixed facts.
+  </p>
+
+  <div class="pager">
+    <a href="2-4-transformers-vs-rnns.html">&larr; 2.4 Why transformers replaced RNNs</a>
+    <a href="../phase-03-prompt-engineering/3-1-advanced-reasoning-patterns.html">3.1 Advanced reasoning patterns &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+const TIERS = [
+  { label: "8K tokens", tokens: 8000, pages: "~16 pages", books: "small chapter", cost: 4 },
+  { label: "128K tokens", tokens: 128000, pages: "~250 pages", books: "a full novel", cost: 22 },
+  { label: "200K tokens", tokens: 200000, pages: "~400 pages", books: "long novel", cost: 44 },
+  { label: "1M tokens", tokens: 1000000, pages: "~2,000 pages", books: "~8 novels", cost: 100 },
+  { label: "2M tokens", tokens: 2000000, pages: "~4,000 pages", books: "~16 novels", cost: 100 },
+];
+
+function renderCtx() {
+  const i = document.getElementById('ctx-slider').value;
+  const tier = TIERS[i];
+  document.getElementById('ctx-readout').textContent = tier.label;
+  document.getElementById('ctx-equivs').innerHTML = `
+    <div class="ctx-equiv-card"><div class="n">${tier.pages}</div><div class="l">of standard text</div></div>
+    <div class="ctx-equiv-card"><div class="n">${tier.books}</div><div class="l">book equivalent</div></div>
+    <div class="ctx-equiv-card"><div class="n">${Math.round(tier.tokens*0.75).toLocaleString()}</div><div class="l">approx. words</div></div>
+  `;
+  document.getElementById('ctx-cost-fill').style.width = tier.cost + '%';
+  document.getElementById('ctx-cost-label').textContent = `Relative cost index: ${tier.cost} (illustrative, scaled quadratically — not to be read as real pricing)`;
+}
+document.getElementById('ctx-slider').addEventListener('input', renderCtx);
+renderCtx();
+
+document.getElementById('fig-tiers').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: three tiers of context window use cases from short chat to long document analysis">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    .sub { font-size: 11px; fill: #9aa4b5; }
+  </style>
+  <rect x="20" y="60" width="200" height="90" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="120" y="90" class="lbl" text-anchor="middle">Short (&lt;32K)</text>
+  <text x="120" y="110" class="sub" text-anchor="middle">chat, single-doc Q&amp;A</text>
+  <text x="120" y="126" class="sub" text-anchor="middle">code completion</text>
+
+  <rect x="240" y="60" width="200" height="90" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="340" y="90" class="lbl" text-anchor="middle">Medium (128K&ndash;256K)</text>
+  <text x="340" y="110" class="sub" text-anchor="middle">RAG-backed chatbots</text>
+  <text x="340" y="126" class="sub" text-anchor="middle">multi-doc analysis</text>
+
+  <rect x="460" y="60" width="200" height="90" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="560" y="90" class="lbl" text-anchor="middle" fill="#a9c1ff">Long (400K&ndash;1M+)</text>
+  <text x="560" y="110" class="sub" text-anchor="middle" fill="#7891c9">full codebases</text>
+  <text x="560" y="126" class="sub" text-anchor="middle" fill="#7891c9">book-length documents</text>
+</svg>
+`;
+</script>
+
+</body>
+</html>

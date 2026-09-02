@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 Tokenization &amp; byte-pair encoding | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.bpe-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.bpe-tokens { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; margin-bottom: 16px; }
+.bpe-tok { display: inline-flex; align-items: center; padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; font-family: var(--font-mono); font-size: 14px; transition: background 0.3s, border-color 0.3s; }
+.bpe-tok.merging { background: var(--accent-bg); border-color: var(--accent); }
+.bpe-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bpe-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.bpe-btn:hover { opacity: 0.85; }
+.bpe-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.bpe-stat { font-size: 13px; color: var(--text-secondary); }
+.bpe-log { font-size: 13px; color: var(--text-muted); margin-top: 12px; min-height: 20px; }
+input.bpe-input { background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: var(--font-mono); font-size: 14px; width: 220px; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.1</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 2 · Transformers &amp; foundation models</div>
+  <h1>2.1 Tokenization &amp; byte-pair encoding</h1>
+  <p class="subtitle">The step before the model ever sees your text &mdash; and why it's not splitting on spaces.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    LLMs don't tokenize by word or by character &mdash; they use <strong>subword tokenization</strong>,
+    almost always a variant of <strong>Byte-Pair Encoding (BPE)</strong>. It starts with individual
+    characters and repeatedly merges whichever adjacent pair appears most often in the training
+    data, building up a vocabulary of common chunks. Frequent words end up as a single token; rare
+    words get broken into recognizable pieces. This is why token count for the same sentence can
+    vary between models, and why weird or foreign words sometimes cost far more tokens than you'd expect.
+  </div>
+
+  <h2>Try it: merge "banana" step by step</h2>
+  <p>
+    This is a simplified, illustrative version of the real algorithm &mdash; small enough to trace
+    by hand, same mechanism a production tokenizer uses at massive scale. Click <strong>merge
+    next pair</strong> repeatedly and watch the most frequent adjacent pair combine into a single
+    unit each time.
+  </p>
+
+  <div class="bpe-box">
+    <div class="bpe-tokens" id="bpe-tokens"></div>
+    <div class="bpe-controls">
+      <button class="bpe-btn" id="bpe-step">Merge next pair &rarr;</button>
+      <button class="bpe-btn" id="bpe-reset">Reset</button>
+      <span class="bpe-stat" id="bpe-stat"></span>
+    </div>
+    <div class="bpe-log" id="bpe-log"></div>
+  </div>
+
+  <h2>Why not just split on spaces or characters?</h2>
+  <p>
+    Three tokenization strategies exist, and each fails for a different reason:
+  </p>
+  <ul>
+    <li><strong>Word-level</strong> &mdash; one token per word. Vocabulary explodes to hundreds of thousands of entries, and any word the model didn't see during training (typos, new slang, rare technical terms) becomes an unhandleable "unknown" token.</li>
+    <li><strong>Character-level</strong> &mdash; one token per letter. No vocabulary problem, but sequences become extremely long, and individual characters carry almost no meaning on their own &mdash; the model has to work much harder to reconstruct words from letters.</li>
+    <li><strong>Subword (BPE)</strong> &mdash; the middle ground. Common whole words become single tokens; rare or unfamiliar words get broken into meaningful pieces the model has seen before. "boys" might split into "boy" + "s", letting the model reuse what it already knows about "boy."</li>
+  </ul>
+
+  <h2>Try it: how does your own text tokenize?</h2>
+  <p>
+    Type any word or short phrase. This uses a small illustrative rule set (not a full trained
+    vocabulary) to approximate how a real subword tokenizer would likely split it &mdash; common
+    whole words stay intact, everything else gets broken into smaller recognizable pieces.
+  </p>
+  <div class="bpe-box">
+    <input type="text" class="bpe-input" id="try-input" placeholder="type a word, e.g. unbelievable" value="unbelievable">
+    <button class="bpe-btn" id="try-btn" style="margin-left:10px;">Tokenize</button>
+    <div class="bpe-tokens" id="try-output" style="margin-top:16px;"></div>
+  </div>
+
+  <h2>What this means in practice</h2>
+  <ul>
+    <li><strong>Token count &ne; word count or character count.</strong> This is why API pricing (billed per token) doesn't map cleanly onto "per word" intuitions.</li>
+    <li><strong>Different models, different vocabularies.</strong> The same sentence can tokenize into a different number of tokens depending on which model's tokenizer processes it &mdash; each model family trains its own BPE vocabulary on its own data mix.</li>
+    <li><strong>Non-English text and code often cost more tokens</strong> per unit of content, if the tokenizer's training data was mostly English prose &mdash; the vocabulary simply has fewer single-token shortcuts for other languages or symbol-heavy code.</li>
+  </ul>
+
+  <div class="callout paper">
+    <div class="callout-label">Reference</div>
+    <strong>Neural Machine Translation of Rare Words with Subword Units</strong> &mdash; Sennrich,
+    Haddow &amp; Birch, 2015. Adapted the original 1994 Byte-Pair Encoding data-compression
+    algorithm (Philip Gage) into the subword tokenization method that underlies most modern LLM
+    tokenizers.
+  </div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. Why doesn't BPE ever need an "unknown word" token the way word-level tokenization does?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Because it has an infinitely large vocabulary</button>
+        <button class="q-option" data-correct="true">Because any unfamiliar word can be broken down into smaller, previously-seen subword pieces</button>
+        <button class="q-option" data-correct="false">Because it ignores rare words entirely</button>
+      </div>
+      <div class="q-explain">BPE's vocabulary includes individual characters as a fallback, so worst case, an unseen word can always be represented as a sequence of known smaller pieces, right down to single characters if needed.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. What determines which pair of symbols BPE merges at each step during training?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Whichever adjacent pair occurs most frequently across the training corpus</button>
+        <button class="q-option" data-correct="false">Alphabetical order of the symbols</button>
+        <button class="q-option" data-correct="false">A fixed list of known English prefixes and suffixes</button>
+      </div>
+      <div class="q-explain">BPE is a greedy, frequency-driven algorithm &mdash; at each step it counts adjacent pairs across the corpus and merges the single most common one, without any built-in linguistic knowledge of what a "real" prefix or suffix is.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. Why might the same sentence use more tokens in one model's tokenizer than another's?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each model trains its own BPE vocabulary on its own data, so the merge rules differ</button>
+        <button class="q-option" data-correct="false">Token counts are identical across all LLMs by design</button>
+        <button class="q-option" data-correct="false">Only the model's parameter count affects tokenization</button>
+      </div>
+      <div class="q-explain">Tokenization happens before the transformer even runs, using a vocabulary trained separately for each model family &mdash; different training corpora produce different merge rules and therefore different token counts for the same text.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Sennrich, Haddow &amp; Birch (2015); Sebastian Raschka's tokenization &amp; BPE reference;
+    GeeksforGeeks and Towards Data Science BPE explainers.
+  </p>
+
+  <div class="pager">
+    <a href="../phase-01-foundations/1-5-first-llm-call.html">&larr; 1.5 Your first LLM call</a>
+    <a href="2-2-embeddings-vector-space.html">2.2 Embeddings &amp; vector space &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Interactive BPE merge simulator ---
+const WORD = "banana";
+let bpeState, bpeStep;
+
+function initBpe() {
+  bpeState = WORD.split('');
+  bpeStep = 0;
+  renderBpe();
+}
+
+function countPairs(tokens) {
+  const counts = {};
+  for (let i = 0; i < tokens.length - 1; i++) {
+    const pair = tokens[i] + '|' + tokens[i+1];
+    counts[pair] = (counts[pair] || 0) + 1;
+  }
+  return counts;
+}
+
+function mostFrequentPair(tokens) {
+  const counts = countPairs(tokens);
+  let best = null, bestCount = 0;
+  for (const [pair, count] of Object.entries(counts)) {
+    if (count > bestCount) { best = pair; bestCount = count; }
+  }
+  return best ? { pair: best.split('|'), count: bestCount } : null;
+}
+
+function renderBpe(mergedIndex) {
+  const container = document.getElementById('bpe-tokens');
+  container.innerHTML = bpeState.map((t, i) =>
+    `<span class="bpe-tok${i === mergedIndex ? ' merging' : ''}">${t}</span>`
+  ).join('');
+  document.getElementById('bpe-stat').textContent = `${bpeState.length} tokens · step ${bpeStep}`;
+  const next = mostFrequentPair(bpeState);
+  document.getElementById('bpe-step').disabled = !next;
+  if (!next) {
+    document.getElementById('bpe-log').textContent = 'No repeated adjacent pairs left — fully merged.';
+  }
+}
+
+document.getElementById('bpe-step').addEventListener('click', () => {
+  const found = mostFrequentPair(bpeState);
+  if (!found) return;
+  const [a, b] = found.pair;
+  const newTokens = [];
+  let i = 0;
+  let mergedAt = -1;
+  while (i < bpeState.length) {
+    if (i < bpeState.length - 1 && bpeState[i] === a && bpeState[i+1] === b) {
+      newTokens.push(a + b);
+      mergedAt = newTokens.length - 1;
+      i += 2;
+    } else {
+      newTokens.push(bpeState[i]);
+      i += 1;
+    }
+  }
+  bpeState = newTokens;
+  bpeStep++;
+  document.getElementById('bpe-log').textContent = `Merged "${a}" + "${b}" → "${a+b}" (appeared ${found.count}× as an adjacent pair)`;
+  renderBpe(mergedAt);
+});
+
+document.getElementById('bpe-reset').addEventListener('click', initBpe);
+initBpe();
+
+// --- Illustrative "try your own word" tokenizer ---
+const KNOWN_WHOLE = ["un","believe","able","ing","er","est","ed","ly","tion","re","pre","dis","the","cat","dog","run","play","help","fast","slow","happy","sad","govern","ment","national","inter","auto","matic"];
+function fakeTokenize(word) {
+  word = word.toLowerCase().trim();
+  if (!word) return [];
+  let remaining = word;
+  const tokens = [];
+  while (remaining.length > 0) {
+    let matched = null;
+    for (let len = Math.min(remaining.length, 12); len >= 1; len--) {
+      const chunk = remaining.slice(0, len);
+      if (KNOWN_WHOLE.includes(chunk) || len === 1) { matched = chunk; break; }
+    }
+    tokens.push(matched);
+    remaining = remaining.slice(matched.length);
+  }
+  return tokens;
+}
+
+function renderTry() {
+  const word = document.getElementById('try-input').value;
+  const tokens = fakeTokenize(word);
+  document.getElementById('try-output').innerHTML = tokens.map(t => `<span class="bpe-tok">${t}</span>`).join('');
+}
+document.getElementById('try-btn').addEventListener('click', renderTry);
+document.getElementById('try-input').addEventListener('keydown', e => { if (e.key === 'Enter') renderTry(); });
+renderTry();
+</script>
+
+</body>
+</html>

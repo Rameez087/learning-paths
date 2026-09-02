@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.1 Embedding models in practice | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.em-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.em-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.em-slider-row input[type=range] { flex: 1; }
+.em-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; }
+.em-card { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.em-card .n { font-size: 18px; font-weight: 700; }
+.em-card .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top:4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Embeddings &amp; vector search</div>
+  <h1>5.1 Embedding models in practice</h1>
+  <p class="subtitle">Picking an embedding model is a dimension/cost/quality trade-off, not a "biggest number wins" decision.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An embedding model is a separate model from your LLM, specialized purely for turning text into
+    vectors — you don't use GPT or Claude to generate embeddings; you use a dedicated model (OpenAI's
+    text-embedding-3, Voyage, Cohere embed, or open-weight options). Higher dimensionality generally
+    captures more semantic nuance but costs more to store and search over. In practice, retrieval
+    quality depends more on matching the embedding model to your domain and evaluating it against
+    real queries than on chasing the highest leaderboard score in isolation.
+  </div>
+
+  <h2>Try it: dimension vs. cost vs. storage</h2>
+  <div class="em-box">
+    <div class="em-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:120px;">Embedding dimension</label>
+      <input type="range" id="em-slider" min="0" max="3" value="1">
+      <span id="em-readout" style="font-weight:700; min-width:60px; text-align:right;">1536</span>
+    </div>
+    <div class="em-cards" id="em-cards"></div>
+  </div>
+
+  <h2>What an embedding model actually is</h2>
+  <p>
+    Structurally, an embedding model is often a transformer very similar to what's covered in
+    Phase 2 — but instead of predicting the next token, its final layer outputs a single fixed-length
+    vector representing the entire input's meaning. This is a different training objective
+    entirely: the model is optimized so that semantically similar inputs land close together in
+    vector space (2.2's cosine similarity), not so that it can generate fluent continuations.
+  </p>
+
+  <h2>Dimensionality: not simply "more is better"</h2>
+  <ul>
+    <li><strong>Higher dimensions</strong> can encode more nuanced distinctions between concepts, but every dimension adds storage cost and slows down similarity search across a large index.</li>
+    <li><strong>Many production embedding models now support "dimension truncation"</strong> — training the model so that just using the first N dimensions of a larger vector still gives usable, if slightly less precise, results. This lets you trade a small amount of quality for meaningfully less storage and faster search, tunable per use case rather than fixed at training time.</li>
+    <li><strong>The right dimension is an empirical question for your domain</strong>, not a universal constant — retrieval quality should be measured against real queries from your actual use case, not assumed from a general leaderboard ranking.</li>
+  </ul>
+
+  <h2>Domain matters more than the leaderboard</h2>
+  <p>
+    A general-purpose embedding model trained mostly on web text can underperform a domain-tuned
+    one on specialized vocabulary — legal contracts, medical terminology, or a codebase's internal
+    jargon may cluster poorly in a general embedding space even though the same model does well on
+    everyday language. This is why serious RAG deployments (Phase 6) evaluate retrieval quality on
+    a representative sample of their own real queries and documents before committing to a specific
+    embedding model, rather than picking whichever model tops a general benchmark.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is an embedding model trained to do, as opposed to a generative LLM?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Map text to a fixed-length vector such that semantically similar inputs land close together</button>
+        <button class="q-option" data-correct="false">Predict the most likely next token in a sequence</button>
+        <button class="q-option" data-correct="false">Generate fluent, human-readable continuations of a prompt</button>
+      </div>
+      <div class="q-explain">The training objectives are genuinely different — next-token prediction (Phase 1–2) optimizes for fluent generation, while an embedding model's objective directly optimizes for the geometric property that similar meaning means nearby vectors.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why isn't a higher embedding dimension always the better choice?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Higher dimensions increase storage cost and search latency across a large index, for a trade-off that must be evaluated against your actual data</button>
+        <button class="q-option" data-correct="false">Higher-dimension embeddings are always less accurate</button>
+        <button class="q-option" data-correct="false">Embedding dimension has no effect on cost or performance</button>
+      </div>
+      <div class="q-explain">More dimensions can capture more nuance, but that benefit competes directly against storage and query-latency cost at scale — the right choice depends on measuring actual retrieval quality against your real use case.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why might a top-ranked general-purpose embedding model underperform on a specialized domain like legal contracts?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">General benchmarks reflect broad web-text performance, which doesn't guarantee good clustering of specialized or unfamiliar vocabulary</button>
+        <button class="q-option" data-correct="false">Legal text cannot be embedded at all</button>
+        <button class="q-option" data-correct="false">General-purpose models are always slower than domain-specific ones</button>
+      </div>
+      <div class="q-explain">Leaderboard rank reflects average performance on general benchmarks, not guaranteed performance on your specific domain — this is why evaluating against real queries from your own use case matters before committing.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Lushbinary RAG production guide (2026); ancoleman vector database design patterns skill reference; MTEB leaderboard methodology (March 2026 snapshot, cited via DEV Community RAG benchmarks).</p>
+
+  <div class="pager">
+    <a href="../phase-04-llm-apis/4-4-cost-token-accounting.html">&larr; 4.4 Cost &amp; token accounting</a>
+    <a href="5-2-vector-index-internals.html">5.2 Vector index internals: HNSW vs IVF &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DIMS = [
+  { d: 384, storage: "1.5 KB", latency: "fast", quality: "moderate" },
+  { d: 1536, storage: "6 KB", latency: "moderate", quality: "strong" },
+  { d: 3072, storage: "12 KB", latency: "slower", quality: "strongest" },
+  { d: 4096, storage: "16 KB", latency: "slowest", quality: "marginal gain" },
+];
+function renderEm() {
+  const i = document.getElementById('em-slider').value;
+  const d = DIMS[i];
+  document.getElementById('em-readout').textContent = d.d;
+  document.getElementById('em-cards').innerHTML = `
+    <div class="em-card"><div class="n">${d.storage}</div><div class="l">storage / vector</div></div>
+    <div class="em-card"><div class="n">${d.latency}</div><div class="l">search latency</div></div>
+    <div class="em-card"><div class="n">${d.quality}</div><div class="l">semantic precision</div></div>
+  `;
+}
+document.getElementById('em-slider').addEventListener('input', renderEm);
+renderEm();
+</script>
+</body>
+</html>

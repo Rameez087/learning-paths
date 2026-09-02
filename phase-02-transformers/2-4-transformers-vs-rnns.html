@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.4 Why transformers replaced RNNs | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.race-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.race-lane { margin-bottom: 22px; }
+.race-lane-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; }
+.race-track { display: flex; gap: 6px; }
+.race-cell { flex: 1; height: 36px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); transition: background 0.25s, color 0.25s, border-color 0.25s; }
+.race-cell.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.race-cell.done { background: rgba(62,207,142,0.12); border-color: var(--success); color: var(--success); }
+.race-controls { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.race-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.race-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.race-time { font-size: 13px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.4</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 2 · Transformers &amp; foundation models</div>
+  <h1>2.4 Why transformers replaced RNNs</h1>
+  <p class="subtitle">A hardware story as much as a math story.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Before transformers, sequence models (RNNs, LSTMs) processed tokens <strong>one at a time,
+    in order</strong> &mdash; each step's computation literally could not start until the previous
+    step finished. Transformers process every token <strong>in parallel</strong>, which is a
+    perfect match for how GPUs actually work. That single architectural change is a big part of
+    why models scaled from hundreds of millions of parameters to over a trillion in less than a
+    decade &mdash; the hardware finally stopped fighting the software.
+  </div>
+
+  <h2>Watch it happen: sequential vs. parallel</h2>
+  <p>
+    Click <strong>run</strong> on each lane and watch how each architecture actually processes
+    the same 8-token sentence.
+  </p>
+
+  <div class="race-box">
+    <div class="race-lane">
+      <div class="race-lane-label">RNN — sequential (each step waits for the one before it)</div>
+      <div class="race-track" id="rnn-track"></div>
+    </div>
+    <div class="race-lane">
+      <div class="race-lane-label">Transformer — parallel (every token processed at once)</div>
+      <div class="race-track" id="transformer-track"></div>
+    </div>
+    <div class="race-controls">
+      <button class="race-btn" id="race-run">Run both</button>
+      <button class="race-btn" id="race-reset">Reset</button>
+      <span class="race-time" id="race-time"></span>
+    </div>
+  </div>
+
+  <h2>Two separate problems, one architectural fix</h2>
+  <p>
+    RNNs had two distinct failures, and it's worth keeping them separate because transformers
+    fix them for two different reasons:
+  </p>
+  <ul>
+    <li>
+      <strong>Speed: no parallelization.</strong> An RNN's hidden state at step <em>t</em> is a
+      function of the hidden state at step <em>t&minus;1</em>. Step 5 mathematically cannot begin
+      until step 4 has finished. Modern GPUs are built to do enormous numbers of independent
+      calculations simultaneously &mdash; forcing them through a strictly sequential chain wastes
+      almost all of that capability. Transformers reduce this to effectively a single parallel
+      step per layer, since no token's attention computation depends on another token's
+      computation finishing first.
+    </li>
+    <li>
+      <strong>Quality: vanishing gradients over long sequences.</strong> During training,
+      correcting the model's mistakes requires propagating a gradient signal backward through
+      every step. In an RNN, that signal has to pass through every intermediate step, and
+      repeated multiplication through many steps tends to shrink the signal toward zero (or
+      occasionally explode). Practically, this meant RNNs got progressively worse at connecting
+      information across long spans of text &mdash; exactly the "murderer was" long-range problem
+      from 1.2. Attention sidesteps this because every token connects <em>directly</em> to every
+      other token, with no intermediate steps for the signal to degrade through.
+    </li>
+  </ul>
+
+  <div class="figure" id="fig-complexity"></div>
+
+  <h2>The trade-off transformers introduced</h2>
+  <p>
+    This isn't a free lunch. Solving the sequential bottleneck introduced a different one:
+    attention compares every token against every other token, so its computational cost grows
+    quadratically with sequence length &mdash; double the input length and the attention
+    computation roughly quadruples. This is the direct cause of the context-window cost curve
+    we'll dig into in 2.5, and it's an active area of architecture research (sparse attention,
+    state-space models like Mamba, and hybrid architectures all exist specifically to attack this
+    trade-off).
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't an RNN's computation be parallelized across time steps the way a transformer's can?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each step's hidden state depends mathematically on the previous step's hidden state</button>
+        <button class="q-option" data-correct="false">RNNs use more parameters than transformers</button>
+        <button class="q-option" data-correct="false">GPUs cannot run RNN code at all</button>
+      </div>
+      <div class="q-explain">The recurrence relation itself creates the bottleneck — step t needs the output of step t−1 to even begin, which is a structural dependency, not a hardware limitation.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. What causes the vanishing gradient problem in RNNs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Repeated multiplication of the gradient signal through many sequential steps shrinks it toward zero</button>
+        <button class="q-option" data-correct="false">RNNs don't use gradients during training at all</button>
+        <button class="q-option" data-correct="false">Too many attention heads diluting the signal</button>
+      </div>
+      <div class="q-explain">Attention heads are a transformer concept, not an RNN one — the vanishing gradient problem is specific to backpropagating error signals through long sequential chains of computation.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. What trade-off did transformers introduce in exchange for solving the sequential bottleneck?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Transformers cannot handle long sequences at all</button>
+        <button class="q-option" data-correct="true">Attention's computational cost grows quadratically with sequence length</button>
+        <button class="q-option" data-correct="false">Transformers reintroduced the vanishing gradient problem</button>
+      </div>
+      <div class="q-explain">Because every token attends to every other token, cost scales roughly with the square of sequence length — this is exactly why longer context windows get disproportionately more expensive, covered next in 2.5.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Baeldung, "From RNNs to Transformers"; GeeksforGeeks RNN/LSTM/GRU/Transformer comparison;
+    Vaswani et al. (2017).
+  </p>
+
+  <div class="pager">
+    <a href="2-3-attention-deep-dive.html">&larr; 2.3 Attention mechanism deep dive</a>
+    <a href="2-5-context-windows-models.html">2.5 Context windows &amp; model families &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Sequential vs parallel race animation ---
+const TOKENS = ["The","cat","sat","on","the","mat","and","slept"];
+function buildTrack(id) {
+  const el = document.getElementById(id);
+  el.innerHTML = TOKENS.map(t => `<div class="race-cell">${t}</div>`).join('');
+}
+buildTrack('rnn-track');
+buildTrack('transformer-track');
+
+let running = false;
+document.getElementById('race-run').addEventListener('click', () => {
+  if (running) return;
+  running = true;
+  document.getElementById('race-run').disabled = true;
+  const rnnCells = document.querySelectorAll('#rnn-track .race-cell');
+  const tCells = document.querySelectorAll('#transformer-track .race-cell');
+
+  // Transformer: all activate together, "processing" briefly, then all done
+  tCells.forEach(c => c.classList.add('active'));
+  setTimeout(() => {
+    tCells.forEach(c => { c.classList.remove('active'); c.classList.add('done'); });
+  }, 400);
+
+  // RNN: one at a time, each waits for previous
+  let i = 0;
+  const startTime = Date.now();
+  function stepRnn() {
+    if (i > 0) rnnCells[i-1].classList.remove('active');
+    if (i >= rnnCells.length) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      document.getElementById('race-time').textContent = `Transformer finished in ~0.4s · RNN finished in ~${elapsed}s (same 8 tokens)`;
+      running = false;
+      document.getElementById('race-run').disabled = false;
+      return;
+    }
+    rnnCells[i].classList.add('active');
+    setTimeout(() => { rnnCells[i].classList.add('done'); i++; stepRnn(); }, 400);
+  }
+  stepRnn();
+});
+
+document.getElementById('race-reset').addEventListener('click', () => {
+  buildTrack('rnn-track');
+  buildTrack('transformer-track');
+  document.getElementById('race-time').textContent = '';
+  running = false;
+  document.getElementById('race-run').disabled = false;
+});
+
+document.getElementById('fig-complexity').innerHTML = `
+<svg viewBox="0 0 680 260" width="100%" role="img" aria-label="Diagram: RNN cost grows linearly with sequence length, transformer cost grows quadratically, but transformer wall clock time stays flat due to parallelism">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 12px; }
+  </style>
+  <line x1="60" y1="220" x2="640" y2="220" stroke="#6b7386" stroke-width="1"/>
+  <line x1="60" y1="220" x2="60" y2="30" stroke="#6b7386" stroke-width="1"/>
+  <text x="350" y="248" class="lbl" text-anchor="middle" fill="#9aa4b5">sequence length &rarr;</text>
+  <text x="30" y="125" class="lbl" text-anchor="middle" fill="#9aa4b5" transform="rotate(-90 30 125)">compute cost</text>
+
+  <path d="M 60 220 L 640 60" fill="none" stroke="#f2b84b" stroke-width="2"/>
+  <text x="560" y="75" class="lbl" fill="#f2b84b">RNN — O(n) steps, sequential</text>
+
+  <path d="M 60 220 Q 300 200, 640 40" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <text x="420" y="55" class="lbl" fill="#a9c1ff">Transformer — O(n²) compute, but O(1) sequential steps</text>
+</svg>
+`;
+</script>
+
+</body>
+</html>

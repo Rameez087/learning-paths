@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.1 The ReAct loop | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.react-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.react-turn { padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 13.5px; font-family: var(--font-mono); opacity: 0; transform: translateY(6px); transition: all 0.3s; }
+.react-turn.shown { opacity: 1; transform: translateY(0); }
+.react-turn.thought { background: var(--accent-bg); border-left: 3px solid var(--accent); }
+.react-turn.action { background: rgba(242,184,75,0.1); border-left: 3px solid var(--warning); }
+.react-turn.observation { background: var(--surface-2); border-left: 3px solid var(--text-muted); }
+.react-turn.answer { background: rgba(62,207,142,0.1); border-left: 3px solid var(--success); }
+.react-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.react-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · AI agents</div>
+  <h1>8.1 The ReAct loop</h1>
+  <p class="subtitle">The pattern that makes an AI stop and check something instead of confidently guessing.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    ReAct (Reasoning + Acting) interleaves explicit reasoning with tool calls in a repeating loop:
+    the model writes a <strong>thought</strong> (what should I do next, and why), takes an
+    <strong>action</strong> (calls a tool — this is 4.2's tool use, now driving a loop instead of a
+    single call), reads the <strong>observation</strong> (the tool's result), and reasons again
+    from there. This repeats until the model decides it has enough to answer. The original paper
+    demonstrated concrete gains from this structure: a 34% improvement on the ALFWorld benchmark
+    and 10% on WebShop versus reasoning-only or action-only approaches.
+  </div>
+
+  <h2>Try it: step through a real ReAct loop</h2>
+  <div class="react-box">
+    <p style="font-weight:600; margin-bottom:12px;">Task: "What's the current weather in the city where the 2028 Olympics will be held?"</p>
+    <div id="react-turns"></div>
+    <button class="react-btn" id="react-next">Advance one step &rarr;</button>
+  </div>
+
+  <h2>Why interleaving beats reasoning-then-acting or acting-only</h2>
+  <p>
+    A model that only reasons (no tools) can only guess — it might not know, or might confidently
+    state something wrong. A model that only acts, without explicit reasoning between steps, can't
+    explain why a tool result changed its plan, making failures hard to diagnose. Interleaving
+    both means each action is grounded in an explicit, inspectable thought, and each subsequent
+    thought is grounded in real, freshly-observed information rather than an assumption made
+    before any tool was called.
+  </p>
+
+  <h2>The five-stage view: perceive, reason, plan, act, observe</h2>
+  <p>
+    A slightly more granular description of the same underlying loop breaks it into five repeating
+    stages: the agent <strong>perceives</strong> new input (a user message, a tool result, an
+    error), <strong>reasons</strong> about what it means, <strong>plans</strong> what to do about
+    it, <strong>acts</strong> by calling a tool, and <strong>observes</strong> the result — which
+    becomes the next perception, closing the loop.
+  </p>
+
+  <div class="figure" id="fig-react"></div>
+
+  <h2>Real failure modes worth knowing before you build one</h2>
+  <ul>
+    <li><strong>Infinite loops</strong> — with no clear objective-verification step, an agent can keep "refining" indefinitely because it can always find something to improve. This is a documented, real production failure pattern, not a hypothetical.</li>
+    <li><strong>Goal drift</strong> — the agent pursues a related but subtly different goal than the one asked for, often triggered by an ambiguous task spec or a tool result that pulls reasoning sideways.</li>
+    <li><strong>Context overflow</strong> — long-running loops accumulate observations until they fill the context window (2.5), and reasoning quality degrades as a result. Summarizing or compressing earlier steps is the standard mitigation.</li>
+    <li><strong>Silent failures</strong> — the agent produces confident-sounding final output while having made no real progress; tool calls happened, but didn't actually accomplish the task. This is why evaluation (Phase 9) matters as much for agents as for any other LLM system.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does the "observation" step in a ReAct loop consist of?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The result returned by the tool the agent just called</button>
+        <button class="q-option" data-correct="false">The agent's next planned action</button>
+        <button class="q-option" data-correct="false">A summary written by a separate judge model</button>
+      </div>
+      <div class="q-explain">Observation is specifically the real-world result of the action just taken — it's what feeds the next round of reasoning with fresh, grounded information rather than an assumption.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does interleaving reasoning and acting outperform pure reasoning-only responses on tasks requiring outside information?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Reasoning-only responses can only guess, while ReAct's tool results correct the model's assumptions in real time</button>
+        <button class="q-option" data-correct="false">Interleaving makes the model generate text faster</button>
+        <button class="q-option" data-correct="false">Reasoning-only approaches use more tokens than ReAct</button>
+      </div>
+      <div class="q-explain">The reported 34%/10% benchmark gains specifically come from grounding the reasoning in real observed results rather than the model's unverified internal assumptions.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What causes the "infinite loop" failure mode in agent systems?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">No clear objective-verification step, so the agent can always find something to keep "improving"</button>
+        <button class="q-option" data-correct="false">The tool calls always fail with an error</button>
+        <button class="q-option" data-correct="false">The model runs out of tokens too quickly</button>
+      </div>
+      <div class="q-explain">Without an explicit stopping condition tied to actual task completion, an agent has no structural reason to stop — it can keep refining indefinitely, which is a documented real production incident pattern, not a rare edge case.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Yao et al., "ReAct: Synergizing Reasoning and Acting in Language Models" (NeurIPS/ICLR, 2022); Oracle "What Is the AI Agent Loop?" (2026); DataScienceDojo "Agentic loops explained" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-07-multi-llm-orchestration/7-4-caching-strategies.html">&larr; 7.4 Caching strategies</a>
+    <a href="8-2-tool-design-for-agents.html">8.2 Tool design for agents &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TURNS = [
+  { cls: "thought", label: "Thought", text: "I need to find which city hosts the 2028 Olympics before I can check its weather." },
+  { cls: "action", label: "Action", text: "search(\"2028 Olympics host city\")" },
+  { cls: "observation", label: "Observation", text: "Result: Los Angeles, USA" },
+  { cls: "thought", label: "Thought", text: "Now I know the city is Los Angeles. I need current weather there." },
+  { cls: "action", label: "Action", text: "get_weather(city=\"Los Angeles\")" },
+  { cls: "observation", label: "Observation", text: "Result: 72°F, clear skies" },
+  { cls: "answer", label: "Final answer", text: "The 2028 Olympics will be held in Los Angeles, where it's currently 72°F and clear." },
+];
+let idx = 0;
+document.getElementById('react-next').addEventListener('click', () => {
+  if (idx >= TURNS.length) return;
+  const t = TURNS[idx];
+  const div = document.createElement('div');
+  div.className = 'react-turn ' + t.cls;
+  div.innerHTML = `<strong>${t.label}:</strong> ${t.text}`;
+  document.getElementById('react-turns').appendChild(div);
+  setTimeout(() => div.classList.add('shown'), 20);
+  idx++;
+  if (idx >= TURNS.length) {
+    document.getElementById('react-next').disabled = true;
+    document.getElementById('react-next').textContent = 'Loop complete';
+  }
+});
+
+document.getElementById('fig-react').innerHTML = `
+<svg viewBox="0 0 500 260" width="100%" role="img" aria-label="Diagram: reason act observe cycle looping back on itself">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:13px; font-weight:600; } </style>
+  <rect x="180" y="20" width="140" height="50" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="250" y="50" text-anchor="middle" fill="#a9c1ff">Reason</text>
+  <rect x="330" y="105" width="140" height="50" rx="8" fill="#1a2029" stroke="#f2b84b"/>
+  <text x="400" y="135" text-anchor="middle" fill="#f2b84b">Act</text>
+  <rect x="180" y="190" width="140" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="250" y="220" text-anchor="middle">Observe</text>
+  <path d="M 300 55 C 360 60, 400 80, 400 103" fill="none" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a10)"/>
+  <path d="M 400 155 C 400 180, 340 195, 322 205" fill="none" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a10)"/>
+  <path d="M 200 195 C 150 160, 150 80, 195 55" fill="none" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a10)"/>
+  <defs><marker id="a10" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

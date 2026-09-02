@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.2 Embeddings &amp; vector space | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.vec-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.vec-readout { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 12px; }
+.vec-metric { background: var(--surface-2); border-radius: 8px; padding: 12px 18px; min-width: 140px; }
+.vec-metric .n { font-size: 24px; font-weight: 700; }
+.vec-metric .l { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.vec-hint { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+select.wordpick { background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: var(--font-sans); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.2</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 2 · Transformers &amp; foundation models</div>
+  <h1>2.2 Embeddings &amp; vector space</h1>
+  <p class="subtitle">How "meaning" becomes a list of numbers a model can do math on.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An embedding turns a word (or sentence, image, anything) into a point in high-dimensional
+    space &mdash; typically 300 to a few thousand numbers. Words with similar meaning end up as
+    nearby points. "Nearby" is measured with <strong>cosine similarity</strong>: the angle between
+    two vectors, ignoring their length. This is the mechanism underneath search, recommendation,
+    and RAG retrieval &mdash; it's how a system finds "relevant" text without literal keyword
+    matching.
+  </div>
+
+  <h2>Try it: drag the vectors, watch similarity change</h2>
+  <p>
+    Real embeddings live in hundreds of dimensions, but the geometry works exactly the same way
+    in 2D, which you can actually see. Drag either arrow tip and watch the cosine similarity
+    update live.
+  </p>
+
+  <div class="vec-box">
+    <svg id="vec-svg" viewBox="0 0 400 400" width="100%" style="max-width:400px; display:block; margin:0 auto; touch-action:none;">
+      <line x1="200" y1="0" x2="200" y2="400" stroke="#262d3a" stroke-width="1"/>
+      <line x1="0" y1="200" x2="400" y2="200" stroke="#262d3a" stroke-width="1"/>
+      <path id="angle-arc" fill="none" stroke="#f2b84b" stroke-width="1.5" opacity="0.6"/>
+      <line id="vec-a-line" x1="200" y1="200" x2="320" y2="120" stroke="#5b8cff" stroke-width="2.5"/>
+      <circle id="vec-a-handle" cx="320" cy="120" r="9" fill="#5b8cff" style="cursor:grab"/>
+      <text x="330" y="115" fill="#a9c1ff" font-size="13" font-family="-apple-system, sans-serif">A</text>
+      <line id="vec-b-line" x1="200" y1="200" x2="100" y2="140" stroke="#3ecf8e" stroke-width="2.5"/>
+      <circle id="vec-b-handle" cx="100" cy="140" r="9" fill="#3ecf8e" style="cursor:grab"/>
+      <text x="70" y="135" fill="#3ecf8e" font-size="13" font-family="-apple-system, sans-serif">B</text>
+    </svg>
+    <div class="vec-readout">
+      <div class="vec-metric"><div class="n" id="cos-val">&mdash;</div><div class="l">cosine similarity</div></div>
+      <div class="vec-metric"><div class="n" id="angle-val">&mdash;</div><div class="l">angle between vectors</div></div>
+    </div>
+    <p class="vec-hint">Drag vector A or B to any angle. Notice similarity depends only on direction &mdash; dragging a handle further from the center (changing length) alone does not change the cosine similarity, only the angle does.</p>
+  </div>
+
+  <h2>Word analogies: the classic demonstration</h2>
+  <p>
+    The property that made embeddings famous: relationships between words show up as consistent
+    <em>directions</em> in the vector space, not just clusters. The often-cited example is
+    <code>king &minus; man + woman &asymp; queen</code> &mdash; the direction from "man" to "king"
+    (something like "royalty") is approximately the same direction as from "woman" to "queen."
+    This isn't hand-coded; it emerges purely from how often words co-occur across a massive amount
+    of text.
+  </p>
+
+  <div class="figure" id="fig-analogy"></div>
+
+  <h2>Where embeddings actually get used</h2>
+  <ul>
+    <li><strong>Search &amp; retrieval (RAG, Phase 6):</strong> your document chunks and your query both get embedded, and the system retrieves whichever chunks are closest by cosine similarity &mdash; this is semantic search, matching meaning rather than exact keywords.</li>
+    <li><strong>Recommendation:</strong> "similar items" often means "nearby in embedding space."</li>
+    <li><strong>Clustering &amp; classification:</strong> grouping similar documents, or training a lightweight classifier on top of embeddings instead of raw text.</li>
+    <li><strong>Inside the transformer itself:</strong> every token is converted to an embedding before attention (Phase 1.2) ever runs &mdash; this is the "numbers in" step of the generation loop.</li>
+  </ul>
+
+  <h2>Why cosine similarity, not just distance</h2>
+  <p>
+    A natural instinct is to measure how "close" two points are with ordinary (Euclidean) distance
+    &mdash; but that's sensitive to vector length, and vector length in embedding models often
+    reflects something incidental, like how much text a document contains, not how related it is
+    in meaning. Cosine similarity ignores length entirely and measures only the angle, which is
+    why it became the standard metric for comparing embeddings: it isolates direction, and
+    direction is where the semantic relationship lives.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. If you stretch vector A to be twice as long without changing its direction, what happens to its cosine similarity with vector B?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It doubles</button>
+        <button class="q-option" data-correct="true">It stays exactly the same</button>
+        <button class="q-option" data-correct="false">It always increases</button>
+      </div>
+      <div class="q-explain">Cosine similarity measures only the angle between vectors, not their magnitude — stretching a vector along the same direction doesn't change the angle, so similarity is unaffected.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. In RAG-style retrieval, what determines which document chunk gets retrieved for a query?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Exact keyword overlap with the query</button>
+        <button class="q-option" data-correct="true">The chunk whose embedding has the highest cosine similarity to the query's embedding</button>
+        <button class="q-option" data-correct="false">Whichever chunk appears first in the document</button>
+      </div>
+      <div class="q-explain">Semantic search embeds both the query and the stored chunks, then retrieves by vector similarity — this is how it can match relevant content even when the wording doesn't literally overlap.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. What does the "king − man + woman ≈ queen" example demonstrate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">That embeddings are manually labeled by humans for each relationship</button>
+        <button class="q-option" data-correct="true">That semantic relationships emerge as consistent directions in the vector space</button>
+        <button class="q-option" data-correct="false">That embeddings only work for exactly four words at a time</button>
+      </div>
+      <div class="q-explain">This relationship isn't hard-coded — it emerges from training on large text corpora, where the direction encoding a concept like "royalty" turns out to be consistent across related word pairs.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: LADAL word embeddings &amp; vector semantics tutorial; Mikolov et al. (2013) on
+    word2vec analogy structure; Spencer Porter's cosine similarity explainer.
+  </p>
+
+  <div class="pager">
+    <a href="2-1-tokenization-bpe.html">&larr; 2.1 Tokenization &amp; BPE</a>
+    <a href="2-3-attention-deep-dive.html">2.3 Attention mechanism deep dive &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Draggable vector cosine similarity demo ---
+const svg = document.getElementById('vec-svg');
+const CENTER = { x: 200, y: 200 };
+let vecA = { x: 320, y: 120 };
+let vecB = { x: 100, y: 140 };
+let dragging = null;
+
+function toLocal(evt) {
+  const rect = svg.getBoundingClientRect();
+  const scale = 400 / rect.width;
+  const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+  const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+  return { x: (clientX - rect.left) * scale, y: (clientY - rect.top) * scale };
+}
+
+function updateVisual() {
+  document.getElementById('vec-a-line').setAttribute('x2', vecA.x);
+  document.getElementById('vec-a-line').setAttribute('y2', vecA.y);
+  document.getElementById('vec-a-handle').setAttribute('cx', vecA.x);
+  document.getElementById('vec-a-handle').setAttribute('cy', vecA.y);
+  document.getElementById('vec-b-line').setAttribute('x2', vecB.x);
+  document.getElementById('vec-b-line').setAttribute('y2', vecB.y);
+  document.getElementById('vec-b-handle').setAttribute('cx', vecB.x);
+  document.getElementById('vec-b-handle').setAttribute('cy', vecB.y);
+
+  const ax = vecA.x - CENTER.x, ay = vecA.y - CENTER.y;
+  const bx = vecB.x - CENTER.x, by = vecB.y - CENTER.y;
+  const dot = ax*bx + ay*by;
+  const magA = Math.sqrt(ax*ax + ay*ay);
+  const magB = Math.sqrt(bx*bx + by*by);
+  const cos = dot / (magA * magB);
+  const angleDeg = Math.acos(Math.max(-1, Math.min(1, cos))) * (180 / Math.PI);
+
+  document.getElementById('cos-val').textContent = cos.toFixed(2);
+  document.getElementById('angle-val').textContent = Math.round(angleDeg) + '°';
+
+  // arc between the two vectors, radius scaled to shorter vector
+  const r = Math.min(magA, magB) * 0.35 + 20;
+  const angA = Math.atan2(ay, ax);
+  const angB = Math.atan2(by, bx);
+  const x1 = CENTER.x + r * Math.cos(angA);
+  const y1 = CENTER.y + r * Math.sin(angA);
+  const x2 = CENTER.x + r * Math.cos(angB);
+  const y2 = CENTER.y + r * Math.sin(angB);
+  let diff = angB - angA;
+  while (diff < 0) diff += 2 * Math.PI;
+  const largeArc = diff > Math.PI ? 1 : 0;
+  document.getElementById('angle-arc').setAttribute('d', `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`);
+}
+
+function startDrag(which) { return (e) => { dragging = which; e.preventDefault(); }; }
+document.getElementById('vec-a-handle').addEventListener('mousedown', startDrag('a'));
+document.getElementById('vec-a-handle').addEventListener('touchstart', startDrag('a'));
+document.getElementById('vec-b-handle').addEventListener('mousedown', startDrag('b'));
+document.getElementById('vec-b-handle').addEventListener('touchstart', startDrag('b'));
+
+function moveDrag(e) {
+  if (!dragging) return;
+  const p = toLocal(e);
+  if (dragging === 'a') vecA = p; else vecB = p;
+  updateVisual();
+}
+window.addEventListener('mousemove', moveDrag);
+window.addEventListener('touchmove', moveDrag, { passive: false });
+window.addEventListener('mouseup', () => dragging = null);
+window.addEventListener('touchend', () => dragging = null);
+
+updateVisual();
+
+// Word analogy diagram (static SVG, matches king/queen example)
+document.getElementById('fig-analogy').innerHTML = `
+<svg viewBox="0 0 680 260" width="100%" role="img" aria-label="Diagram: king minus man plus woman approximately equals queen, shown as parallel vector directions">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .pt { font-size: 13px; font-weight: 600; }
+  </style>
+  <circle cx="180" cy="190" r="4" fill="#9aa4b5"/>
+  <text x="150" y="215" class="pt">man</text>
+  <circle cx="320" cy="90" r="4" fill="#5b8cff"/>
+  <text x="330" y="80" class="pt" fill="#a9c1ff">king</text>
+  <line x1="180" y1="190" x2="312" y2="98" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a4)" opacity="0.7"/>
+
+  <circle cx="440" cy="190" r="4" fill="#9aa4b5"/>
+  <text x="410" y="215" class="pt">woman</text>
+  <circle cx="580" cy="90" r="4" fill="#3ecf8e"/>
+  <text x="590" y="80" class="pt" fill="#7fe0b8">queen</text>
+  <line x1="440" y1="190" x2="572" y2="98" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a4)" opacity="0.7"/>
+
+  <text x="340" y="250" font-size="12" fill="#9aa4b5" text-anchor="middle">Both arrows point the same direction and roughly the same length — the "royalty" direction</text>
+  <defs><marker id="a4" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker></defs>
+</svg>
+`;
+</script>
+
+</body>
+</html>

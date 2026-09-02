@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.2 LoRA, QLoRA &amp; PEFT | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.lq-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.lq-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.lq-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.lq-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.lq-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; }
+.lq-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.lq-metric .n { font-size: 18px; font-weight: 700; }
+.lq-metric .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Fine-tuning &amp; adaptation</div>
+  <h1>10.2 LoRA, QLoRA &amp; PEFT</h1>
+  <p class="subtitle">Training 1% of the weights, keeping 99% of the quality.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Full fine-tuning updates every one of a model's billions of weights — maximum flexibility,
+    maximum GPU cost, and real risk of <strong>catastrophic forgetting</strong> (the model losing
+    general capabilities while learning the new task). <strong>Parameter-Efficient Fine-Tuning
+    (PEFT)</strong> freezes the base model and trains only a small set of additional parameters.
+    <strong>LoRA</strong> is the dominant PEFT method — training roughly 0.1&ndash;1% of the
+    original parameter count while matching full fine-tuning quality on most tasks.
+    <strong>QLoRA</strong> goes further, quantizing the frozen base model to 4-bit precision while
+    keeping the trainable adapters in higher precision — this is specifically what made fine-tuning
+    70B-class models practical on a single consumer-grade GPU.
+  </div>
+
+  <h2>Try it: compare the approaches</h2>
+  <div class="lq-box">
+    <div class="lq-toggle">
+      <div class="lq-toggle-btn active" data-m="full">Full fine-tuning</div>
+      <div class="lq-toggle-btn" data-m="lora">LoRA</div>
+      <div class="lq-toggle-btn" data-m="qlora">QLoRA</div>
+    </div>
+    <div class="lq-metrics" id="lq-metrics"></div>
+    <p id="lq-desc" style="font-size:13px; color:var(--text-secondary); margin-top:14px;"></p>
+  </div>
+
+  <h2>How LoRA actually works, mechanically</h2>
+  <p>
+    Instead of updating a weight matrix directly, LoRA freezes it and adds a separate, much smaller
+    pair of matrices (commonly called A and B) whose product approximates the change that full
+    fine-tuning would have made. Two key hyperparameters control this: <strong>rank</strong> (the
+    bottleneck width of these small matrices — typical values run 8 to 64) and <strong>alpha</strong>
+    (a scaling factor for how strongly the adapter's output is applied). The result is a lightweight
+    adapter — typically a few hundred megabytes, versus tens of gigabytes for the full model — that
+    can be swapped in and out without touching the underlying frozen weights at all.
+  </p>
+
+  <h2>Why this matters beyond just saving GPU cost</h2>
+  <ul>
+    <li><strong>Multiple adapters, one base model.</strong> Because the base model stays frozen and unchanged, you can train several different LoRA adapters (one per task, one per customer, one per style) and hot-swap between them at inference time without loading multiple full-sized models.</li>
+    <li><strong>Lower catastrophic forgetting risk.</strong> Since the base weights never change, the model's general capabilities are preserved by construction — only the small adapter is learning the new, narrow behavior.</li>
+    <li><strong>Faster iteration.</strong> A LoRA or QLoRA run on a well-curated dataset can complete in hours rather than days, which matters directly for the evaluate-iterate loop from Phase 9.</li>
+  </ul>
+
+  <div class="figure" id="fig-lora"></div>
+
+  <h2>The QLoRA trade-off, honestly stated</h2>
+  <p>
+    Quantizing the base model to 4-bit precision isn't free — it can introduce a small quality loss
+    compared to full-precision LoRA, and it shifts where computational bottlenecks appear during
+    training. In practice, this trade-off is widely considered worth it: it's specifically what
+    makes large-model fine-tuning accessible on hardware that would otherwise require multiple
+    high-end GPUs working together.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What fraction of a model's total parameters does LoRA typically train?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Roughly 0.1–1% of the original parameter count</button>
+        <button class="q-option" data-correct="false">100% — LoRA is another name for full fine-tuning</button>
+        <button class="q-option" data-correct="false">Exactly 50%, split evenly across all layers</button>
+      </div>
+      <div class="q-explain">This small fraction is the core of PEFT's efficiency — a tiny set of added parameters captures most of the quality gain that updating every weight would produce, at a fraction of the compute.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What specifically does QLoRA add on top of standard LoRA?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">4-bit quantization of the frozen base model, while keeping the trainable adapters in higher precision</button>
+        <button class="q-option" data-correct="false">Training on twice as much data as standard LoRA</button>
+        <button class="q-option" data-correct="false">Removing the need for any GPU at all</button>
+      </div>
+      <div class="q-explain">The base model's precision is reduced to shrink its memory footprint dramatically, while the small trainable adapter matrices stay at higher precision to preserve training quality — this combination is what makes very large model fine-tuning fit on modest hardware.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does LoRA carry lower catastrophic forgetting risk than full fine-tuning?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The base model's original weights are never modified — only a small added adapter learns the new task</button>
+        <button class="q-option" data-correct="false">LoRA doesn't actually change model behavior at all</button>
+        <button class="q-option" data-correct="false">Catastrophic forgetting only affects models larger than 70B parameters</button>
+      </div>
+      <div class="q-explain">Because the frozen base weights are structurally untouched, the model's general pre-trained capabilities are preserved by construction — the adapter adds new narrow behavior without overwriting what was already there.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Hu et al. (2021), "LoRA: Low-Rank Adaptation of Large Language Models"; Dettmers et al. (2023), "QLoRA: Efficient Finetuning of Quantized LLMs"; BigDataBoutique and CodersEra 2026 fine-tuning guides.</p>
+
+  <div class="pager">
+    <a href="10-1-when-to-fine-tune.html">&larr; 10.1 When to fine-tune vs. prompt or RAG</a>
+    <a href="10-3-alignment-dpo-rlhf.html">10.3 Alignment: DPO vs. RLHF &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const LQ_DATA = {
+  full: { params: "100%", gpu: "Multiple high-end GPUs", size: "Tens of GB", desc: "Updates every weight. Maximum flexibility and quality ceiling, but expensive, slow, and carries real catastrophic forgetting risk." },
+  lora: { params: "0.1–1%", gpu: "Single GPU", size: "~100s of MB", desc: "Freezes the base model, trains small low-rank adapter matrices. Matches full fine-tuning quality on most tasks at a fraction of the cost." },
+  qlora: { params: "0.1–1%", gpu: "Single consumer GPU", size: "~100s of MB", desc: "LoRA plus 4-bit quantization of the frozen base — what makes 70B-class fine-tuning viable outside a data center." },
+};
+function renderLq(key) {
+  const d = LQ_DATA[key];
+  document.getElementById('lq-metrics').innerHTML = `
+    <div class="lq-metric"><div class="n">${d.params}</div><div class="l">params trained</div></div>
+    <div class="lq-metric"><div class="n">${d.gpu}</div><div class="l">typical hardware</div></div>
+    <div class="lq-metric"><div class="n">${d.size}</div><div class="l">output artifact size</div></div>
+  `;
+  document.getElementById('lq-desc').textContent = d.desc;
+}
+document.querySelectorAll('.lq-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lq-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLq(btn.dataset.m);
+  });
+});
+renderLq('full');
+
+document.getElementById('fig-lora').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: frozen base model weights with a small trainable LoRA adapter added alongside">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <rect x="40" y="30" width="240" height="100" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1.5"/>
+  <text x="160" y="75" text-anchor="middle">Frozen base weights</text>
+  <text x="160" y="93" text-anchor="middle" class="s">billions of parameters, untouched</text>
+  <text x="300" y="80" text-anchor="middle" font-size="16">+</text>
+  <rect x="330" y="60" width="150" height="45" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="405" y="87" text-anchor="middle" fill="#a9c1ff">LoRA adapter (A×B)</text>
+  <text x="510" y="80" text-anchor="middle" font-size="16">=</text>
+  <rect x="540" y="45" width="120" height="70" rx="8" fill="#182238" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="600" y="80" text-anchor="middle" fill="#3ecf8e">Adapted model</text>
+</svg>
+`;
+</script>
+</body>
+</html>

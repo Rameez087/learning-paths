@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.5 Your first LLM call | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.5</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.5 Your first LLM call</h1>
+  <p class="subtitle">Everything from 1.1&ndash;1.4, made real in eight lines of code.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A working LLM integration is: install the SDK, set an API key as an environment variable
+    (never hardcode it), call <code>client.messages.create()</code> with a model, a token limit,
+    and a message list, then read the text back out of the response. Everything more advanced in
+    this track &mdash; RAG, agents, orchestration &mdash; is this same call, wrapped in more
+    machinery.
+  </div>
+
+  <h2>Setup</h2>
+  <pre><code>python -m venv venv
+source venv/bin/activate      # on Windows: venv\Scripts\activate
+pip install anthropic
+
+export ANTHROPIC_API_KEY="sk-ant-your-key-here"</code></pre>
+  <p>
+    Get an API key from the Anthropic Console. Setting it as an environment variable rather than
+    pasting it into your code isn't a nitpick &mdash; a hardcoded key is exactly the kind of thing
+    that ends up committed to a public GitHub repo by accident, and API keys are billable secrets.
+    The SDK reads <code>ANTHROPIC_API_KEY</code> automatically, so your code never touches the raw
+    key at all.
+  </p>
+
+  <h2>The call</h2>
+  <pre><code>import anthropic
+
+client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
+
+message = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[
+        {"role": "user", "content": "Explain what a race condition is, in two sentences."}
+    ]
+)
+
+print(message.content[0].text)</code></pre>
+  <p>
+    Trace this back to 1.2 and 1.3: <code>messages</code> is the token sequence the model attends
+    over. <code>max_tokens</code> caps how many times the predict&rarr;sample&rarr;append loop is
+    allowed to run. The absence of a <code>system</code> parameter here means there's no role
+    definition &mdash; the model is answering with its default behavior, not as any particular
+    persona.
+  </p>
+
+  <h2>Adding a system prompt</h2>
+  <p>
+    This is 1.3's role/context/task/format structure, expressed as code. The <code>system</code>
+    parameter sets standing instructions that apply to the whole conversation, separate from the
+    user's actual message:
+  </p>
+  <pre><code>message = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    system="You are a senior backend engineer. Answer concisely, in plain English, with no code unless explicitly asked for it.",
+    messages=[
+        {"role": "user", "content": "Explain what a race condition is, in two sentences."}
+    ]
+)</code></pre>
+
+  <h2>Reading the response object</h2>
+  <p>
+    <code>message.content</code> is a list of content blocks &mdash; usually one text block, but
+    a response can contain multiple blocks (for example, a thinking block followed by a text
+    block, if extended thinking is enabled). Production code should check block types rather than
+    always assuming <code>content[0]</code> is the text you want:
+  </p>
+  <pre><code>for block in message.content:
+    if block.type == "text":
+        print(block.text)</code></pre>
+
+  <h2>Tracking cost as you go</h2>
+  <p>
+    Every response includes token usage &mdash; this is the "tok / tok/s / cost" readout from the
+    live orchestration visual back in Phase 1's overview. Reading this from day one builds the
+    habit that becomes essential once you're running many calls in Phase 7's orchestration work:
+  </p>
+  <pre><code>print(message.usage.input_tokens, message.usage.output_tokens)</code></pre>
+
+  <div class="figure" id="fig-anatomy"></div>
+
+  <h2>What you should be able to do now</h2>
+  <ul>
+    <li>Explain, without hand-waving, what happens between sending a prompt and getting text back (1.2)</li>
+    <li>Write a prompt using role, context, task, and format deliberately, not by accident (1.3)</li>
+    <li>Name the four layers of the AI engineering stack and place any new tool you encounter into one of them (1.4)</li>
+    <li>Make a real, working API call, with a system prompt, and read token usage back out (1.5)</li>
+  </ul>
+  <p>
+    That's Phase 1 complete. Phase 2 goes one level deeper into the model itself &mdash;
+    tokenization, embeddings, and the transformer architecture in more technical detail than the
+    intuition-level pass in 1.2.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. Why should an API key be set as an environment variable instead of hardcoded in a script?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Environment variables make the API call faster</button>
+        <button class="q-option" data-correct="true">Hardcoded keys risk being accidentally committed to a public repo, and keys are billable secrets</button>
+        <button class="q-option" data-correct="false">The SDK doesn't support hardcoded keys at all</button>
+      </div>
+      <div class="q-explain">This is a security practice, not a technical requirement of the SDK &mdash; a leaked key in a public repo can be used by anyone to run billable requests on your account.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. What does the <code>system</code> parameter do that a user message doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Sets standing instructions/role that apply across the whole conversation</button>
+        <button class="q-option" data-correct="false">Increases the model's max token limit</button>
+        <button class="q-option" data-correct="false">Forces the response into JSON format automatically</button>
+      </div>
+      <div class="q-explain">The system prompt is where role/context instructions live, separate from the specific user turn &mdash; it's the code-level expression of the four-element prompt structure from 1.3.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. Why check <code>block.type == "text"</code> instead of always reading <code>message.content[0]</code>?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false"><code>content[0]</code> doesn't exist in the API</button>
+        <button class="q-option" data-correct="true">A response can contain multiple block types (e.g. thinking + text), so the text isn't always at index 0</button>
+        <button class="q-option" data-correct="false">It's required for the API call to succeed</button>
+      </div>
+      <div class="q-explain">Content blocks can include types beyond plain text, such as thinking blocks when extended thinking is enabled &mdash; checking the type is more robust than assuming a fixed position.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Anthropic Claude Platform documentation (platform.claude.com/docs), anthropic-sdk-python
+    GitHub repository.
+  </p>
+
+  <div class="pager">
+    <a href="1-4-ai-engineering-stack.html">&larr; 1.4 The AI engineering stack</a>
+    <a href="../phase-02-transformers/2-1-tokenization-bpe.html">Phase 2: Tokenization &amp; BPE &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+document.getElementById('fig-anatomy').innerHTML = `
+<svg viewBox="0 0 680 220" width="100%" role="img" aria-label="Diagram: anatomy of an API call showing system, messages, max_tokens, and response usage">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    .sub { font-size: 11px; fill: #9aa4b5; }
+  </style>
+  <rect x="30" y="20" width="280" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="170" y="42" class="lbl" text-anchor="middle">system</text>
+  <text x="170" y="58" class="sub" text-anchor="middle">role &amp; standing instructions</text>
+
+  <rect x="330" y="20" width="320" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="490" y="42" class="lbl" text-anchor="middle">messages</text>
+  <text x="490" y="58" class="sub" text-anchor="middle">the token sequence attended over</text>
+
+  <rect x="30" y="90" width="280" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="170" y="112" class="lbl" text-anchor="middle">max_tokens</text>
+  <text x="170" y="128" class="sub" text-anchor="middle">caps the generation loop</text>
+
+  <line x1="340" y1="115" x2="380" y2="115" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="380" y="90" width="270" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="515" y="112" class="lbl" text-anchor="middle">message.content</text>
+  <text x="515" y="128" class="sub" text-anchor="middle">text (and other) blocks back</text>
+
+  <rect x="30" y="165" width="620" height="40" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="340" y="190" class="sub" text-anchor="middle" font-size="12">message.usage.input_tokens / output_tokens &mdash; what you're billed for</text>
+
+  <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+
+</body>
+</html>

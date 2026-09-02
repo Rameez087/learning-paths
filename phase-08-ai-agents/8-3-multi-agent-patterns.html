@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.3 Multi-agent patterns | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ma-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ma-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.ma-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ma-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.ma-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; }
+.ma-detail .use { color: var(--success); font-weight: 600; margin-top: 8px; display: block; }
+.ma-detail .fail { color: #ff8b8f; font-weight: 600; margin-top: 4px; display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · AI agents</div>
+  <h1>8.3 Multi-agent patterns</h1>
+  <p class="subtitle">Reported industry data: roughly 40% of multi-agent pilots fail — usually from picking the wrong coordination pattern, not the wrong model.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Multi-agent systems divide a complex task among several specialized agents that coordinate
+    through a defined structure, rather than one agent handling everything with many tools.
+    Industry guidance is blunt about when to actually reach for this: use the lowest level of
+    complexity that reliably meets your requirements — most tasks don't need multiple agents at
+    all, and starting there anyway is reported as the single most common architecture mistake teams
+    make. When you do need it, the coordination pattern you pick matters more than which model
+    powers each agent.
+  </div>
+
+  <h2>Try it: explore the patterns and their real failure modes</h2>
+  <div class="ma-box">
+    <div class="ma-tabs" id="ma-tabs"></div>
+    <div class="ma-detail" id="ma-detail"></div>
+  </div>
+
+  <h2>The decision framework practitioners actually use</h2>
+  <ul>
+    <li><strong>Known task decomposition, fixed subtasks</strong> → orchestrator-worker (a single point of accountability delegates known subtasks to specialists).</li>
+    <li><strong>Fixed linear steps that never change order</strong> → sequential pipeline (this is 3.5's chaining, applied across separate agents instead of separate prompts).</li>
+    <li><strong>Four or more genuinely independent tasks</strong> → fan-out/fan-in (parallel, no dependencies between branches).</li>
+    <li><strong>Open-ended problems with no predetermined solution path</strong> → manager/supervisor pattern, where the plan itself is discovered through iteration rather than fixed upfront.</li>
+  </ul>
+
+  <h2>Why "start simple" isn't just caution — it's backed by real failure data</h2>
+  <p>
+    Reported figures describe a roughly 1,445% increase in enterprise interest in multi-agent
+    systems within about a year, alongside organizations now running a double-digit average number
+    of agents in production. But interest and adoption running ahead of reliability shows up
+    directly in the pilot failure rate — the recommendation from teams who've actually shipped
+    these systems is consistently to under-build rather than over-build: pick the simplest pattern
+    that structurally fits the problem, and only add coordination complexity when a single agent
+    demonstrably fails on tool selection, context capacity, or multi-step reasoning.
+  </p>
+
+  <div class="figure" id="fig-patterns"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the most commonly cited architecture mistake teams make with multi-agent systems in 2026?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Reaching for a multi-agent system when a single agent (or no agent at all) would have reliably handled the task</button>
+        <button class="q-option" data-correct="false">Using too few agents for the task</button>
+        <button class="q-option" data-correct="false">Choosing models that are too cheap for each agent role</button>
+      </div>
+      <div class="q-explain">Industry guidance is explicit: use the lowest level of complexity that reliably meets requirements — most tasks don't need coordination overhead at all, and adding it unnecessarily is the more common failure than under-architecting.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. When does the manager/supervisor pattern (plan discovered through iteration) fit best?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Open-ended problems with no predetermined solution path, like incident response where remediation steps emerge from diagnosis</button>
+        <button class="q-option" data-correct="false">Fixed, linear tasks where the steps never change</button>
+        <button class="q-option" data-correct="false">Tasks requiring exactly one agent and no coordination</button>
+      </div>
+      <div class="q-explain">Unlike orchestrator-worker (known subtasks upfront), the manager pattern is specifically for cases where the plan itself has to be discovered and can pivot mid-execution based on what's found.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's a documented real cost of the manager/supervisor pattern's backtracking behavior?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">When the manager discovers a dead end, all work from that branch is wasted compute, with the total cost impossible to predict upfront</button>
+        <button class="q-option" data-correct="false">Backtracking has no measurable cost impact</button>
+        <button class="q-option" data-correct="false">The manager pattern never needs to backtrack</button>
+      </div>
+      <div class="q-explain">This is a specific, named trade-off of the pattern's flexibility — the same iterative discovery that lets it handle open-ended problems also means wasted branches are a real, hard-to-budget cost.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Beam.ai "6 Multi-Agent Orchestration Patterns for Production" (2026); Rost Glukhov, "Multi-Agent Orchestration Patterns" (2026), citing Gartner and Salesforce 2026 data; Lyzr "What Is Multi-Agent Architecture?" (2026), citing Microsoft Azure Architecture Center guidance.</p>
+
+  <div class="pager">
+    <a href="8-2-tool-design-for-agents.html">&larr; 8.2 Tool design for agents</a>
+    <a href="8-4-agent-memory-systems.html">8.4 Agent memory systems &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const PATTERNS = {
+  "orchestrator-worker": {
+    desc: "One agent receives the task, breaks it into subtasks, delegates each to a specialist worker, assembles results.",
+    use: "Use when: known subtasks at design time, single accountability point desired. The most widely deployed pattern in production.",
+    fail: "Fails when: workers need to coordinate directly with each other — everything routes through the orchestrator, adding latency at scale."
+  },
+  "sequential pipeline": {
+    desc: "Agents execute in a fixed, deterministic chain, each consuming the previous agent's output.",
+    use: "Use when: fixed linear steps, predictable workflow progression — e.g. data transformation pipelines where each stage depends on the last.",
+    fail: "Fails when: the task actually needs branching or backtracking — a rigid pipeline can't adapt if an early stage's output turns out to be wrong."
+  },
+  "manager / supervisor": {
+    desc: "A manager agent dynamically builds and refines a task plan by consulting specialists, discovering the plan through collaboration rather than fixing it upfront.",
+    use: "Use when: open-ended problems, incident response, migrations where scope changes during execution.",
+    fail: "Fails when: goal drift over iterations, wasted compute on discarded branches, or indefinite looping on an underspecified goal — the production killer for this pattern."
+  },
+  "hierarchical": {
+    desc: "Supervisors of supervisors — stacked coordination layers for genuinely complex, multi-level workflows.",
+    use: "Use when: task complexity genuinely spans multiple coordination levels, not achievable with a single flat orchestrator.",
+    fail: "Fails from: lossy information loss between levels — a supervisor summarizing worker output for the top manager can drop details critical to the final decision."
+  },
+  "swarm": {
+    desc: "Decentralized emergent coordination — no central authority. Agents act on shared state (a blackboard) or environment signals, claim tasks, publish results.",
+    use: "Use when: task space is large enough to justify dynamic spawning overhead — long autonomous sessions, large-scale exploratory research.",
+    fail: "Fails from: coordination overhead dominating at scale, and race conditions on shared state without explicit safeguards."
+  }
+};
+function renderMa(key) {
+  const p = PATTERNS[key];
+  document.getElementById('ma-detail').innerHTML = `
+    ${p.desc}
+    <span class="use">✓ ${p.use}</span>
+    <span class="fail">✗ ${p.fail}</span>
+  `;
+}
+document.getElementById('ma-tabs').innerHTML = Object.keys(PATTERNS).map((k,i) =>
+  `<div class="ma-tab${i===0?' active':''}" data-k="${k}">${k}</div>`
+).join('');
+document.querySelectorAll('.ma-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ma-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderMa(tab.dataset.k);
+  });
+});
+renderMa('orchestrator-worker');
+
+document.getElementById('fig-patterns').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: orchestrator-worker pattern with one orchestrator delegating to three workers">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <rect x="270" y="20" width="140" height="45" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="340" y="47" text-anchor="middle" fill="#a9c1ff">Orchestrator</text>
+  <line x1="300" y1="65" x2="140" y2="115" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a11)"/>
+  <line x1="340" y1="65" x2="340" y2="115" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a11)"/>
+  <line x1="380" y1="65" x2="540" y2="115" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a11)"/>
+  <rect x="70" y="115" width="140" height="45" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="140" y="142" text-anchor="middle">Worker A</text>
+  <rect x="270" y="115" width="140" height="45" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="340" y="142" text-anchor="middle">Worker B</text>
+  <rect x="470" y="115" width="140" height="45" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="540" y="142" text-anchor="middle">Worker C</text>
+  <defs><marker id="a11" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

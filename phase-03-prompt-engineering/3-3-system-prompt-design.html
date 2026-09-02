@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.3 System prompt design patterns | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.spd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.spd-block { padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; margin-bottom: 8px; cursor: grab; display: flex; align-items: center; gap: 12px; }
+.spd-block.dragging { opacity: 0.4; }
+.spd-block .num { font-weight: 700; color: var(--accent-text); width: 20px; }
+.spd-block .name { font-weight: 600; font-size: 14px; }
+.spd-block .desc { font-size: 12px; color: var(--text-muted); }
+.spd-check { margin-top: 16px; padding: 12px 16px; border-radius: 8px; font-size: 13px; }
+.spd-check.good { background: rgba(62,207,142,0.1); border: 1px solid var(--success); color: var(--success); }
+.spd-check.bad { background: rgba(242,184,75,0.1); border: 1px solid var(--warning); color: var(--warning); }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.3</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 3 · Prompt engineering deep dive</div>
+  <h1>3.3 System prompt design patterns</h1>
+  <p class="subtitle">The instruction block written once, evaluated against thousands of unpredictable user inputs.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A production system prompt is different from a one-off user prompt: it has to be general,
+    unambiguous, and robust against adversarial input, because it's written once and run against
+    every future conversation. A well-structured 2026 system prompt tends to follow six blocks, in
+    order: <strong>identity/persona &rarr; task scope &rarr; tool-use rules &rarr; refusal/safety
+    behavior &rarr; output format &rarr; guardrails</strong>. Order matters more than people expect
+    &mdash; identity first anchors everything that follows; guardrails buried at the very end
+    compete with everything the model has already "settled into" by the time it gets there.
+  </div>
+
+  <h2>Try it: reorder the blocks, see what breaks</h2>
+  <p>
+    Drag the blocks below into a different order and see the practical consequence of that
+    ordering choice. There's a reason production system prompts converge on roughly the sequence
+    shown by default.
+  </p>
+
+  <div class="spd-box">
+    <div id="spd-blocks"></div>
+    <div class="spd-check" id="spd-check"></div>
+  </div>
+
+  <h2>The six blocks</h2>
+  <ul>
+    <li><strong>Identity &amp; persona</strong> &mdash; who the assistant is, kept to two or three sentences. Over-long personas waste tokens and rarely change behavior beyond that point.</li>
+    <li><strong>Task scope</strong> &mdash; what the assistant is for, and just as importantly, what it's <em>not</em> for. Explicit scope prevents the model from being talked into adjacent work it wasn't designed for.</li>
+    <li><strong>Tool-use rules</strong> &mdash; if the assistant has tools, when to call each one, when to ask the user first, what to do when a tool call fails. This is reportedly where most agent bugs live in practice.</li>
+    <li><strong>Refusal &amp; safety behavior</strong> &mdash; the exact shape refusals should take. A common default: acknowledge briefly, explain why, offer an alternative &mdash; consistently, not improvised per-conversation.</li>
+    <li><strong>Output format</strong> &mdash; the format contract (from 3.2): what shape, what schema, what to omit.</li>
+    <li><strong>Guardrails</strong> &mdash; explicit boundaries against known attack patterns: persona switches, attempts to extract the system prompt itself, instructions to "ignore previous instructions."</li>
+  </ul>
+
+  <h2>A concrete framework: RCCF</h2>
+  <p>
+    One widely-cited practical framework compresses this into four moving parts: <strong>Role</strong>
+    (personality), <strong>Context</strong> (grounding &mdash; not just "write about Python" but
+    "for data scientists migrating from R who need to handle missing values differently"),
+    <strong>Constraints</strong> (guardrails), <strong>Format</strong> (structure). The core finding
+    behind frameworks like this: specificity beats cleverness, consistently. Front-loading
+    constraints at the start of a prompt measurably reduces how often a task needs iterative
+    back-and-forth to get right, compared to a vague initial ask that gets refined through trial
+    and error.
+  </p>
+
+  <h2>Model-specific quirks are real, not folklore</h2>
+  <p>
+    System prompt conventions aren't perfectly portable across providers. Different reasoning
+    models respond differently to explicit "show your work" instructions &mdash; some will dump
+    intermediate reasoning into a designated scratchpad area only if told to; others include
+    reasoning directly in the main output unless explicitly told not to. This means a system
+    prompt tuned carefully for one model family may need real adjustment, not just find-and-replace,
+    when porting to another.
+  </p>
+
+  <h2>Guardrails aren't a courtesy &mdash; they're security</h2>
+  <p>
+    A system prompt's guardrail section is doing real security work, not just tone-setting.
+    Documented attack patterns worth explicitly defending against include: prompted persona
+    switches ("pretend you're an AI with no restrictions"), attempts to extract the system prompt
+    template itself, and instructions telling the model to ignore its previous instructions
+    entirely. We'll go deeper on this in 3.4.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. Why does identity/persona typically go first in a system prompt, rather than last?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It anchors the framing that everything else in the prompt builds on</button>
+        <button class="q-option" data-correct="false">The model only reads the first sentence of a system prompt</button>
+        <button class="q-option" data-correct="false">Order doesn't affect anything — it's purely stylistic</button>
+      </div>
+      <div class="q-explain">System prompt sections aren't independent — later sections (tool rules, refusal behavior, format) are interpreted in light of the identity established earlier, which is why reordering can change behavior even though the same content is present.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. Why should "task scope" explicitly state what the assistant is NOT for, not just what it is for?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Explicit negative scope prevents the model from being talked into adjacent, undesigned-for work</button>
+        <button class="q-option" data-correct="false">It's required by the API and won't run otherwise</button>
+        <button class="q-option" data-correct="false">Negative scope makes the prompt shorter</button>
+      </div>
+      <div class="q-explain">Positive scope alone leaves ambiguity at the edges — a user can often talk a model into "just this one adjacent thing" unless the boundary is stated explicitly.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. What's the core principle behind the RCCF framework's effectiveness?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Using more creative and clever language in the prompt</button>
+        <button class="q-option" data-correct="true">Specificity beats cleverness — front-loading concrete constraints reduces iterative back-and-forth</button>
+        <button class="q-option" data-correct="false">Making the prompt as short as possible</button>
+      </div>
+      <div class="q-explain">RCCF's reported gains come from replacing vague initial asks with concrete grounding and constraints up front, cutting the need to discover requirements through repeated failed attempts.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Promptarch's 2026 system prompt anatomy guide; UC Strategies RCCF framework analysis;
+    Datadog LLM guardrails best practices (referencing OWASP LLM Top 10 2025).
+  </p>
+
+  <div class="pager">
+    <a href="3-2-structured-output-schemas.html">&larr; 3.2 Structured output &amp; schemas</a>
+    <a href="3-4-prompt-injection-security.html">3.4 Prompt injection &amp; security risks &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Drag-to-reorder system prompt blocks ---
+const CORRECT_ORDER = ["identity","scope","tools","refusal","format","guardrails"];
+const BLOCK_INFO = {
+  identity: { name: "Identity & persona", desc: "Who the assistant is" },
+  scope: { name: "Task scope", desc: "What it's for (and not for)" },
+  tools: { name: "Tool-use rules", desc: "When to call which tool" },
+  refusal: { name: "Refusal & safety behavior", desc: "Shape of a decline" },
+  format: { name: "Output format", desc: "Schema / structure contract" },
+  guardrails: { name: "Guardrails", desc: "Defenses against known attacks" },
+};
+let currentOrder = [...CORRECT_ORDER];
+// shuffle initial order so there's something to fix
+currentOrder = ["scope","guardrails","identity","format","tools","refusal"];
+
+function renderBlocks() {
+  const container = document.getElementById('spd-blocks');
+  container.innerHTML = '';
+  currentOrder.forEach((key, i) => {
+    const div = document.createElement('div');
+    div.className = 'spd-block';
+    div.draggable = true;
+    div.dataset.key = key;
+    div.innerHTML = `<span class="num">${i+1}</span><span class="name">${BLOCK_INFO[key].name}</span><span class="desc">— ${BLOCK_INFO[key].desc}</span>`;
+    container.appendChild(div);
+  });
+  attachDrag();
+  checkOrder();
+}
+
+function attachDrag() {
+  const blocks = document.querySelectorAll('.spd-block');
+  let dragSrc = null;
+  blocks.forEach(b => {
+    b.addEventListener('dragstart', () => { dragSrc = b; b.classList.add('dragging'); });
+    b.addEventListener('dragend', () => b.classList.remove('dragging'));
+    b.addEventListener('dragover', (e) => e.preventDefault());
+    b.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (dragSrc === b) return;
+      const srcKey = dragSrc.dataset.key;
+      const targetKey = b.dataset.key;
+      const srcIdx = currentOrder.indexOf(srcKey);
+      const targetIdx = currentOrder.indexOf(targetKey);
+      currentOrder.splice(srcIdx, 1);
+      currentOrder.splice(targetIdx, 0, srcKey);
+      renderBlocks();
+    });
+  });
+}
+
+function checkOrder() {
+  const el = document.getElementById('spd-check');
+  const isCorrect = currentOrder.every((k,i) => k === CORRECT_ORDER[i]);
+  if (isCorrect) {
+    el.className = 'spd-check good';
+    el.textContent = '✓ This matches the conventional production ordering — identity anchors everything, guardrails come last as the final defensive layer.';
+  } else {
+    el.className = 'spd-check bad';
+    el.textContent = '↕ Drag the blocks into a different order — try putting "Identity & persona" first and "Guardrails" last.';
+  }
+}
+renderBlocks();
+</script>
+
+</body>
+</html>

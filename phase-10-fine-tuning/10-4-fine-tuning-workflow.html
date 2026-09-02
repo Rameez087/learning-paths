@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.4 Fine-tuning workflow &amp; failure modes | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.wf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.wf-fail-btn { display: block; width: 100%; text-align: left; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.wf-cause { display: none; padding: 10px 12px; background: var(--code-bg); border-radius: 6px; margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.wf-cause.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Fine-tuning &amp; adaptation</div>
+  <h1>10.4 Fine-tuning workflow &amp; failure modes</h1>
+  <p class="subtitle">Fine-tuning became cheap in 2026. The failure modes did not go away just because the GPU bill got smaller.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A QLoRA fine-tune on a well-curated dataset can now be a genuinely fast, low-cost operation —
+    hours, not weeks, on a single GPU. But the classic failure modes (catastrophic forgetting,
+    overfitting on a small dataset, broken instruction-following, compute spent on the wrong
+    problem) are exactly as real as they were when fine-tuning required a six-figure budget. The
+    fix isn't more compute — it's evaluation discipline (Phase 9) applied specifically before and
+    after every fine-tuning run.
+  </div>
+
+  <h2>Try it: diagnose the failure</h2>
+  <div class="wf-box">
+    <div id="wf-fails"></div>
+  </div>
+
+  <h2>The workflow, end to end</h2>
+  <ol>
+    <li><strong>Confirm the prerequisite (10.1).</strong> Stable task, known schema, a real eval showing prompting/RAG plateaued, enough curated examples.</li>
+    <li><strong>Prepare the dataset.</strong> Quality over quantity (10.1) — hundreds to low thousands of carefully curated examples, typically in a structured instruction format.</li>
+    <li><strong>Choose the method (10.2).</strong> QLoRA is the practical default for most teams in 2026 — 4-bit base, LoRA adapters, runs on accessible hardware.</li>
+    <li><strong>Train, with a held-out validation set</strong> separate from training data, to catch overfitting during the run itself rather than discovering it only after deployment.</li>
+    <li><strong>Evaluate before shipping (Phase 9).</strong> Score the fine-tuned model and the base model on identical prompts, on both task-specific metrics and general capability benchmarks — and ship only when the improvement is real and general capability hasn't regressed.</li>
+  </ol>
+
+  <h2>Why you benchmark general capability, not just the target task</h2>
+  <p>
+    A fine-tune can look like a clear win on its target metric while quietly degrading the model's
+    broader capabilities — this is catastrophic forgetting showing up in aggregate. The specific
+    practice this motivates: benchmark before and after on general capability tests (not just your
+    narrow task metric) so a regression in unrelated capability doesn't go unnoticed simply because
+    nobody was watching for it.
+  </p>
+
+  <div class="figure" id="fig-workflow"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a held-out validation set matter during a fine-tuning run, not just at final evaluation?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It catches overfitting to the training data during the run itself, rather than discovering the problem only after deployment</button>
+        <button class="q-option" data-correct="false">Validation sets are only needed for full fine-tuning, never for LoRA</button>
+        <button class="q-option" data-correct="false">A validation set replaces the need for any post-training evaluation</button>
+      </div>
+      <div class="q-explain">Monitoring performance on held-out data throughout training is what lets you catch the model starting to memorize training examples rather than generalize, before that becomes a shipped problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why benchmark general capability, not just the fine-tuning target metric, before shipping?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A fine-tune can improve the target task while silently degrading broader capabilities — catastrophic forgetting won't show up if you're only watching the narrow metric</button>
+        <button class="q-option" data-correct="false">General capability benchmarks are required by law for any fine-tuned model</button>
+        <button class="q-option" data-correct="false">Target-task metrics are always identical to general capability scores</button>
+      </div>
+      <div class="q-explain">A narrow-metric win can mask a real regression elsewhere in the model's capabilities — checking both before and after is what catches this trade-off explicitly rather than discovering it in production.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does fine-tuning becoming cheaper in 2026 not eliminate its classic failure modes?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Catastrophic forgetting, overfitting, and misapplied compute are structural risks tied to the fine-tuning process itself, not to its cost</button>
+        <button class="q-option" data-correct="false">Cheaper fine-tuning methods are immune to overfitting by design</button>
+        <button class="q-option" data-correct="false">These failure modes only ever applied to full fine-tuning, not LoRA or QLoRA</button>
+      </div>
+      <div class="q-explain">Lower cost changes who can afford to fine-tune and how quickly they can iterate — it doesn't change the underlying mechanics that produce forgetting or overfitting, which is why evaluation discipline remains essential regardless of budget.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: hjLabs.in "LLM Fine-Tuning Best Practices 2026"; FutureAGI "Fine-Tuning LLMs in 2026" comparison guide; CodersEra "Fine-Tuning LLMs in 2026" (failure modes section).</p>
+
+  <div class="pager">
+    <a href="10-3-alignment-dpo-rlhf.html">&larr; 10.3 Alignment: DPO vs. RLHF</a>
+    <a href="../index.html">Phase 11: Production &amp; MLOps &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const FAILURES = [
+  { symptom: "The model nails the new task but suddenly gives worse answers on totally unrelated general questions it used to handle fine.", cause: "Catastrophic forgetting — the fine-tune shifted weights (or, with LoRA, an overly strong adapter) enough to degrade unrelated capabilities. Mitigation: benchmark general capability before/after, prefer PEFT over full fine-tuning, and consider a lower learning rate or rank." },
+  { symptom: "Training loss keeps dropping beautifully, but the model performs worse than the base model on held-out validation examples.", cause: "Overfitting — the model is memorizing training examples rather than generalizing. Mitigation: more diverse/curated data (not just more data), a held-out validation set watched during training, and stopping before validation performance starts degrading." },
+  { symptom: "The model ignores the exact instruction format it used to follow reliably before fine-tuning.", cause: "Broken instruction-following — often caused by a dataset that doesn't consistently include the same instruction format the base model was trained to follow. Mitigation: match the fine-tuning data format precisely to how the model will actually be prompted in production." },
+];
+document.getElementById('wf-fails').innerHTML = FAILURES.map((f,i) => `
+  <button class="wf-fail-btn" data-i="${i}">${f.symptom}</button>
+  <div class="wf-cause" id="cause-${i}">${f.cause}</div>
+`).join('');
+document.querySelectorAll('.wf-fail-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('cause-' + btn.dataset.i).classList.toggle('show');
+  });
+});
+
+document.getElementById('fig-workflow').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: fine-tuning workflow from prerequisite check through dataset prep, training, and evaluation gate">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="10" y="45" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="75" y="75" text-anchor="middle">Confirm prereqs</text>
+  <line x1="140" y1="70" x2="170" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a14)"/>
+  <rect x="170" y="45" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="235" y="75" text-anchor="middle">Curate dataset</text>
+  <line x1="300" y1="70" x2="330" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a14)"/>
+  <rect x="330" y="45" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="395" y="75" text-anchor="middle">QLoRA train</text>
+  <line x1="460" y1="70" x2="490" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a14)"/>
+  <rect x="490" y="45" width="180" height="50" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="580" y="70" text-anchor="middle" fill="#a9c1ff">Eval gate</text>
+  <text x="580" y="86" text-anchor="middle" fill="#7891c9" font-size="10">before shipping</text>
+  <defs><marker id="a14" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.1 What is an AI Engineer in 2026 | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.1</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.1 What is an AI engineer in 2026?</h1>
+  <p class="subtitle">And why the job didn't exist five years ago.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An AI engineer builds products on top of existing foundation models &mdash; wiring together
+    prompts, retrieval, tools, and agents into working software. An ML engineer builds and trains
+    the models themselves, working close to data and math. Both matter, but the market has shifted
+    hard toward the AI engineer, because most companies no longer need to train a model &mdash;
+    they need someone who can turn an API call into a reliable product.
+  </div>
+
+  <h2>The split that happened</h2>
+  <p>
+    Until around 2021, "AI engineer" and "machine learning engineer" mostly meant the same
+    job: someone who trained a model in PyTorch or TensorFlow, tuned hyperparameters, and shipped
+    it behind an API endpoint. If you wanted intelligence in your product, you built it from your
+    own data.
+  </p>
+  <p>
+    Foundation models changed the shape of that work. When any team can call GPT-5 or Claude and
+    get a world-class model instantly, training one from scratch stops being the bottleneck for
+    most products. The bottleneck moves up a layer &mdash; into retrieval, orchestration, agents,
+    and evaluation. That upper layer is what "AI engineer" now refers to.
+  </p>
+
+  <div class="figure" id="fig-stack"></div>
+
+  <h2>AI engineer vs. ML engineer, concretely</h2>
+  <p>The cleanest way to tell them apart is to ask: <strong>is the model the product, or a dependency?</strong></p>
+  <ul>
+    <li>
+      <strong>ML engineer</strong> &mdash; the model is the product. They own the full lifecycle:
+      data pipelines, feature engineering, training, hyperparameter search, evaluation against a
+      labeled dataset, and deployment of a custom model that meets a specific accuracy or latency
+      SLA. Example: building a fraud-detection model on a bank's own transaction data.
+    </li>
+    <li>
+      <strong>AI engineer</strong> &mdash; the model is a dependency, the way Postgres or Stripe
+      is a dependency. They don't train it; they compose it. Their layers are: the prompt layer
+      (system prompts, few-shot examples, structured output), the retrieval layer (chunking,
+      embeddings, vector search, reranking), and the agent layer (tool definitions, planning
+      loops, memory, error recovery). Example: building a customer-support copilot that retrieves
+      account data and drafts a reply.
+    </li>
+  </ul>
+  <p>
+    The two roles still share real overlap &mdash; both need strong programming fundamentals,
+    both need to reason about data quality, both increasingly need evaluation skills. But the
+    day-to-day work, and increasingly the hiring market, treats them as different jobs.
+  </p>
+
+  <h2>Why this matters right now</h2>
+  <p>
+    This isn't a minor title distinction. A few data points worth sitting with, all specific to
+    2026:
+  </p>
+  <ul>
+    <li>Foundation-model skills now appear in roughly half of AI engineering job postings, alongside Python and cloud platforms &mdash; employers want breadth across the application stack, not deep specialization in one model.</li>
+    <li>RAG, agents, and evaluation harnesses have overtaken raw prompt engineering as the fastest-growing skill demands within the field.</li>
+    <li>The application layer &mdash; companies building <em>on top of</em> foundation models across legal, healthcare, finance, and enterprise workflows &mdash; accounts for the vast majority of open roles. Foundation-model labs themselves hire small, elite research teams; that is not where most jobs are.</li>
+  </ul>
+  <p>
+    One useful heuristic if you're not sure which path fits a given problem: if you have
+    proprietary data a foundation model has never seen, need strict statistical guarantees, or
+    need sub-100ms inference on tabular features &mdash; that's ML engineering territory. If you're
+    building a product surface where an existing model's general capability is enough, and the
+    hard part is retrieval, orchestration, and reliability &mdash; that's AI engineering. When
+    genuinely unsure, most 2026 use cases turn out to be the second kind.
+  </p>
+
+  <h2>What this track will make you able to do</h2>
+  <p>
+    This series focuses on the AI engineer path: the prompt layer, the retrieval layer, the agent
+    layer, orchestration across multiple models, memory, caching, and the production concerns
+    (cost, latency, observability) that separate a demo from a shipped product. Classical ML
+    training is out of scope here on purpose &mdash; it's a different, well-covered discipline with
+    its own track.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. What is the clearest distinguishing question between an AI engineer and an ML engineer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Who writes more Python code day to day?</button>
+        <button class="q-option" data-correct="true">Is the model itself the product, or a dependency used to build the product?</button>
+        <button class="q-option" data-correct="false">Who earns a higher salary on average?</button>
+      </div>
+      <div class="q-explain">Both roles write plenty of Python and salaries vary widely by company and region &mdash; the structural distinction is whether you're training the model (ML engineer) or composing an existing one into a product (AI engineer).</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. A team needs sub-100ms fraud predictions on their own proprietary transaction data. Which role does this call for?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">AI engineer &mdash; call a foundation model's API</button>
+        <button class="q-option" data-correct="true">ML engineer &mdash; train a custom model on proprietary data</button>
+        <button class="q-option" data-correct="false">Either works equally well</button>
+      </div>
+      <div class="q-explain">Proprietary data a foundation model has never seen, plus a strict latency SLA, is the textbook case for training a custom model &mdash; ML engineering territory.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. Why has the application layer overtaken model training as the primary source of AI jobs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Because foundation models stopped improving</button>
+        <button class="q-option" data-correct="true">Because most companies can now get a world-class model via API instead of training their own</button>
+        <button class="q-option" data-correct="false">Because ML engineering roles were eliminated</button>
+      </div>
+      <div class="q-explain">Foundation models didn't remove the need for ML engineers &mdash; they removed the need for <em>most companies</em> to train their own model, shifting demand toward engineers who can integrate and orchestrate existing ones.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: industry role-comparison analyses and job-market reports from 2026 (AYAutomate, Codebasics,
+    FutureProofing.dev, InterviewStack.io, 365 Data Science). Figures cited reflect publicly reported
+    2026 market data and are directional, not exact &mdash; job-market numbers vary by source and methodology.
+  </p>
+
+  <div class="pager">
+    <a href="../index.html">&larr; Phase overview</a>
+    <a href="1-2-how-llms-work.html">1.2 How LLMs actually work &rarr;</a>
+  </div>
+</main>
+
+<script>
+// Quiz interactivity
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => {
+        o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect");
+      });
+      explain.classList.add('show');
+    });
+  });
+});
+
+// Inline stack diagram (SVG, dark-theme matched to site palette)
+document.getElementById('fig-stack').innerHTML = `
+<svg viewBox="0 0 680 300" width="100%" role="img" aria-label="Diagram: AI engineer stack layers above foundation models, ML engineer works below">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    .sub { font-size: 11.5px; fill: #9aa4b5; }
+  </style>
+  <rect x="40" y="210" width="600" height="60" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="60" y="235" class="lbl">Foundation model</text>
+  <text x="60" y="253" class="sub">GPT-5, Claude, Gemini &mdash; trained by frontier labs</text>
+
+  <rect x="40" y="130" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1"/>
+  <text x="60" y="155" class="lbl">AI engineer layer</text>
+  <text x="60" y="173" class="sub">Prompts &middot; retrieval (RAG) &middot; agents &middot; orchestration &middot; evals</text>
+
+  <rect x="40" y="50" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1"/>
+  <text x="60" y="75" class="lbl">Product</text>
+  <text x="60" y="93" class="sub">The feature a user actually touches</text>
+
+  <line x1="340" y1="110" x2="340" y2="128" stroke="#6b7386" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <line x1="340" y1="190" x2="340" y2="208" stroke="#6b7386" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/>
+    </marker>
+  </defs>
+</svg>
+<div class="figure-caption">The AI engineer builds and operates the middle layer &mdash; on top of a foundation model, underneath the product surface.</div>
+`;
+</script>
+
+</body>
+</html>

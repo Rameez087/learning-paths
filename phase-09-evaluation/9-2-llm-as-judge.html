@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2 LLM-as-judge | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.judge-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.judge-case { padding: 12px 14px; background: var(--surface-2); border-radius: 8px; margin-bottom: 10px; font-size: 13px; }
+.judge-verdict-btn { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 6px; }
+.judge-verdict-btn.correct-choice { border-color: var(--success); background: rgba(62,207,142,0.15); }
+.judge-verdict-btn.wrong-choice { border-color: #e5484d; background: rgba(229,72,77,0.15); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Evaluation</div>
+  <h1>9.2 LLM-as-judge</h1>
+  <p class="subtitle">Using an LLM to grade an LLM — genuinely useful, and genuinely easy to get wrong if it isn't calibrated first.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    LLM-as-a-judge uses a model to score, classify, or compare outputs against a reference or
+    rubric — the practical alternative when a task is too open-ended for deterministic checks
+    (9.1) but still needs to be evaluated at scale, faster and cheaper than pure human review. The
+    step teams skip, and shouldn't: <strong>calibrate the judge against real human verdicts before
+    trusting its scores</strong> — grade a sample of cases by hand, compare the judge's verdicts
+    against those, and only rely on the automated judge once it agrees with human judgment closely
+    enough on a held-out sample.
+  </div>
+
+  <h2>Try it: would you trust this judge?</h2>
+  <p>A judge prompt was calibrated against 5 human-graded cases. Guess whether the judge agreed with the human verdict before revealing the answer.</p>
+
+  <div class="judge-box" id="judge-cases"></div>
+  <div class="judge-box" id="judge-summary" style="display:none;"></div>
+
+  <h2>What a judge prompt actually looks like</h2>
+  <pre><code>Compare the generated RESPONSE to the REFERENCE answer.
+Evaluate whether the generated response correctly conveys the
+same meaning, even if the wording differs.
+
+REFERENCE: {reference_answer}
+RESPONSE: {generated_response}
+
+Return one of: "Correct" or "Incorrect"</code></pre>
+  <p>
+    This is an offline evaluation — the judge compares against a known-good reference, most useful
+    during active development (iterating on system design) and for regression testing after a
+    model or prompt change. It's a direct alternative to older deterministic text-overlap metrics
+    like ROUGE, which only measure word/phrase overlap and can score a correct paraphrase as wrong
+    simply because the wording differs from the reference.
+  </p>
+
+  <h2>Judges for things that don't have a single "correct" reference</h2>
+  <p>
+    Not every eval has a golden reference answer to compare against — production traffic usually
+    doesn't come with labeled expected outputs at all. For these <strong>reference-free</strong>
+    cases, a judge evaluates a quality dimension directly against a rubric: is this response
+    faithful to the retrieved context (6.4)? Did the agent complete its assigned task? Did it use
+    the right tool with the right arguments? These reference-free judge metrics are what make
+    ongoing production monitoring possible, not just pre-deployment testing.
+  </p>
+
+  <h2>Why calibration is the step that can't be skipped</h2>
+  <p>
+    An uncalibrated judge is a plausible-sounding number with unknown reliability — it might
+    systematically favor longer answers, or miss subtle factual errors a domain expert would catch
+    immediately. The recommended process: grade a set of real cases by hand yourself (or with a
+    domain expert), run the judge prompt against the same cases, and only trust the judge's scores
+    at production scale once its verdicts closely track the human-graded verdicts on that
+    held-out sample. A judge that hasn't been checked against real human judgment is a plausible
+    number, not a validated metric.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is LLM-as-a-judge often preferred over strict text-overlap metrics like ROUGE?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A judge can recognize a correct answer phrased differently from the reference, while overlap metrics can penalize valid paraphrases</button>
+        <button class="q-option" data-correct="false">ROUGE cannot be computed for any language other than English</button>
+        <button class="q-option" data-correct="false">LLM judges are always faster to run than ROUGE</button>
+      </div>
+      <div class="q-explain">ROUGE-style metrics measure surface word/phrase overlap, which penalizes a correct answer that happens to use different wording than the reference — a judge can evaluate meaning rather than surface form.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do many production evaluations need reference-free judge metrics rather than reference-based ones?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Production traffic usually doesn't come with a labeled expected output to compare against</button>
+        <button class="q-option" data-correct="false">Reference-free metrics are always more accurate than reference-based ones</button>
+        <button class="q-option" data-correct="false">Reference-based metrics are illegal to use in production</button>
+      </div>
+      <div class="q-explain">Reference-based judging works well during development against a known-good answer set, but live production requests generally arrive with no golden answer attached — reference-free rubric-based judging is what makes ongoing monitoring possible.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why must a judge be calibrated against human verdicts before being trusted at scale?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An uncalibrated judge is a plausible-sounding score of unknown reliability, which could systematically favor certain answer styles or miss real errors</button>
+        <button class="q-option" data-correct="false">Calibration is a purely optional, cosmetic step</button>
+        <button class="q-option" data-correct="false">Judges are always perfectly accurate without any calibration needed</button>
+      </div>
+      <div class="q-explain">Without checking judge verdicts against real human grading on a held-out sample, there's no evidence the judge's scores actually track quality the way a person would judge it — calibration is what turns a plausible number into a validated metric.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Evidently AI, "LLM-as-a-judge: a complete guide" (2026); DeepEval "LLM-as-a-Judge in 2026" guide; Galtea "The complete guide for LLM evaluations in 2026".</p>
+
+  <div class="pager">
+    <a href="9-1-golden-datasets.html">&larr; 9.1 Golden datasets</a>
+    <a href="9-3-offline-vs-online-evals.html">9.3 Offline vs. online evals &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CASES = [
+  { ref: "The capital of Australia is Canberra.", resp: "Canberra is Australia's capital city.", human: "Correct", judge: "Correct" },
+  { ref: "Refunds take 5-7 business days.", resp: "Refunds are processed quickly, usually within a week or so.", human: "Correct", judge: "Correct" },
+  { ref: "The function returns null if the list is empty.", resp: "The function returns an empty string if the list is empty.", human: "Incorrect", judge: "Incorrect" },
+  { ref: "Our office is closed on public holidays.", resp: "We're open every day of the year, no exceptions.", human: "Incorrect", judge: "Correct" },
+  { ref: "The meeting is at 3pm Tuesday.", resp: "The meeting is scheduled for 3:00 PM on Tuesday.", human: "Correct", judge: "Correct" },
+];
+document.getElementById('judge-cases').innerHTML = CASES.map((c,i) => `
+  <div class="judge-case">
+    <div><strong>Reference:</strong> ${c.ref}</div>
+    <div><strong>Response:</strong> ${c.resp}</div>
+    <div style="margin-top:8px;">
+      <button class="judge-verdict-btn" data-i="${i}" data-guess="agree">Judge will agree with human</button>
+      <button class="judge-verdict-btn" data-i="${i}" data-guess="disagree">Judge will disagree</button>
+    </div>
+    <div class="judge-outcome" id="outcome-${i}" style="font-size:12px; margin-top:6px; display:none;"></div>
+  </div>
+`).join('');
+
+document.querySelectorAll('.judge-verdict-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const i = btn.dataset.i;
+    const group = document.querySelectorAll(`[data-i="${i}"]`);
+    if (group[0].dataset.answered) return;
+    group.forEach(b => b.dataset.answered = "true");
+    const c = CASES[i];
+    const actuallyAgrees = c.human === c.judge;
+    const guessedCorrectly = (btn.dataset.guess === 'agree') === actuallyAgrees;
+    group.forEach(b => {
+      if ((b.dataset.guess === 'agree') === actuallyAgrees) b.classList.add('correct-choice');
+      else if (b === btn) b.classList.add('wrong-choice');
+    });
+    const outcome = document.getElementById(`outcome-${i}`);
+    outcome.style.display = 'block';
+    outcome.textContent = `Human: ${c.human} · Judge: ${c.judge} — ${actuallyAgrees ? 'they agreed' : 'they DISAGREED — this is exactly the kind of miss calibration is meant to catch'}`;
+    checkAllAnswered();
+  });
+});
+
+function checkAllAnswered() {
+  const allDone = [...document.querySelectorAll('.judge-case')].every((_, i) => {
+    const g = document.querySelectorAll(`[data-i="${i}"]`);
+    return g[0] && g[0].dataset.answered;
+  });
+  if (allDone) {
+    const agreements = CASES.filter(c => c.human === c.judge).length;
+    document.getElementById('judge-summary').style.display = 'block';
+    document.getElementById('judge-summary').innerHTML = `<strong>Calibration result: ${agreements}/${CASES.length} agreement (${Math.round(agreements/CASES.length*100)}%).</strong> Real calibration runs happen on far more than 5 cases, but the principle is the same: measure agreement before trusting the judge, and dig into the disagreements — they often reveal a systematic bias in the judge prompt.`;
+  }
+}
+</script>
+</body>
+</html>

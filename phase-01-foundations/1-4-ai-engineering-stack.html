@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.4 The AI engineering stack | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.4</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.4 The AI engineering stack</h1>
+  <p class="subtitle">Where APIs, retrieval, agents, and evaluation each sit &mdash; and why this order matters.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The AI engineering stack has four layers, bottom to top: <strong>the foundation model</strong>
+    (you don't build this), <strong>the prompt/API layer</strong> (how you talk to it),
+    <strong>the retrieval &amp; agent layer</strong> (how you give it knowledge and let it act),
+    and <strong>the evaluation &amp; ops layer</strong> (how you know it's actually working).
+    Nearly every phase after this one in this track is a deep dive into one of the middle two
+    layers.
+  </div>
+
+  <h2>Layer 1: the foundation model</h2>
+  <p>
+    This is GPT, Claude, Gemini, Llama, or similar &mdash; trained by a small number of labs at
+    enormous cost. As an AI engineer, this layer is a dependency you consume via API, not
+    something you build. It's worth remembering because it reframes what "AI engineering" even
+    means: you're not competing on who has the smartest model, you're competing on how well you
+    wire an already-smart model into a system that's reliable, fast, and cheap enough to ship.
+  </p>
+
+  <div class="figure" id="fig-stack"></div>
+
+  <h2>Layer 2: prompt &amp; API</h2>
+  <p>
+    This is the interface layer &mdash; system prompts, few-shot examples, structured output
+    schemas, prompt versioning (covered in 1.3), plus the mechanics of actually calling a model:
+    SDKs, streaming responses token-by-token instead of waiting for the full answer, function
+    calling / tool use (letting the model request that your code run something), and async
+    patterns for handling many concurrent requests without blocking. We'll build this layer
+    hands-on in Phase 4.
+  </p>
+
+  <h2>Layer 3: retrieval &amp; agents</h2>
+  <p>
+    A foundation model only knows what was in its training data, frozen at some cutoff date, plus
+    whatever you put directly in the prompt. This layer is how you get around that:
+  </p>
+  <ul>
+    <li><strong>Retrieval-Augmented Generation (RAG)</strong> &mdash; chunking your own documents, converting them to embeddings, storing them in a vector database, and retrieving the most relevant pieces to insert into the prompt at query time. This is reportedly the single most common pattern in real enterprise AI deployments &mdash; most production AI systems are RAG systems, not agents doing open-ended reasoning. Full treatment in Phase 6.</li>
+    <li><strong>Agents</strong> &mdash; giving the model tools (functions, APIs, database queries) it can choose to call, and looping: reason about what to do, call a tool, observe the result, decide the next step. This is the ReAct (Reason + Act) pattern. Full treatment in Phase 8.</li>
+    <li><strong>Multi-LLM orchestration</strong> &mdash; routing different requests to different models based on task type, cost, or latency needs, rather than sending everything to one model. Full treatment in Phase 7.</li>
+  </ul>
+
+  <h2>Layer 4: evaluation &amp; operations</h2>
+  <p>
+    This is the layer most learning resources skip, and multiple 2026 industry sources single it
+    out as the most underrated skill in the field: nearly every senior AI engineering role now
+    expects experience designing evaluation pipelines, building golden datasets, and setting up
+    LLM-as-a-judge workflows &mdash; before any fine-tuning work even starts. The reasoning is
+    blunt: teams that can't measure whether their model's output is actually good cannot ship it
+    safely, no matter how clever the prompt or how sophisticated the agent.
+  </p>
+  <p>
+    This layer also covers what happens after you ship: monitoring for model drift, cost tracking
+    per request, latency budgets, and caching. Full treatment in Phases 9 and 11.
+  </p>
+
+  <h2>Why this order</h2>
+  <p>
+    It's tempting to jump straight to agents because they're the most exciting layer &mdash; but
+    an agent built on unreliable prompts, with no retrieval grounding, and no way to evaluate
+    whether it's working, tends to demo well and fail in production. This track follows the stack
+    bottom-up on purpose: solid prompting and API mechanics first, then retrieval, then
+    orchestration and agents, with evaluation threaded through from Phase 9 onward rather than
+    bolted on at the end.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. Which layer of the stack does an AI engineer typically NOT build from scratch?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The foundation model</button>
+        <button class="q-option" data-correct="false">The retrieval / RAG layer</button>
+        <button class="q-option" data-correct="false">The evaluation layer</button>
+      </div>
+      <div class="q-explain">Foundation models are trained by a small number of labs at enormous cost. AI engineers consume them via API and build the layers on top &mdash; prompts, retrieval, agents, and evaluation.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. According to multiple 2026 industry sources, what is the most underrated skill in AI engineering?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Fine-tuning with LoRA</button>
+        <button class="q-option" data-correct="true">Evaluation &mdash; golden datasets and LLM-as-a-judge pipelines</button>
+        <button class="q-option" data-correct="false">Writing longer, more detailed prompts</button>
+      </div>
+      <div class="q-explain">Nearly every senior AI engineering role now expects evaluation experience before any fine-tuning work &mdash; teams that can't measure output quality can't safely ship, regardless of how sophisticated the rest of the system is.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. What is RAG used for?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Making the model generate faster</button>
+        <button class="q-option" data-correct="true">Grounding the model's answers in your own documents beyond its training data</button>
+        <button class="q-option" data-correct="false">Reducing the number of tokens in a prompt</button>
+      </div>
+      <div class="q-explain">RAG retrieves relevant chunks from your own document store and inserts them into the prompt, letting the model answer using information it was never trained on &mdash; it's reportedly the most common pattern in real enterprise AI deployments.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: dataskew.io AI engineering roadmap (citing Chip Huyen's <em>AI Engineering</em> and
+    Stanford CS336); technovids.com AI engineering skills breakdown; MockExperts 2026 AI engineer
+    interview roadmap.
+  </p>
+
+  <div class="pager">
+    <a href="1-3-prompting-as-engineering.html">&larr; 1.3 Prompting as an engineering skill</a>
+    <a href="1-5-first-llm-call.html">1.5 Your first LLM call &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+document.getElementById('fig-stack').innerHTML = `
+<svg viewBox="0 0 680 340" width="100%" role="img" aria-label="Diagram: four layer AI engineering stack from foundation model to evaluation and ops">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 14px; font-weight: 600; }
+    .sub { font-size: 11.5px; fill: #9aa4b5; }
+  </style>
+  <rect x="40" y="260" width="600" height="60" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="60" y="285" class="lbl">Foundation model</text>
+  <text x="60" y="303" class="sub">GPT, Claude, Gemini &mdash; consumed via API, not built</text>
+
+  <rect x="40" y="190" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="60" y="215" class="lbl">Prompt &amp; API layer</text>
+  <text x="60" y="233" class="sub">System prompts &middot; streaming &middot; tool calling &middot; async &middot; Phase 3&ndash;4</text>
+
+  <rect x="40" y="120" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="60" y="145" class="lbl">Retrieval &amp; agent layer</text>
+  <text x="60" y="163" class="sub">RAG &middot; multi-LLM orchestration &middot; agents &middot; Phase 5&ndash;8</text>
+
+  <rect x="40" y="50" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="60" y="75" class="lbl">Evaluation &amp; ops layer</text>
+  <text x="60" y="93" class="sub">Golden datasets &middot; LLM-as-judge &middot; monitoring &middot; Phase 9&ndash;11</text>
+
+  <line x1="340" y1="120" x2="340" y2="108" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a2)"/>
+  <line x1="340" y1="190" x2="340" y2="178" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a2)"/>
+  <line x1="340" y1="260" x2="340" y2="248" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a2)"/>
+  <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+
+</body>
+</html>

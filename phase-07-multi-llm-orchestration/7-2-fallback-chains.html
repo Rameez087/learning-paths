@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.2 Fallback chains | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fb-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fb-chain { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.fb-node { flex: 1; min-width: 130px; padding: 14px; border-radius: 8px; text-align: center; background: var(--surface-2); border: 1px solid var(--border-strong); transition: all 0.3s; }
+.fb-node.down { border-color: #e5484d; background: rgba(229,72,77,0.1); opacity: 0.6; }
+.fb-node.active { border-color: var(--success); background: rgba(62,207,142,0.1); }
+.fb-node .name { font-weight: 700; font-size: 13px; }
+.fb-node .status { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.fb-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Multi-LLM orchestration</div>
+  <h1>7.2 Fallback chains</h1>
+  <p class="subtitle">If your app depends on a single LLM provider, you already have a fallback strategy: sit there and wait.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Every LLM provider has outages — reported figures for early 2026 include over a hundred
+    incidents in a 90-day window for one major provider, and even a provider advertising 99.76%
+    uptime still works out to roughly 16 hours of downtime a year. A fallback chain automatically
+    switches to a backup model when the primary fails, times out, or hits a rate limit. The subtle
+    but important detail: chain order should usually be set by cost, not just availability — if
+    your fallback jumps straight to a 3x-more-expensive model, an outage silently triples your
+    costs on top of already being disruptive.
+  </div>
+
+  <h2>Try it: simulate an outage and watch the fallback chain react</h2>
+  <div class="fb-box">
+    <div class="fb-chain" id="fb-chain"></div>
+    <button class="fb-btn" id="fb-simulate">Simulate: primary provider goes down</button>
+  </div>
+
+  <h2>The three components of a resilient setup</h2>
+  <ul>
+    <li><strong>The router</strong> — decides which model handles a request under normal conditions (7.1).</li>
+    <li><strong>The gateway</strong> — a single entry point that handles authentication for every provider behind it, so your application code doesn't need separate integration logic per provider.</li>
+    <li><strong>The fallback logic</strong> — automatically tries the next provider in the chain when the current one fails, ideally transparent to the end user.</li>
+  </ul>
+
+  <h2>Order by cost, not just by availability</h2>
+  <p>
+    A concrete illustrative case: if a cheap model costs roughly a tenth of your mid-tier model,
+    and your fallback chain jumps straight from mid-tier to a model costing 3x the mid-tier price,
+    then every minute of the primary provider's outage costs meaningfully more than normal
+    operation — on top of the outage itself already being disruptive. The fix is explicit:
+    structure the fallback chain so cost increases gradually as you move down it, rather than
+    jumping straight to whatever "the best other option" happens to be.
+  </p>
+
+  <h2>Silent degradation is worse than an explicit failure</h2>
+  <p>
+    A specific production caution: when the preferred model for a task class is unavailable, the
+    fallback needs to be an explicit, logged decision — not a silent substitution that quietly
+    routes a task-specialized request to a mismatched model with different behavior. An explicit
+    failure that surfaces in monitoring is easier to catch and fix than a silent quality regression
+    nobody notices until users start complaining.
+  </p>
+
+  <h2>What to actually build</h2>
+  <pre><code>async def call_with_fallback(prompt, chain=["claude-sonnet", "gpt-4o", "claude-haiku"]):
+    for model in chain:
+        try:
+            return await call_model(model, prompt, timeout=10)
+        except (RateLimitError, TimeoutError, ServiceUnavailableError) as e:
+            log_fallback_event(model, error=e)  # explicit, not silent
+            continue
+    raise AllProvidersFailedError()</code></pre>
+  <p>
+    Note the explicit exception types caught and the explicit logging call — this is the
+    difference between a fallback system you can debug at 2am and one that silently degrades
+    without anyone noticing until a customer complains.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should a fallback chain be ordered by cost rather than purely by preference or availability?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A fallback jumping straight to a much more expensive model can silently multiply costs during every outage, on top of the disruption itself</button>
+        <button class="q-option" data-correct="false">Cost has no bearing on fallback chain design</button>
+        <button class="q-option" data-correct="false">Cheaper models are always more reliable during outages</button>
+      </div>
+      <div class="q-explain">An outage is already disruptive — a poorly-ordered fallback chain compounds that by also spiking costs, which is avoidable by structuring the chain so cost increases gradually rather than jumping to the priciest available option.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is silent degradation to a mismatched model considered worse than an explicit failure?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A silent substitution can go unnoticed and produce a quiet quality regression, while an explicit failure surfaces in monitoring where it can be caught and fixed</button>
+        <button class="q-option" data-correct="false">Explicit failures always crash the entire application</button>
+        <button class="q-option" data-correct="false">Silent degradation is always preferable for user experience</button>
+      </div>
+      <div class="q-explain">Visibility matters — an explicit, logged fallback event gives engineers a chance to notice and respond, while a silent substitution can persist undetected until it shows up as a user complaint.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What role does "the gateway" play in a multi-provider setup?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A single entry point handling authentication across all providers, so application code doesn't need separate integration logic per provider</button>
+        <button class="q-option" data-correct="false">It decides which model handles each request based on task type</button>
+        <button class="q-option" data-correct="false">It generates the actual LLM responses itself</button>
+      </div>
+      <div class="q-explain">The gateway is an infrastructure layer distinct from the router — it's about unified access and credential management across providers, not about the model-selection logic itself.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: BuildMVPFast "LLM Fallback Strategies" (2026), citing reported Anthropic/OpenAI incident data; Mindra "Beyond the Monolith" (2026); DEV Community multi-provider orchestration guide (2026).</p>
+
+  <div class="pager">
+    <a href="7-1-routing-strategies.html">&larr; 7.1 Routing strategies</a>
+    <a href="7-3-orchestration-frameworks.html">7.3 Orchestration frameworks &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CHAIN = [
+  { name: "Claude Sonnet", role: "Primary" },
+  { name: "GPT-4o", role: "Fallback 1" },
+  { name: "Claude Haiku", role: "Fallback 2" },
+];
+let simulating = false;
+function renderChain(downIdx, activeIdx) {
+  document.getElementById('fb-chain').innerHTML = CHAIN.map((c,i) => `
+    <div class="fb-node ${i===downIdx?'down':''} ${i===activeIdx?'active':''}">
+      <div class="name">${c.name}</div>
+      <div class="status">${c.role}${i===downIdx?' — DOWN':i===activeIdx?' — handling request':''}</div>
+    </div>
+  `).join('');
+}
+renderChain(-1, 0);
+document.getElementById('fb-simulate').addEventListener('click', () => {
+  if (simulating) return;
+  simulating = true;
+  renderChain(0, -1);
+  setTimeout(() => {
+    renderChain(0, 1);
+    simulating = false;
+  }, 900);
+});
+</script>
+</body>
+</html>

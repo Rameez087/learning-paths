@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.3 Chunking strategies | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.chk-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.chk-doc { background: var(--code-bg); border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.7; margin-bottom: 16px; }
+.chk-span { padding: 1px 2px; border-radius: 3px; }
+.chk-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.chk-slider-row input[type=range] { flex: 1; }
+.chk-stats { display:flex; gap:16px; margin-top: 12px; }
+.chk-stats .m { background: var(--surface-2); border-radius: 8px; padding: 10px 16px; text-align:center; }
+.chk-stats .n { font-size: 18px; font-weight: 700; }
+.chk-stats .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Embeddings &amp; vector search</div>
+  <h1>5.3 Chunking strategies</h1>
+  <p class="subtitle">Where you cut a document decides what a query can and can't find.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A document has to be split into smaller pieces before embedding — you can't usefully embed an
+    entire book as one vector. Chunks that are too small lose surrounding context; chunks too
+    large dilute the specific point a query is looking for inside irrelevant surrounding text.
+    <strong>Overlap</strong> between consecutive chunks prevents a fact from being awkwardly split
+    across a chunk boundary. There's no universal "correct" chunk size — it's an empirical
+    parameter tuned against real retrieval quality on your own documents and queries.
+  </div>
+
+  <h2>Try it: watch chunk size change what gets grouped together</h2>
+  <div class="chk-box">
+    <div class="chk-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:100px;">Chunk size</label>
+      <input type="range" id="chk-slider" min="1" max="4" value="2">
+      <span id="chk-readout" style="font-weight:700; min-width:70px; text-align:right;">~150 chars</span>
+    </div>
+    <div class="chk-doc" id="chk-doc"></div>
+    <div class="chk-stats" id="chk-stats"></div>
+  </div>
+
+  <h2>Fixed-size vs. semantic chunking</h2>
+  <ul>
+    <li><strong>Fixed-size (with overlap)</strong> — split every N characters or tokens, with a small overlapping window between consecutive chunks (e.g. 500 tokens per chunk, 50 tokens of overlap). Simple, deterministic, and the same document always splits the same way — useful when you need reproducibility as you iterate on other parts of the pipeline.</li>
+    <li><strong>Semantic chunking</strong> — split at natural boundaries (paragraph breaks, section headings, sentence groups that discuss one coherent idea) rather than a fixed character count. This tends to keep a complete thought inside one chunk rather than slicing it arbitrarily in the middle, at the cost of variable chunk sizes and more preprocessing complexity.</li>
+  </ul>
+
+  <h2>Always carry metadata alongside the chunk</h2>
+  <p>
+    Production RAG systems store more than raw chunk text — source document, section heading, page
+    number, and a parent-chunk ID are standard alongside the embedding itself. This metadata
+    enables citation (showing the user exactly where an answer came from), filtering (searching
+    only within a specific document set), and hierarchical retrieval (finding a small precise
+    chunk, then pulling in its parent section for broader context if needed).
+  </p>
+
+  <h2>Why "naive" chunking fails so often in practice</h2>
+  <p>
+    Industry reporting on production RAG deployments cites naive pipelines failing at retrieval a
+    substantial fraction of the time — a large share of that failure traces back to chunking
+    decisions made without testing: chunks too small to carry meaning on their own, chunks that
+    split a fact and its qualifying context across a boundary, or no overlap at all so a sentence
+    that spans two chunks becomes unretrievable in its complete form by either.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What problem does overlap between consecutive chunks solve?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It prevents a fact or sentence from being awkwardly split across a hard chunk boundary</button>
+        <button class="q-option" data-correct="false">It reduces the total number of chunks needed</button>
+        <button class="q-option" data-correct="false">It makes embedding generation faster</button>
+      </div>
+      <div class="q-explain">Without overlap, a sentence spanning a chunk boundary can end up split between two chunks, with neither one containing the complete thought — overlap gives that content a chance to appear intact in at least one chunk.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What is the main trade-off of semantic chunking versus fixed-size chunking?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Better preservation of complete ideas, at the cost of variable chunk sizes and more preprocessing complexity</button>
+        <button class="q-option" data-correct="false">Semantic chunking is always faster to compute</button>
+        <button class="q-option" data-correct="false">Semantic chunking eliminates the need for embeddings entirely</button>
+      </div>
+      <div class="q-explain">Semantic chunking respects natural content boundaries rather than a fixed character count, which better preserves coherent ideas but requires more sophisticated splitting logic and produces less predictable chunk sizes.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why store metadata (source, section, page, parent ID) alongside each chunk's embedding?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It enables citation, filtering to specific document sets, and hierarchical retrieval of broader context</button>
+        <button class="q-option" data-correct="false">Metadata is required by the embedding model to function</button>
+        <button class="q-option" data-correct="false">It reduces the size of the embedding vector</button>
+      </div>
+      <div class="q-explain">The embedding alone only supports similarity search — metadata is what lets a production system show the user where an answer came from, restrict search scope, and pull in surrounding context when a chunk alone isn't enough.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Lushbinary RAG production guide (2026); Oracle AI Vector Search chunking documentation (DBMS_VECTOR_CHAIN); ancoleman vector database design patterns skill reference.</p>
+
+  <div class="pager">
+    <a href="5-2-vector-index-internals.html">&larr; 5.2 Vector index internals: HNSW vs IVF</a>
+    <a href="5-4-hybrid-search.html">5.4 Hybrid search &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DOC = "Retrieval-augmented generation grounds a language model's answers in external documents. The system first splits source documents into chunks, then embeds each chunk into a vector. At query time, the user's question is embedded the same way, and the chunks with the highest cosine similarity are retrieved and inserted into the prompt. This lets the model answer using information it was never trained on, without any fine-tuning required.";
+const SIZES = [40, 80, 150, 300];
+const COLORS = ["#5b8cff","#3ecf8e","#f2b84b","#e24b4a","#7f77dd"];
+
+function renderChunks() {
+  const sizeIdx = document.getElementById('chk-slider').value;
+  const size = SIZES[sizeIdx];
+  document.getElementById('chk-readout').textContent = '~' + size + ' chars';
+  const chunks = [];
+  for (let i = 0; i < DOC.length; i += size) chunks.push(DOC.slice(i, i + size));
+  document.getElementById('chk-doc').innerHTML = chunks.map((c,i) =>
+    `<span class="chk-span" style="background:${COLORS[i % COLORS.length]}22; border-bottom:2px solid ${COLORS[i % COLORS.length]};">${c}</span>`
+  ).join('');
+  document.getElementById('chk-stats').innerHTML = `
+    <div class="m"><div class="n">${chunks.length}</div><div class="l">total chunks</div></div>
+    <div class="m"><div class="n">${size}</div><div class="l">chars per chunk</div></div>
+  `;
+}
+document.getElementById('chk-slider').addEventListener('input', renderChunks);
+renderChunks();
+</script>
+</body>
+</html>

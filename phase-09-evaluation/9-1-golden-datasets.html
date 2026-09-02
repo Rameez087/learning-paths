@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.1 Golden datasets | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.gd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.gd-source { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.gd-source input[type=range] { flex: 1; }
+.gd-source .label { min-width: 140px; font-size: 13px; }
+.gd-source .val { min-width: 30px; text-align: right; font-weight: 700; font-size: 13px; }
+.gd-total { margin-top: 16px; padding: 14px; background: var(--code-bg); border-radius: 8px; text-align: center; font-size: 16px; font-weight: 700; }
+.gd-warning { font-size: 12px; color: var(--warning); margin-top: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Evaluation</div>
+  <h1>9.1 Golden datasets</h1>
+  <p class="subtitle">The foundation everything else in this phase is built on — and the one thing you cannot skip.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A golden dataset is a curated set of representative inputs with known-good expected outputs
+    (or expert-graded verdicts), used to measure whether your system actually works — as opposed
+    to public leaderboards (MMLU, HumanEval, GSM8K), which measure base model capability in
+    isolation and say very little once you add retrieval, tools, a system prompt, and your actual
+    workflow on top. Practical 2026 guidance is specific: start with roughly 50 real failure cases,
+    have a domain expert grade them pass/fail with written critiques, and build outward from there
+    — not a sprawling 500-example dataset assembled before you've shipped anything to evaluate.
+  </div>
+
+  <h2>Try it: build a realistic dataset composition</h2>
+  <div class="gd-box">
+    <div class="gd-source">
+      <div class="label">Real production failures</div>
+      <input type="range" id="gd-failures" min="0" max="100" value="60">
+      <div class="val" id="gd-failures-val">60%</div>
+    </div>
+    <div class="gd-source">
+      <div class="label">Curated edge cases</div>
+      <input type="range" id="gd-edge" min="0" max="100" value="25">
+      <div class="val" id="gd-edge-val">25%</div>
+    </div>
+    <div class="gd-source">
+      <div class="label">Synthetic / generic examples</div>
+      <input type="range" id="gd-synthetic" min="0" max="100" value="15">
+      <div class="val" id="gd-synthetic-val">15%</div>
+    </div>
+    <div class="gd-total" id="gd-total"></div>
+    <div class="gd-warning" id="gd-warning"></div>
+  </div>
+
+  <h2>Why leaderboard benchmarks aren't your evaluation</h2>
+  <p>
+    Public benchmarks were designed to compare base models against each other under controlled
+    conditions — they help narrow a model shortlist. But the same model can score differently on
+    the identical benchmark depending on evaluation protocol details like zero-shot versus few-shot
+    testing, and none of these benchmarks account for what actually determines your system's real
+    behavior: your retrieval layer, your tool definitions, your system prompt, and the specific
+    workflow your users actually run. A model topping a leaderboard is not the same claim as "this
+    system works for my use case."
+  </p>
+
+  <h2>Where real examples should come from</h2>
+  <ul>
+    <li><strong>Production logs</strong> — representative sessions pulled across user segments and difficulty levels, with privacy filters applied before anything is stored (this connects to the sensitive-data handling covered throughout Phase 3.4's security material).</li>
+    <li><strong>Real failures, prioritized first</strong> — every meaningful production failure should become a future regression test case. This is more valuable early on than a large volume of examples the system already handles correctly.</li>
+    <li><strong>Adversarial / red-team cases</strong> — deliberately constructed edge cases and known attack patterns (prompt injection variants from 3.4, malformed inputs), specifically for pre-release testing before a new model version or major prompt change ships.</li>
+  </ul>
+
+  <h2>Three types of checks belong in the dataset, at different costs</h2>
+  <ul>
+    <li><strong>Deterministic / sanity checks</strong> — does the JSON parse? Does the classifier return one of the four expected labels? These run in milliseconds and catch obvious breakage before anything reaches a slower, more expensive judge.</li>
+    <li><strong>Statistical checks</strong> — regex matching, keyword presence, simple heuristics.</li>
+    <li><strong>LLM-as-a-judge</strong> — for genuinely open-ended quality questions a deterministic check can't capture (covered fully in 9.2), and the most expensive of the three per example.</li>
+  </ul>
+  <p>
+    A specifically flagged mistake: teams that skip the cheap deterministic layer and route
+    everything straight to an LLM judge end up with slow, expensive pipelines doing work a 5ms
+    check could have filtered out first.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why doesn't a strong score on a public benchmark like MMLU guarantee your specific application works well?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Public benchmarks measure base model capability in isolation, not behavior with your retrieval layer, tools, system prompt, and actual workflow</button>
+        <button class="q-option" data-correct="false">Public benchmarks are always inaccurate regardless of context</button>
+        <button class="q-option" data-correct="false">MMLU only tests coding ability</button>
+      </div>
+      <div class="q-explain">Everything your production system adds on top of the base model — RAG, tools, prompts, user-specific context — is exactly what a general leaderboard score doesn't account for.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the practical recommendation for starting a golden dataset from scratch?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Start with around 50 real failure cases, graded pass/fail by a domain expert with written critiques, and build outward</button>
+        <button class="q-option" data-correct="false">Generate 500+ synthetic examples covering every conceivable scenario before writing any real evaluation code</button>
+        <button class="q-option" data-correct="false">Skip dataset construction and rely entirely on public benchmarks</button>
+      </div>
+      <div class="q-explain">2026 practitioner guidance specifically warns against sprawling upfront dataset construction — starting small with real, graded failures and expanding based on what you actually learn ships faster and stays more relevant.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why check deterministic/sanity conditions before routing an output to an LLM judge?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Deterministic checks run in milliseconds and catch obvious breakage cheaply, before spending judge-level compute on outputs that were already clearly broken</button>
+        <button class="q-option" data-correct="false">LLM judges cannot evaluate JSON-formatted output at all</button>
+        <button class="q-option" data-correct="false">Deterministic checks are more accurate than LLM judges in every case</button>
+      </div>
+      <div class="q-explain">This is a cost and speed optimization, not an accuracy claim — obvious failures (malformed JSON, wrong label set) don't need an expensive judge call to catch, so filtering them out first keeps the pipeline fast and cheap.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Galtea "The complete guide for LLM evaluations in 2026"; GetMaxim.ai "Building a Golden Dataset for AI Evaluation" (2026); LangChain "LLM Evaluation Benchmarks: What They Measure & Miss" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-08-ai-agents/8-4-agent-memory-systems.html">&larr; 8.4 Agent memory systems</a>
+    <a href="9-2-llm-as-judge.html">9.2 LLM-as-judge &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderGd() {
+  const f = parseInt(document.getElementById('gd-failures').value, 10);
+  const e = parseInt(document.getElementById('gd-edge').value, 10);
+  const s = parseInt(document.getElementById('gd-synthetic').value, 10);
+  document.getElementById('gd-failures-val').textContent = f + '%';
+  document.getElementById('gd-edge-val').textContent = e + '%';
+  document.getElementById('gd-synthetic-val').textContent = s + '%';
+  const total = f + e + s;
+  document.getElementById('gd-total').textContent = `Total: ${total}%` + (total !== 100 ? ' (adjust to sum to 100%)' : ' ✓');
+  const warning = document.getElementById('gd-warning');
+  if (s > 50) {
+    warning.textContent = '⚠ Over half synthetic — this dataset risks missing the real failure patterns that actually matter for your users.';
+  } else if (f < 20) {
+    warning.textContent = '⚠ Too few real production failures — these are the highest-value examples, since every one represents something that actually went wrong for a real user.';
+  } else {
+    warning.textContent = '';
+  }
+}
+['gd-failures','gd-edge','gd-synthetic'].forEach(id => document.getElementById(id).addEventListener('input', renderGd));
+renderGd();
+</script>
+</body>
+</html>

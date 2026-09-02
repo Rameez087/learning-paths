@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.1 RAG architecture end-to-end | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.rag-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.rag-stage { padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); transition: all 0.2s; }
+.rag-stage.active { background: var(--accent-bg); border-color: var(--accent); }
+.rag-stage .name { font-weight: 600; font-size: 14px; }
+.rag-detail { margin-top: 14px; padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · RAG systems</div>
+  <h1>6.1 RAG architecture end-to-end</h1>
+  <p class="subtitle">Every piece from Phase 5, assembled into one working pipeline.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Retrieval-Augmented Generation has two distinct phases: an <strong>offline indexing phase</strong>
+    (chunk documents, embed them, store in a vector index — done once, updated as documents change)
+    and an <strong>online query phase</strong> (embed the user's question, retrieve the most similar
+    chunks, insert them into the prompt, generate an answer — done on every request). Reported
+    industry data puts around 72% of surveyed enterprises now running RAG in production as of
+    early 2026, up sharply from mostly-pilot status a year prior — the reference architecture has
+    matured enough that planning time has compressed from 6-12 months down to 4-6 weeks.
+  </div>
+
+  <h2>Try it: click through each stage</h2>
+  <div class="rag-box">
+    <div id="rag-stages"></div>
+    <div class="rag-detail" id="rag-detail">Click a stage above to see what happens there.</div>
+  </div>
+
+  <h2>The full pipeline, concretely</h2>
+  <p>A production RAG system chains together nearly everything from Phases 4-5:</p>
+  <ul>
+    <li><strong>Document processing</strong> — parsing PDFs, DOCX, HTML into clean text (tools like Apache Tika or Unstructured.io handle this in production).</li>
+    <li><strong>Chunking (5.3)</strong> — splitting parsed text into retrievable pieces, with metadata (source, section, page) attached.</li>
+    <li><strong>Embedding (5.1)</strong> — converting each chunk into a vector using a dedicated embedding model.</li>
+    <li><strong>Indexing (5.2)</strong> — storing vectors in an ANN index (HNSW or IVF), often alongside a keyword index for hybrid search (5.4).</li>
+    <li><strong>Query-time retrieval</strong> — embedding the incoming question the same way, searching the index(es), optionally reranking (6.2) the results.</li>
+    <li><strong>Prompt assembly (Phase 3)</strong> — inserting the retrieved chunks into the prompt, typically with a system prompt instructing the model to answer only from the provided context.</li>
+    <li><strong>Generation</strong> — the LLM call itself (Phase 4), producing an answer grounded in the retrieved material.</li>
+  </ul>
+
+  <h2>Why this beats stuffing everything into context</h2>
+  <p>
+    Recall from 2.5: filling a huge context window costs disproportionately more (quadratic
+    attention cost) and suffers from the "lost in the middle" effect. RAG's entire value
+    proposition is retrieving <em>only</em> the handful of chunks actually relevant to a given
+    query — a few thousand well-chosen tokens usually outperforms a million loosely-related ones,
+    on both cost and answer quality.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the key difference between RAG's indexing phase and its query phase?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Indexing happens once (or when documents change); querying happens on every user request</button>
+        <button class="q-option" data-correct="false">They happen simultaneously on every request</button>
+        <button class="q-option" data-correct="false">Indexing only applies to images, querying only to text</button>
+      </div>
+      <div class="q-explain">Indexing is a batch, offline process that prepares the searchable index; querying is the real-time path that runs for every incoming question against that already-built index.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does RAG typically outperform simply pasting an entire document into a large context window?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Retrieving only the relevant chunks avoids the quadratic cost and "lost in the middle" problems of very long contexts</button>
+        <button class="q-option" data-correct="false">Large context windows cannot process document text at all</button>
+        <button class="q-option" data-correct="false">RAG always uses a larger, more capable model</button>
+      </div>
+      <div class="q-explain">This connects directly back to 2.4–2.5: attention cost scales quadratically, and models are measurably less reliable at using information buried deep in a very long context — targeted retrieval sidesteps both problems.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does the system prompt typically instruct the model to do in a RAG pipeline?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Answer only from the retrieved context provided, rather than from its own general training knowledge</button>
+        <button class="q-option" data-correct="false">Ignore the retrieved chunks entirely</button>
+        <button class="q-option" data-correct="false">Always generate the longest possible answer</button>
+      </div>
+      <div class="q-explain">Grounding the model's answer in only the retrieved material — rather than letting it freely draw on its general training knowledge — is central to why RAG reduces hallucination on domain-specific questions.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DEV Community 2026 RAG production benchmarks; jobsbyculture.com RAG architecture guide (2026); Lushbinary RAG production guide (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-05-embeddings-vector-search/5-4-hybrid-search.html">&larr; 5.4 Hybrid search</a>
+    <a href="6-2-reranking.html">6.2 Reranking &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const STAGES = [
+  { name: "1. Document processing", detail: "Raw PDFs, DOCX, HTML get parsed into clean plain text — this is where formatting noise, headers/footers, and encoding issues get cleaned up before anything else happens." },
+  { name: "2. Chunking", detail: "Clean text is split into retrievable pieces (5.3) with metadata attached — source, section heading, page number." },
+  { name: "3. Embedding + indexing", detail: "Each chunk becomes a vector (5.1) and gets stored in an ANN index (5.2), often alongside a keyword index for hybrid search (5.4). This whole stage runs offline, ahead of any user query." },
+  { name: "4. Query embedding", detail: "At request time, the user's question is embedded using the exact same embedding model used for the chunks — comparing vectors from two different models would be meaningless." },
+  { name: "5. Retrieval + reranking", detail: "The index returns the top candidate chunks by similarity; a reranker (6.2) often re-scores these candidates more precisely before the final selection." },
+  { name: "6. Generation", detail: "The retrieved chunks are inserted into the prompt (Phase 3) alongside the user's question, and the LLM (Phase 4) generates a grounded answer." },
+];
+function renderRag() {
+  document.getElementById('rag-stages').innerHTML = STAGES.map((s,i) =>
+    `<div class="rag-stage" data-i="${i}"><span class="name">${s.name}</span></div>`
+  ).join('');
+  document.querySelectorAll('.rag-stage').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.rag-stage').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('rag-detail').textContent = STAGES[el.dataset.i].detail;
+    });
+  });
+}
+renderRag();
+</script>
+</body>
+</html>

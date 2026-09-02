@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 Function calling &amp; tool use | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.tool-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.tool-turn { padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 13.5px; font-family: var(--font-mono); opacity:0; transform:translateY(6px); transition:all 0.3s; }
+.tool-turn.shown { opacity:1; transform:translateY(0); }
+.tool-turn.model { background: var(--accent-bg); border: 1px solid var(--accent); }
+.tool-turn.tool { background: var(--surface-2); border: 1px solid var(--border-strong); }
+.tool-turn.user { background: var(--surface-2); border: 1px solid var(--border-strong); font-style: italic; }
+.tool-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.tool-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Working with LLM APIs</div>
+  <h1>4.2 Function calling &amp; tool use</h1>
+  <p class="subtitle">How a model that can only generate text ends up looking up your database.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An LLM can't actually run code or query a database — it can only generate text. Tool use closes
+    that gap: you describe available functions in a schema, the model decides when a function call
+    would help, and it outputs a structured request to call one (arguments included) instead of a
+    normal answer. Your code executes the actual function, then feeds the result back to the model
+    as a new message, and the model continues from there — often producing a final natural-language
+    answer that incorporates the tool's result. This request&rarr;execute&rarr;feed-back loop is the
+    seed of everything in Phase 8's agents.
+  </div>
+
+  <h2>Try it: step through a real tool-use loop</h2>
+  <p>A user asks about the weather. The model doesn't know current weather — it has no way to. Watch it call a tool instead of guessing.</p>
+  <div class="tool-box">
+    <div id="tool-turns"></div>
+    <button class="tool-btn" id="tool-next">Advance one turn &rarr;</button>
+  </div>
+
+  <h2>The three-part schema</h2>
+  <p>Every tool definition your code hands the model needs three things:</p>
+  <pre><code>{
+  "name": "get_weather",
+  "description": "Get current weather for a city. Use this whenever the user asks about current conditions.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "city": {"type": "string", "description": "City name, e.g. 'Boston'"}
+    },
+    "required": ["city"]
+  }
+}</code></pre>
+  <p>
+    The <code>description</code> field matters more than it looks — it's the only signal the model
+    has for <em>when</em> to reach for this tool versus answering directly or picking a different
+    tool. A vague description ("weather stuff") produces unreliable tool selection; a specific one
+    tied to concrete trigger conditions produces reliable selection.
+  </p>
+
+  <h2>The recommended execution pattern</h2>
+  <p>
+    Production tool-calling code generally follows: <strong>model suggests tool &rarr; your code
+    executes it &rarr; model summarizes the result</strong> &mdash; explicitly not letting the
+    model's suggested call run unchecked. Your code is the trust boundary: it decides whether the
+    requested call is safe to actually execute, with what permissions, and what happens if it fails.
+  </p>
+  <pre><code>messages = [{"role": "user", "content": "What's the weather in Boston?"}]
+
+response = client.messages.create(
+    model="claude-sonnet-4-6", max_tokens=1024,
+    tools=[weather_tool], messages=messages
+)
+
+if response.stop_reason == "tool_use":
+    tool_call = next(b for b in response.content if b.type == "tool_use")
+    result = get_weather(**tool_call.input)   # your actual function runs here
+
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({"role": "user", "content": [
+        {"type": "tool_result", "tool_use_id": tool_call.id, "content": str(result)}
+    ]})
+    final = client.messages.create(model="claude-sonnet-4-6", max_tokens=1024,
+                                    tools=[weather_tool], messages=messages)</code></pre>
+
+  <h2>Why "the schema is a hint, not a hard constraint" (from 3.2) matters here</h2>
+  <p>
+    Even with a well-written schema, the model can occasionally suggest a call with a slightly
+    wrong argument type or an oddly-shaped value. This is exactly why 3.2's Tier 3 (native
+    structured output / constrained decoding) matters for tool arguments specifically — it's the
+    difference between "the model usually gets the arguments right" and "the arguments are
+    guaranteed to match the schema before your function ever runs."
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does the model actually do when it "calls" a tool?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It directly executes code on the provider's servers</button>
+        <button class="q-option" data-correct="true">It generates a structured request naming the tool and arguments — your code executes the actual function</button>
+        <button class="q-option" data-correct="false">It searches the internet automatically</button>
+      </div>
+      <div class="q-explain">The model has no execution ability of its own — it produces text describing which tool it wants called and with what arguments; your application code is what actually runs anything.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a tool's "description" field matter so much for reliability?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's the model's only signal for when this tool should be selected over another option</button>
+        <button class="q-option" data-correct="false">It has no effect — only the input schema matters</button>
+        <button class="q-option" data-correct="false">It determines the tool's execution speed</button>
+      </div>
+      <div class="q-explain">Tool selection is driven by the model reading the description and matching it against the user's request — vague descriptions produce unreliable selection regardless of how well-formed the input schema is.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why shouldn't a model's suggested tool call be executed unchecked?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Your code is the trust boundary that decides if a call is safe to run, with what permissions, and how to handle failure</button>
+        <button class="q-option" data-correct="false">Unchecked execution is always faster and equally safe</button>
+        <button class="q-option" data-correct="false">Models never suggest incorrect tool calls</button>
+      </div>
+      <div class="q-explain">The recommended pattern explicitly separates "model suggests" from "code executes" — this is where permission checks, argument validation, and error handling belong, a theme that becomes central in Phase 8's agent design.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DevToolKit.cloud LLM API integration patterns (2026); Anthropic Claude Platform tool use documentation.</p>
+
+  <div class="pager">
+    <a href="4-1-streaming-responses.html">&larr; 4.1 Streaming responses</a>
+    <a href="4-3-async-concurrent-requests.html">4.3 Async &amp; concurrent requests &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TOOL_TURNS = [
+  { cls: "user", text: '👤 User: "What\'s the weather in Boston right now?"' },
+  { cls: "model", text: '🤖 Model: stop_reason = "tool_use" → get_weather(city="Boston")' },
+  { cls: "tool", text: '⚙ Your code executes get_weather("Boston") → {"temp_f": 52, "condition": "cloudy"}' },
+  { cls: "model", text: '🤖 Model (final): "It\'s 52°F and cloudy in Boston right now."' },
+];
+let toolIdx = 0;
+function renderTool() {
+  const container = document.getElementById('tool-turns');
+  if (toolIdx === 0) container.innerHTML = '';
+}
+document.getElementById('tool-next').addEventListener('click', () => {
+  if (toolIdx >= TOOL_TURNS.length) return;
+  const t = TOOL_TURNS[toolIdx];
+  const div = document.createElement('div');
+  div.className = 'tool-turn ' + t.cls;
+  div.textContent = t.text;
+  document.getElementById('tool-turns').appendChild(div);
+  setTimeout(() => div.classList.add('shown'), 20);
+  toolIdx++;
+  if (toolIdx >= TOOL_TURNS.length) {
+    document.getElementById('tool-next').disabled = true;
+    document.getElementById('tool-next').textContent = 'Loop complete';
+  }
+});
+</script>
+</body>
+</html>

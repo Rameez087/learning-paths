@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.4 Incident response &amp; production readiness | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ir-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ir-step-btn { padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 8px; }
+.ir-step-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.ir-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 60px; }
+.ir-timeline { display: flex; align-items: center; margin: 16px 0; }
+.ir-tl-node { flex: 1; text-align: center; }
+.ir-tl-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border-strong); margin: 0 auto 6px; }
+.ir-tl-line { flex: 1; height: 2px; background: var(--border-strong); }
+.ir-tl-label { font-size: 10px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Production &amp; MLOps</div>
+  <h1>11.4 Incident response &amp; production readiness</h1>
+  <p class="subtitle">The runtime is healthy. The logs are moving. The output is formatted correctly. The work quality is dead. That's still an incident.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    AI incidents don't look like classical outages — there's rarely one broken commit mapping to
+    one clean rollback. A widely cited 2026 framework structures response around six steps:
+    <strong>detect, triage, contain, evaluate, fix, review</strong> — across four common incident
+    classes: hallucination, jailbreak, drift, and PII leak. The loop-closing step matters as much
+    as the fix itself: every real incident's post-mortem should become a permanent new entry in
+    the golden dataset (9.1), so the same failure is caught automatically before it ships again.
+  </div>
+
+  <h2>Try it: walk through an incident response</h2>
+  <div class="ir-box">
+    <div id="ir-steps"></div>
+    <div class="ir-detail" id="ir-detail">Click a step above.</div>
+  </div>
+
+  <h2>The illustrative cost of not having this wired up in advance</h2>
+  <p>
+    A documented shape of failure: groundedness drops 9% at 4pm on a Tuesday, caused by a prompt
+    change that shipped at that exact moment. But there's no eval gate watching production in real
+    time — detection instead comes from customer complaints starting the following Friday. That's
+    a 72-hour lag from incident to detection, then 4 more hours from detection to an actual fix. By
+    the time the rollback ships, roughly 5,800 user sessions have already received degraded
+    responses. The post-mortem's own conclusion: none of the missing pieces were exotic — most had
+    been on the original launch plan and gotten deferred.
+  </p>
+
+  <h2>Why "roll back to the last commit" doesn't map cleanly here</h2>
+  <p>
+    A broken software endpoint usually traces to one commit and one clean rollback. An LLM
+    quality regression can trace to any of several independent layers, each requiring a genuinely
+    different fix: a prompt edit, a silent model-version push from the provider (11.3), a
+    retrieval re-index after a corpus change, or an upstream tool contract change — and several of
+    these can produce the exact same symptom on a small slice of traffic before anyone notices.
+    The response process has to be built to identify <em>which layer</em> actually changed, not
+    just to have a generic "revert" button.
+  </p>
+
+  <div class="figure" id="fig-classes"></div>
+
+  <h2>The first five minutes: blast-radius control, not root cause</h2>
+  <p>
+    Specific guidance for the opening of an incident: your job in the first five minutes is not
+    root-cause analysis — it's containing the blast radius. If the incident touches money, customer
+    communications, records, or permissions, the recommended default is to hit a kill switch or
+    roll back immediately, rather than trying to understand the full cause first. Root-cause
+    investigation happens after containment, not instead of it.
+  </p>
+
+  <h2>The permanent payoff: every incident becomes a regression test</h2>
+  <p>
+    This closes the loop back to Phase 9 directly: an incident real enough to actually hurt is
+    real enough to deserve becoming a permanent entry in the golden dataset — using the same
+    input/context/tool-response pattern that produced the failure. This is what prevents the exact
+    same failure mode from silently shipping again in six months.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why doesn't the classical "one commit, one rollback" incident model fit most LLM production failures?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A quality regression can originate from several independent layers — prompt, model version, retrieval index, or tool contracts — each needing a different fix</button>
+        <button class="q-option" data-correct="false">LLM systems are never deployed using version control</button>
+        <button class="q-option" data-correct="false">LLM incidents are always caused by a single, easily identified code change</button>
+      </div>
+      <div class="q-explain">Multiple distinct layers can produce the identical user-visible symptom, which is exactly why an effective response process has to identify which layer actually changed rather than assuming a single rollback fixes everything.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What is the recommended priority in the first five minutes of a real incident?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Blast-radius control — containing the damage — rather than immediately investigating the root cause</button>
+        <button class="q-option" data-correct="false">A full root-cause investigation before taking any containment action</button>
+        <button class="q-option" data-correct="false">Writing the post-mortem document first</button>
+      </div>
+      <div class="q-explain">Containment and root-cause analysis are sequenced deliberately — stopping the bleeding (kill switch, rollback) comes first, especially when money, records, or permissions are involved, with deeper investigation following afterward.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does a real incident's post-mortem specifically need to become a golden dataset entry?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's what prevents the exact same failure mode from silently reoccurring undetected in a future deployment</button>
+        <button class="q-option" data-correct="false">Post-mortems are purely for internal documentation with no effect on future testing</button>
+        <button class="q-option" data-correct="false">Golden datasets cannot incorporate real production incidents, only synthetic examples</button>
+      </div>
+      <div class="q-explain">This is the loop-closing step from both this page and 9.3's offline/online eval discussion — a real failure that isn't captured as a future regression test can simply happen again unnoticed.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: FutureAGI "The LLM Incident Response Runbook for 2026" and "Production LLM Monitoring Checklist for 2026"; TianPan.co "The AI Incident Response Playbook" (2026); I Am Stackwell "AI Agent Incident Response Runbook (2026)".</p>
+
+  <div class="pager">
+    <a href="11-3-drift-detection.html">&larr; 11.3 Drift detection</a>
+    <a href="../phase-12-capstones/12-1-capstone-rag-with-evals.html">Phase 12: Capstone projects &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const STEPS = [
+  { name: "1. Detect", detail: "A drift alert fires, or a customer complaint surfaces, or a canary eval gate (11.1) fails. Ideally this is automated (Phase 9's online evals) rather than discovered by a user." },
+  { name: "2. Triage", detail: "Which incident class is this? Hallucination, jailbreak, drift, or PII leak — each has a different severity profile and a different playbook." },
+  { name: "3. Contain", detail: "Blast-radius control first: kill switch, traffic rollback, or route the affected cohort away from the candidate — before any deep investigation begins." },
+  { name: "4. Evaluate", detail: "Once contained, actually diagnose which layer changed: prompt, model version, retrieval index, or a tool contract — using the trace data from 11.2." },
+  { name: "5. Fix", detail: "Apply the fix matched to the actual layer that changed — a prompt rollback, a re-index behind a shadow route, a rubric tightened, or a data-layer repair." },
+  { name: "6. Review", detail: "Post-mortem, and — critically — promote the failing case into the golden dataset (9.1) as a permanent regression test, closing the loop." },
+];
+document.getElementById('ir-steps').innerHTML = STEPS.map((s,i) =>
+  `<div class="ir-step-btn${i===0?' active':''}" data-i="${i}">${s.name}</div>`
+).join('');
+document.querySelectorAll('.ir-step-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ir-step-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('ir-detail').textContent = STEPS[btn.dataset.i].detail;
+  });
+});
+document.getElementById('ir-detail').textContent = STEPS[0].detail;
+
+document.getElementById('fig-classes').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: four incident classes - hallucination, jailbreak, drift, PII leak">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <rect x="10" y="40" width="155" height="60" rx="8" fill="#1a2029" stroke="#f2b84b"/>
+  <text x="87" y="75" text-anchor="middle" fill="#f2b84b">Hallucination</text>
+  <rect x="180" y="40" width="155" height="60" rx="8" fill="#1a2029" stroke="#e5484d"/>
+  <text x="257" y="75" text-anchor="middle" fill="#ff8b8f">Jailbreak</text>
+  <rect x="350" y="40" width="155" height="60" rx="8" fill="#1a2029" stroke="#5b8cff"/>
+  <text x="427" y="75" text-anchor="middle" fill="#a9c1ff">Drift</text>
+  <rect x="520" y="40" width="150" height="60" rx="8" fill="#1a2029" stroke="#3ecf8e"/>
+  <text x="595" y="75" text-anchor="middle" fill="#3ecf8e">PII leak</text>
+</svg>
+`;
+</script>
+</body>
+</html>

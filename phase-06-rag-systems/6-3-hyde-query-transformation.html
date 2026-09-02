@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.3 HyDE &amp; query transformation | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.hyde-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.hyde-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.hyde-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.hyde-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.hyde-flow { background: var(--code-bg); border-radius: 8px; padding: 14px; font-size: 13px; font-family: var(--font-mono); line-height: 1.8; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · RAG systems</div>
+  <h1>6.3 HyDE &amp; query transformation</h1>
+  <p class="subtitle">Sometimes the fix for bad retrieval isn't a better index — it's a better question.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>HyDE (Hypothetical Document Embeddings)</strong> addresses a subtle mismatch: a short
+    user question and a long, detailed document passage often don't embed close together in vector
+    space, even when the passage perfectly answers the question. HyDE's fix: ask an LLM to generate
+    a hypothetical answer to the question first, then embed and search using <em>that</em> —
+    matching document-length text against document-length text. It measurably helps in some
+    domains and measurably hurts in others, which makes it a genuinely conditional technique, not
+    a universal upgrade.
+  </div>
+
+  <h2>Try it: compare the two retrieval paths</h2>
+  <div class="hyde-box">
+    <div class="hyde-toggle">
+      <div class="hyde-toggle-btn active" data-mode="direct">Direct query embedding</div>
+      <div class="hyde-toggle-btn" data-mode="hyde">HyDE</div>
+    </div>
+    <div class="hyde-flow" id="hyde-flow"></div>
+  </div>
+
+  <h2>Why the length mismatch matters</h2>
+  <p>
+    A question like "what causes cache invalidation issues in distributed systems" is short and
+    abstract. A document passage that thoroughly answers it is long, specific, and full of concrete
+    detail. Embedding models can genuinely struggle to recognize that a terse question and a
+    verbose, detailed answer are "about the same thing," because their surface form is so
+    different — this is the asymmetry HyDE targets directly.
+  </p>
+
+  <h2>The research finding that complicates the picture</h2>
+  <p>
+    HyDE's fix has a real failure mode: it works by generating a <em>hypothetical</em> answer with
+    an LLM, and that hypothetical answer can be plausible-sounding but factually wrong — especially
+    for domains that demand precise numbers or facts, like financial or scientific queries. One
+    2026 benchmark study found HyDE consistently <strong>underperforming</strong> plain dense
+    retrieval specifically on financial question-answering, because the generated pseudo-document
+    fabricated plausible-but-incorrect figures that pulled the search away from the actually
+    correct answer. The recommendation drawn from this: avoid HyDE for domains where factual
+    precision dominates over general semantic similarity.
+  </p>
+
+  <h2>Other query transformation techniques worth knowing</h2>
+  <ul>
+    <li><strong>Multi-query</strong> — generate several reworded variants of the user's question, retrieve for each, and merge the results. One systematic study found this <em>underperforming</em> simple baseline retrieval, a reminder that "more sophisticated" doesn't automatically mean "better" — always measure against your own data.</li>
+    <li><strong>Query decomposition</strong> — breaking a complex multi-part question into simpler sub-questions, retrieving separately for each, similar in spirit to the task decomposition covered in 3.5.</li>
+  </ul>
+  <p>
+    The consistent lesson across this research: retrieval-enhancement techniques are conditional
+    improvements, not universal wins. The right default, per one recent benchmark's recommended
+    decision framework, is to start with hybrid retrieval (BM25 + dense, fused) as a strong
+    baseline, and only add HyDE, multi-query, or other transformations after measuring whether they
+    actually help on your specific documents and queries.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What problem is HyDE specifically designed to fix?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The embedding mismatch between a short, abstract question and a long, detailed passage that answers it</button>
+        <button class="q-option" data-correct="false">Slow query latency in vector search</button>
+        <button class="q-option" data-correct="false">The cost of storing embeddings</button>
+      </div>
+      <div class="q-explain">HyDE targets a length/form asymmetry — a terse question and a detailed answer can embed far apart even when perfectly relevant to each other, and HyDE closes that gap by embedding a hypothetical answer instead of the raw question.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why did HyDE underperform on the financial question-answering benchmark mentioned above?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The LLM-generated hypothetical answer fabricated plausible but incorrect numeric figures, pulling retrieval away from the correct answer</button>
+        <button class="q-option" data-correct="false">Financial documents cannot be embedded at all</button>
+        <button class="q-option" data-correct="false">HyDE is incompatible with any numeric data</button>
+      </div>
+      <div class="q-explain">HyDE's mechanism depends on the hypothetical answer being reasonably close to correct — for domains demanding precise facts, a fabricated-but-plausible number can do more harm than the length mismatch HyDE was trying to fix.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the broader lesson from HyDE and multi-query's mixed research results?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Retrieval-enhancement techniques are conditional, not universal — they should be measured against your own data before adopting</button>
+        <button class="q-option" data-correct="false">All query transformation techniques should always be applied together</button>
+        <button class="q-option" data-correct="false">HyDE and multi-query are functionally identical techniques</button>
+      </div>
+      <div class="q-explain">Both techniques help in some studies and hurt in others depending on the domain — the practical takeaway is to start from a strong hybrid-retrieval baseline and empirically test any added technique rather than assuming it will help.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Gao et al., "HyDE" original paper (via ARAGOG evaluation, 2026); "From BM25 to Corrective RAG" benchmark study (arXiv, 2026); ARAGOG: Advanced RAG Output Grading (arXiv).</p>
+
+  <div class="pager">
+    <a href="6-2-reranking.html">&larr; 6.2 Reranking</a>
+    <a href="6-4-evaluating-retrieval-quality.html">6.4 Evaluating retrieval quality &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const FLOWS = {
+  direct: `Query: "what causes cache invalidation issues in distributed systems"
+  ↓ embed directly
+  ↓ search vector index
+  → may miss long, detailed passages that don't share the query's exact framing`,
+  hyde: `Query: "what causes cache invalidation issues in distributed systems"
+  ↓ LLM generates hypothetical answer:
+    "Cache invalidation issues in distributed systems typically arise from stale
+     reads during network partitions, race conditions between writers, and
+     inconsistent TTL policies across replicas..."
+  ↓ embed the hypothetical answer (not the original question)
+  ↓ search vector index
+  → matches against real passages with similar length and level of detail`
+};
+document.querySelectorAll('.hyde-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.hyde-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('hyde-flow').textContent = FLOWS[btn.dataset.mode];
+  });
+});
+document.getElementById('hyde-flow').textContent = FLOWS.direct;
+</script>
+</body>
+</html>

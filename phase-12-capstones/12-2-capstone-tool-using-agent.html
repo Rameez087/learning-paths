@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.2 Capstone: Tool-using agent | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone projects</div>
+  <h1>12.2 Capstone: Tool-using agent</h1>
+  <p class="subtitle">Phases 4 and 8, built into something that actually reasons, acts, and observes — not just answers.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build an agent that solves a genuinely multi-step task requiring at least three different
+    tools, using the ReAct loop (8.1) explicitly — with visible, logged reasoning at every step,
+    not just a final answer. The point of this capstone isn't the task itself; it's demonstrating
+    you can design safe, narrow tool contracts (8.2), handle a tool failure gracefully, and stop
+    the loop deliberately rather than letting it run forever or silently give up.
+  </div>
+
+  <h2>What to build</h2>
+  <ul>
+    <li>Pick a real, multi-step task: examples include "research a topic across multiple sources and produce a structured summary," "debug a failing test by reading the code, running it, and proposing a fix," or "plan a trip given a budget and constraints, checking real availability."</li>
+    <li>Define at least three narrow, single-purpose tools (8.2) with explicit descriptions, input schemas, and defined failure behavior.</li>
+    <li>Implement the ReAct loop explicitly (8.1) — log every thought, action, and observation, not just the final response.</li>
+    <li>Add an explicit stopping condition tied to actual task completion, not just a fixed step count — and a maximum step limit as a safety net against the infinite-loop failure mode (8.1).</li>
+    <li>Handle at least one tool failure gracefully — a malformed input, a timeout, an empty result — and show the agent recovering or reporting the failure clearly rather than hallucinating past it.</li>
+  </ul>
+
+  <h2>Track your progress</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <p>
+    A recorded trace (text log is fine) of the agent completing the task end-to-end, showing every
+    thought/action/observation step. A README explaining your tool design choices, why you scoped
+    each tool the way you did (principle of least privilege from 8.2), and a section specifically
+    describing what happens when a tool fails — this is often the most revealing part of an agent
+    project, more than the happy path.
+  </p>
+
+  <h2>Common places this goes wrong</h2>
+  <ul>
+    <li><strong>No visible reasoning trace.</strong> If you can't show the thought/action/observation steps, you haven't actually demonstrated the ReAct pattern — you've built a single tool-augmented call, not a loop.</li>
+    <li><strong>No stopping condition beyond a step limit.</strong> A hard cap prevents infinite loops but doesn't demonstrate the agent knowing when it's actually done — both matter.</li>
+    <li><strong>Tools that are too broad or too many.</strong> Recall 8.2 — narrow, unambiguous tools beat a swiss-army-knife tool or an unnecessarily large tool list the agent has to choose among.</li>
+  </ul>
+
+  <p class="sources" style="margin-top:32px">This capstone synthesizes Phases 4 (tool calling, async) and 8 (ReAct, tool design, memory) into a single working project.</p>
+
+  <div class="pager">
+    <a href="12-1-capstone-rag-with-evals.html">&larr; 12.1 Capstone: RAG system with evaluation</a>
+    <a href="12-3-capstone-multi-llm-app.html">12.3 Capstone: Multi-LLM orchestrated app &rarr;</a>
+  </div>
+</main>
+<script>
+const ITEMS = [
+  "Multi-step task selected requiring at least 3 distinct tools",
+  "Each tool has a narrow scope, clear description, and explicit failure behavior",
+  "ReAct loop implemented with logged thought/action/observation at every step",
+  "Explicit task-completion stopping condition, plus a hard step-limit safety net",
+  "At least one tool failure handled gracefully and visibly in the trace",
+  "README documenting tool design choices and failure-handling behavior",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} milestones checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

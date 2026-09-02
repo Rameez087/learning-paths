@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.1 When to fine-tune vs. prompt or RAG | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ft-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ft-q { font-weight: 600; margin-bottom: 12px; font-size: 14px; }
+.ft-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 8px; }
+.ft-result { padding: 14px 16px; border-radius: 8px; margin-top: 16px; font-size: 14px; display: none; }
+.ft-result.show { display: block; }
+.ft-result.prompt { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.ft-result.rag { background: rgba(91,140,255,0.1); border: 1px solid var(--accent); }
+.ft-result.finetune { background: rgba(242,184,75,0.1); border: 1px solid var(--warning); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Fine-tuning &amp; adaptation</div>
+  <h1>10.1 When to fine-tune vs. prompt or RAG</h1>
+  <p class="subtitle">The most common fine-tuning mistake in 2026: reaching for it before the cheaper options have actually failed.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    2026 practitioner guidance converges on a specific order: <strong>Prompt &rarr; RAG &rarr;
+    Fine-tune &rarr; Distill</strong> — try the cheapest, fastest, fully reversible option first,
+    and only escalate once it's demonstrably insufficient. One widely cited estimate: roughly 80%
+    of "we need fine-tuning" requests are actually solved by better retrieval. Fine-tuning is for
+    <strong>form, not facts</strong> — shaping behavior, tone, structured output format, and
+    domain vocabulary. It is the wrong tool for injecting knowledge that changes frequently; RAG
+    remains the right tool for that.
+  </div>
+
+  <h2>Try it: work through the decision</h2>
+  <div class="ft-box">
+    <div class="ft-q">Does the task need knowledge that changes daily or weekly (current events, live prices, recent documents)?</div>
+    <div id="ft-q1">
+      <button class="ft-btn" data-a="yes">Yes</button>
+      <button class="ft-btn" data-a="no">No</button>
+    </div>
+    <div id="ft-followup" style="display:none;"></div>
+    <div class="ft-result" id="ft-result"></div>
+  </div>
+
+  <h2>The three things fine-tuning genuinely fixes</h2>
+  <p>Frontier models are already excellent at general instruction following. What they still consistently struggle with, and what fine-tuning is actually good for:</p>
+  <ul>
+    <li><strong>Exact output schema</strong> — a rigid, unusual structured format that needs to be followed with near-perfect consistency at scale, beyond what prompting alone reliably guarantees.</li>
+    <li><strong>Narrow domain vocabulary</strong> — specialized terminology or jargon that's underrepresented in general training data.</li>
+    <li><strong>Brand voice / tone</strong> — a specific, consistent style that's difficult to fully pin down through prompting alone across a large volume of generations.</li>
+  </ul>
+
+  <h2>The prerequisite checklist before fine-tuning makes sense</h2>
+  <ul>
+    <li>A stable task with a known, fixed output schema — not something still actively changing.</li>
+    <li>A real evaluation harness (Phase 9) that has already shown the base model plateauing with prompting and RAG alone.</li>
+    <li>At least a few hundred high-quality examples — reported guidance suggests 500-2,000 curated examples for instruction/tone fine-tuning, and importantly: quality over quantity. Curated examples in the low thousands commonly outperform a much larger noisy dataset.</li>
+  </ul>
+
+  <h2>They compose — this isn't an either/or</h2>
+  <p>
+    Fine-tuning and RAG solve different problems and stack cleanly: a fine-tuned smaller open-weight
+    model paired with a strong RAG pipeline is cited as a strong cost-per-quality combination for
+    many production agents in 2026 — fine-tuning shapes <em>how</em> the model behaves and
+    responds, RAG supplies <em>what</em> it knows at any given moment.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the recommended order for solving a quality problem in an LLM application?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Prompt engineering first, then RAG, then fine-tuning, then distillation — escalating only when the cheaper option proves insufficient</button>
+        <button class="q-option" data-correct="false">Always start with fine-tuning since it produces the highest quality</button>
+        <button class="q-option" data-correct="false">RAG and fine-tuning are mutually exclusive; you must pick one permanently</button>
+      </div>
+      <div class="q-explain">This ordering reflects cost and reversibility — prompting is free and instant to change, while fine-tuning requires real data, compute, and evaluation investment, so it's reserved for when cheaper options are demonstrably insufficient.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is fine-tuning the wrong tool for knowledge that changes weekly?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Fine-tuning shapes behavior and format ("form"), not a live knowledge base — RAG is built specifically for frequently-changing information</button>
+        <button class="q-option" data-correct="false">Fine-tuned models cannot answer factual questions at all</button>
+        <button class="q-option" data-correct="false">Fine-tuning is always more expensive than RAG in every scenario</button>
+      </div>
+      <div class="q-explain">Re-fine-tuning every time underlying facts change is far more costly and slower than retrieval, which naturally reflects updated source documents without retraining anything.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does "quality over quantity" mean in the context of fine-tuning datasets?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A smaller set of carefully curated examples commonly outperforms a much larger set of noisy ones</button>
+        <button class="q-option" data-correct="false">Dataset size has no effect on fine-tuning outcomes</button>
+        <button class="q-option" data-correct="false">More examples always produce better results regardless of quality</button>
+      </div>
+      <div class="q-explain">Reported guidance specifically notes that curated examples in the hundreds to low thousands often beat tens of thousands of noisy ones — a finding consistent with broader "less but better data" results in the fine-tuning literature.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: BigDataBoutique "Fine-Tuning LLMs in 2026: When RAG Isn't Enough" ; hjLabs.in fine-tuning best practices 2026; FutureAGI "Fine-Tuning LLMs in 2026" comparison guide.</p>
+
+  <div class="pager">
+    <a href="../phase-09-evaluation/9-4-building-eval-pipeline.html">&larr; 9.4 Building an eval pipeline</a>
+    <a href="10-2-lora-qlora-peft.html">10.2 LoRA, QLoRA &amp; PEFT &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.querySelectorAll('#ft-q1 .ft-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('ft-q1').style.display = 'none';
+    const followup = document.getElementById('ft-followup');
+    if (btn.dataset.a === 'yes') {
+      document.getElementById('ft-result').className = 'ft-result rag show';
+      document.getElementById('ft-result').textContent = '→ Use RAG. Frequently-changing knowledge is exactly what retrieval is built for — fine-tuning would require constant retraining to stay current, which is far more costly than updating a document index.';
+    } else {
+      followup.style.display = 'block';
+      followup.innerHTML = `
+        <div class="ft-q">Is the issue a rigid output format, domain vocabulary, or consistent tone that prompting hasn't reliably fixed after real iteration?</div>
+        <button class="ft-btn" data-a2="yes">Yes, and we have 500+ good examples</button>
+        <button class="ft-btn" data-a2="no">Not yet — haven't fully tried prompting/RAG</button>
+      `;
+      followup.querySelectorAll('.ft-btn').forEach(b2 => {
+        b2.addEventListener('click', () => {
+          followup.style.display = 'none';
+          if (b2.dataset.a2 === 'yes') {
+            document.getElementById('ft-result').className = 'ft-result finetune show';
+            document.getElementById('ft-result').textContent = '→ Fine-tuning is a reasonable next step. You have a stable task, a form/style/format problem (not a knowledge problem), and enough curated examples — this matches the prerequisite checklist.';
+          } else {
+            document.getElementById('ft-result').className = 'ft-result prompt show';
+            document.getElementById('ft-result').textContent = '→ Go back to prompt engineering (Phase 3) first. Reported estimates suggest a large majority of "we need fine-tuning" requests are actually solved by better prompting or retrieval — confirm those are genuinely exhausted before investing in fine-tuning.';
+          }
+        });
+      });
+    }
+  });
+});
+</script>
+</body>
+</html>

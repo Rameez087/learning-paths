@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.4 Building an eval pipeline | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ep-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ep-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.ep-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.ep-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.ep-item.checked .ep-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.ep-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Evaluation</div>
+  <h1>9.4 Building an eval pipeline</h1>
+  <p class="subtitle">Seven items that ship in two weeks beat twenty items that never leave the planning doc.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Most "LLM evaluation best practices" guides are taxonomies, not checklists — comprehensive
+    lists of every metric family and dashboard widget that nobody actually finishes building. A
+    specific 2026 practitioner framework cuts this to seven items scoped to ship inside a single
+    sprint. If you only build three this sprint: <strong>the golden dataset, a deterministic
+    floor, and a CI gate</strong> — without those three, nothing else in the list can stand on
+    its own.
+  </div>
+
+  <h2>Try it: the seven-item checklist</h2>
+  <div class="ep-box">
+    <div id="ep-items"></div>
+    <div class="ep-progress" id="ep-progress"></div>
+  </div>
+
+  <h2>Why "the deterministic floor" comes before anything fancier</h2>
+  <p>
+    Before any LLM-as-judge scoring runs, a set of cheap, fast, deterministic checks (9.1) should
+    catch obviously broken output — malformed JSON, wrong label enum, missing required fields.
+    This "floor" is what prevents the more expensive parts of the pipeline from doing work on
+    outputs that were already clearly broken, and it's specifically one of the three items flagged
+    as load-bearing for everything else.
+  </p>
+
+  <h2>Why a CI gate matters even with a good dataset</h2>
+  <p>
+    A golden dataset sitting unused doesn't protect anything — the CI gate is what actually
+    connects evaluation to the deployment process, blocking a regression from shipping rather than
+    just measuring it after the fact. A dataset without a gate is a report; a dataset with a gate
+    is a safeguard.
+  </p>
+
+  <h2>Putting the full phase together</h2>
+  <p>
+    This phase's four topics chain into each other directly: 9.1's golden dataset is what 9.2's
+    judge gets calibrated against and what 9.3's offline evals run before every deployment; 9.3's
+    online monitoring is what keeps 9.1's dataset current with real failures; and this checklist is
+    the concrete, shippable version of assembling all three into something that actually runs,
+    rather than a diagram of how they theoretically relate.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. According to the practical 2026 framework referenced above, which three items are load-bearing for the rest of an eval program?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The golden dataset, a deterministic floor, and a CI gate</button>
+        <button class="q-option" data-correct="false">A 20-item taxonomy covering every possible metric</button>
+        <button class="q-option" data-correct="false">Only an LLM-as-judge, with nothing else needed</button>
+      </div>
+      <div class="q-explain">These three are specifically flagged as what everything else depends on — without them, the rest of an evaluation program has nothing solid to stand on.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a sprawling 20-item evaluation checklist often fail to ship, according to this practitioner framing?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A large taxonomy has nothing small enough to finish in a sprint, so teams file it and ship without implementing any of it</button>
+        <button class="q-option" data-correct="false">20-item checklists are technically impossible to build with current tools</button>
+        <button class="q-option" data-correct="false">Large checklists always produce worse evaluation quality than small ones</button>
+      </div>
+      <div class="q-explain">The critique isn't that comprehensiveness is bad — it's that a checklist too large to action in a normal sprint tends to just get filed and ignored, which is worse than a smaller checklist that actually gets built.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is a CI gate necessary even if you already have a well-built golden dataset?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A dataset alone only measures quality — the gate is what actually blocks a regression from shipping, connecting evaluation to the deployment process</button>
+        <button class="q-option" data-correct="false">CI gates replace the need for a golden dataset entirely</button>
+        <button class="q-option" data-correct="false">A golden dataset automatically blocks bad deployments without any additional tooling</button>
+      </div>
+      <div class="q-explain">Measurement and enforcement are separate steps — a dataset that's never wired into the deployment pipeline is just a report generated after the fact, not a safeguard that prevents a regression from reaching users.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: FutureAGI "LLM Evaluation Best Practices Checklist for 2026"; Galtea "The complete guide for LLM evaluations in 2026".</p>
+
+  <div class="pager">
+    <a href="9-3-offline-vs-online-evals.html">&larr; 9.3 Offline vs. online evals</a>
+    <a href="../index.html">Phase 10: Fine-tuning &amp; adaptation &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ITEMS = [
+  { name: "Stratified golden set", core: true, desc: "A representative dataset covering real failures, edge cases, and difficulty levels (9.1)." },
+  { name: "Deterministic floor", core: true, desc: "Cheap, fast checks that catch obviously broken output before anything more expensive runs (9.1)." },
+  { name: "CI regression gate", core: true, desc: "Wires evaluation into the deployment pipeline so a regression actually blocks a release (9.3)." },
+  { name: "Calibrated judge", core: false, desc: "An LLM-as-judge prompt validated against real human verdicts (9.2)." },
+  { name: "Statistical rigor", core: false, desc: "Comparing candidate vs. baseline with proper statistical significance, not eyeballing a single run." },
+  { name: "Production observability", core: false, desc: "Continuous online monitoring sampling real traffic (9.3)." },
+  { name: "Closed feedback loop", core: false, desc: "Production failures promoted into the golden dataset as new regression tests." },
+];
+document.getElementById('ep-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="ep-item" data-i="${i}">
+    <div class="ep-check">✓</div>
+    <div>
+      <strong>${it.name}</strong>${it.core ? ' <span style="color:var(--success); font-size:11px;">(load-bearing)</span>' : ''}
+      <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">${it.desc}</div>
+    </div>
+  </div>
+`).join('');
+document.querySelectorAll('.ep-item').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('checked');
+    updateProgress();
+  });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.ep-item.checked').length;
+  document.getElementById('ep-progress').textContent = `${checked} / ${ITEMS.length} items checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

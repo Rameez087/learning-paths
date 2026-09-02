@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 Structured output &amp; schemas | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.val-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+textarea.val-input { width: 100%; min-height: 140px; background: var(--code-bg); border: 1px solid var(--border-strong); border-radius: 8px; padding: 12px 14px; color: var(--text); font-family: var(--font-mono); font-size: 13.5px; resize: vertical; }
+.val-result { margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-family: var(--font-mono); }
+.val-result.pass { background: rgba(62,207,142,0.1); border: 1px solid var(--success); color: var(--success); }
+.val-result.fail { background: rgba(229,72,77,0.1); border: 1px solid #e5484d; color: #ff8b8f; }
+.tier-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.tier-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.tier-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.2</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 3 · Prompt engineering deep dive</div>
+  <h1>3.2 Structured output &amp; schemas</h1>
+  <p class="subtitle">From "please return JSON" to output that's physically incapable of being wrong.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    There are three tiers of getting structured data out of an LLM, and they differ enormously in
+    reliability: <strong>prompted JSON</strong> (just ask nicely, ~80&ndash;95% reliable),
+    <strong>function/tool calling</strong> (schema as a strong hint, ~95&ndash;99% reliable), and
+    <strong>native structured output with constrained decoding</strong> (the schema is enforced at
+    the token-sampling level, making invalid output physically unreachable &mdash; effectively
+    100% schema-valid). By 2026, constrained decoding is standard across every major provider, and
+    production systems should default to it.
+  </div>
+
+  <h2>Try it: see why "just ask for JSON" isn't enough</h2>
+  <p>
+    Edit the JSON below to violate the schema in different ways &mdash; wrong type, missing field,
+    invalid enum value &mdash; and watch what a real schema validator catches versus what silently
+    slips through.
+  </p>
+
+  <div class="val-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">Schema: <code>{ category: enum, confidence: number 0-1, reasoning: string }</code></p>
+    <textarea class="val-input" id="val-input">{
+  "category": "BILLING",
+  "confidence": 0.92,
+  "reasoning": "Customer mentions a duplicate charge"
+}</textarea>
+    <div class="val-result" id="val-result"></div>
+  </div>
+
+  <h2>The three tiers, concretely</h2>
+
+  <div class="tier-tabs">
+    <div class="tier-tab active" data-tier="1">Tier 1: Prompted</div>
+    <div class="tier-tab" data-tier="2">Tier 2: Tool calling</div>
+    <div class="tier-tab" data-tier="3">Tier 3: Constrained decoding</div>
+  </div>
+  <div id="tier-content"></div>
+
+  <h2>Why constrained decoding is categorically different</h2>
+  <p>
+    Tiers 1 and 2 both work by asking the model nicely and hoping &mdash; the schema is a strong
+    suggestion, but the model is still free to generate whatever token comes next. Constrained
+    decoding changes what's possible at the mechanism level: the inference engine converts your
+    schema into a finite state machine and uses it to mask out every token that would violate the
+    schema, at generation time. The model isn't being asked to comply &mdash; it's structurally
+    unable to emit an invalid token, because the invalid options simply aren't in the sampling
+    pool for that position.
+  </p>
+
+  <div class="figure" id="fig-tiers"></div>
+
+  <h2>What structured output does NOT solve</h2>
+  <p>
+    This is worth being precise about, because it's an easy trap: constrained decoding guarantees
+    the <em>shape</em> is right &mdash; correct types, required fields present, enum values valid.
+    It does not guarantee the <em>content</em> is right. A response can be perfectly schema-valid
+    and still contain a hallucinated fact, or violate a business rule the schema can't express
+    (e.g. "end_date must be after start_date"). Those require a separate validation layer on top
+    &mdash; commonly libraries like Pydantic or Zod &mdash; and ideally, evaluation (Phase 9).
+    Never treat "it parsed" as "it's correct."
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. What makes Tier 3 (constrained decoding) different from Tier 1 and Tier 2?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It uses a larger, more capable model</button>
+        <button class="q-option" data-correct="true">Invalid tokens are masked out at generation time, making schema violations physically unreachable</button>
+        <button class="q-option" data-correct="false">It runs the prompt multiple times and picks the best JSON</button>
+      </div>
+      <div class="q-explain">Tiers 1 and 2 rely on the model choosing to comply; Tier 3 changes the actual token sampling process so invalid output can't be generated in the first place, regardless of whether the model "wants" to violate the schema.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. If a response is 100% schema-valid, what does that guarantee?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">The factual content is also guaranteed correct</button>
+        <button class="q-option" data-correct="true">The structure (types, required fields, enum values) is correct — content correctness is a separate concern</button>
+        <button class="q-option" data-correct="false">The response is guaranteed to satisfy all business rules</button>
+      </div>
+      <div class="q-explain">Schema validity is purely structural. A response can be perfectly valid JSON matching every type and field requirement while still containing a factually wrong or business-rule-violating value — those need separate validation.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. Why might you still add Pydantic/Zod validation on top of a provider's native structured output?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">To catch business-rule violations the JSON Schema itself can't express</button>
+        <button class="q-option" data-correct="false">Because native structured output doesn't actually work reliably</button>
+        <button class="q-option" data-correct="false">Because JSON Schema and Pydantic are mutually exclusive</button>
+      </div>
+      <div class="q-explain">JSON Schema handles types and structure; rules that span multiple fields (like a date ordering constraint) require an additional validation layer, which is standard defensive practice even with guaranteed schema compliance.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: TECHSY 2026 structured output guide; MyEngineeringPath structured outputs reference;
+    DEV Community 2026 structured output comparison across OpenAI, Anthropic, and Gemini.
+  </p>
+
+  <div class="pager">
+    <a href="3-1-advanced-reasoning-patterns.html">&larr; 3.1 Advanced reasoning patterns</a>
+    <a href="3-3-system-prompt-design.html">3.3 System prompt design patterns &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Live JSON schema validator ---
+const VALID_CATEGORIES = ["BILLING", "BUG_REPORT", "FEATURE_REQUEST", "ACCOUNT_ACCESS"];
+function validate(obj) {
+  const errors = [];
+  if (typeof obj !== 'object' || obj === null) return ["Not a valid JSON object"];
+  if (!('category' in obj)) errors.push("Missing required field: category");
+  else if (typeof obj.category !== 'string') errors.push("category must be a string");
+  else if (!VALID_CATEGORIES.includes(obj.category)) errors.push(`category "${obj.category}" is not one of: ${VALID_CATEGORIES.join(', ')}`);
+
+  if (!('confidence' in obj)) errors.push("Missing required field: confidence");
+  else if (typeof obj.confidence !== 'number') errors.push("confidence must be a number, got " + typeof obj.confidence);
+  else if (obj.confidence < 0 || obj.confidence > 1) errors.push("confidence must be between 0 and 1");
+
+  if (!('reasoning' in obj)) errors.push("Missing required field: reasoning");
+  else if (typeof obj.reasoning !== 'string') errors.push("reasoning must be a string");
+
+  return errors;
+}
+function runValidation() {
+  const raw = document.getElementById('val-input').value;
+  const resultEl = document.getElementById('val-result');
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    resultEl.className = 'val-result fail';
+    resultEl.textContent = '✗ Invalid JSON syntax: ' + e.message;
+    return;
+  }
+  const errors = validate(parsed);
+  if (errors.length === 0) {
+    resultEl.className = 'val-result pass';
+    resultEl.textContent = '✓ Valid — matches schema exactly';
+  } else {
+    resultEl.className = 'val-result fail';
+    resultEl.textContent = '✗ Schema violations:\n' + errors.map(e => '  • ' + e).join('\n');
+  }
+}
+document.getElementById('val-input').addEventListener('input', runValidation);
+runValidation();
+
+// --- Tier tabs ---
+const TIER_CONTENT = {
+  "1": `<div class="callout" style="border-left-color:#e5484d;"><div class="callout-label">Prompted JSON (~80–95% reliable)</div>
+    You simply ask: "Return JSON with fields: category, confidence, reasoning." The model usually complies, but nothing enforces it — it can wrap the response in a markdown code fence, add a friendly preamble, or return a string where a number was expected. Fails silently at scale.</div>`,
+  "2": `<div class="callout" style="border-left-color:#f2b84b;"><div class="callout-label">Function / tool calling (~95–99% reliable)</div>
+    You define a function schema and the model "calls" it with arguments matching that schema. Much more reliable than plain prompting, but the schema is still a strong hint rather than a hard constraint — the model can produce a value of the right type that's still semantically wrong, or occasionally miss the shape entirely on edge cases.</div>`,
+  "3": `<div class="callout tldr"><div class="callout-label">Native structured output / constrained decoding (~100% schema-valid)</div>
+    The provider's inference engine builds a finite state machine from your JSON Schema and masks out any token that would produce invalid output. The model cannot generate a schema-violating response — not "usually won't," but structurally cannot. This is the standard for anything going to production as of 2026.</div>`
+};
+document.querySelectorAll('.tier-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tier-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tier-content').innerHTML = TIER_CONTENT[tab.dataset.tier];
+  });
+});
+document.getElementById('tier-content').innerHTML = TIER_CONTENT["1"];
+
+document.getElementById('fig-tiers').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: three tiers of structured output reliability from prompted JSON to constrained decoding">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    .sub { font-size: 11px; fill: #9aa4b5; }
+  </style>
+  <rect x="20" y="60" width="200" height="90" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1"/>
+  <text x="120" y="90" class="lbl" text-anchor="middle">Tier 1: Prompted</text>
+  <text x="120" y="110" class="sub" text-anchor="middle">~80–95% reliable</text>
+  <text x="120" y="126" class="sub" text-anchor="middle">schema = suggestion</text>
+
+  <rect x="240" y="60" width="200" height="90" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1"/>
+  <text x="340" y="90" class="lbl" text-anchor="middle">Tier 2: Tool calling</text>
+  <text x="340" y="110" class="sub" text-anchor="middle">~95–99% reliable</text>
+  <text x="340" y="126" class="sub" text-anchor="middle">schema = strong hint</text>
+
+  <rect x="460" y="60" width="200" height="90" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="560" y="90" class="lbl" text-anchor="middle" fill="#a9c1ff">Tier 3: Constrained</text>
+  <text x="560" y="110" class="sub" text-anchor="middle" fill="#7891c9">~100% schema-valid</text>
+  <text x="560" y="126" class="sub" text-anchor="middle" fill="#7891c9">schema = physical limit</text>
+</svg>
+`;
+</script>
+
+</body>
+</html>

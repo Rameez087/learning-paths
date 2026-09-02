@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.3 Orchestration frameworks: graphs vs chains | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.gr-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.gr-state { background: var(--code-bg); border-radius: 8px; padding: 14px; font-family: var(--font-mono); font-size: 13px; margin-bottom: 16px; min-height: 90px; }
+.gr-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-right: 8px; }
+.gr-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Multi-LLM orchestration</div>
+  <h1>7.3 Orchestration frameworks: graphs vs. chains</h1>
+  <p class="subtitle">Why an entire framework category exists just to add loops and memory back into LLM pipelines.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A linear chain (3.5) can't express "retry this step," "loop until a condition is met," or
+    "pause and wait for human approval before continuing." <strong>LangGraph</strong>, the most
+    widely adopted framework for this as of 2026, models a workflow as a <strong>stateful, cyclic
+    graph</strong> instead: <strong>nodes</strong> are functions that do work (an LLM call, a tool
+    execution), <strong>edges</strong> (including conditional edges) decide what runs next, and a
+    <strong>shared state object</strong> persists and updates across every step, checkpointed so
+    execution can resume after a failure. According to one 2026 industry survey, over 60% of
+    production agent incidents trace back to state-management failures — agents losing context
+    mid-workflow, repeating steps, or crashing without recovery — which is precisely the failure
+    class this graph model is built to prevent.
+  </div>
+
+  <h2>Try it: step through a graph with a conditional branch and a loop</h2>
+  <div class="gr-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">Scenario: draft a report, check its quality, either revise (loop back) or publish.</p>
+    <div class="gr-state" id="gr-state">state = { draft: null, quality_ok: null, revisions: 0 }</div>
+    <button class="gr-btn" id="gr-step">Run next node &rarr;</button>
+    <button class="gr-btn" id="gr-reset">Reset</button>
+  </div>
+
+  <h2>The three primitives</h2>
+  <ul>
+    <li><strong>State</strong> — a shared, typed object every node can read and update. This is the workflow's persistent memory for a given run, not something re-derived from scratch at each step.</li>
+    <li><strong>Nodes</strong> — Python functions that receive the current state, do something (an LLM call, a tool execution, a validation check), and return a partial state update.</li>
+    <li><strong>Edges</strong> — transitions between nodes. A <strong>conditional edge</strong> routes to a different next node depending on the current state, which is exactly what implements branching and looping — a linear chain has no equivalent structure for this at all.</li>
+  </ul>
+
+  <h2>Why this matters more than it might seem</h2>
+  <p>
+    A linear chain fundamentally cannot express: "call a model, check the result, decide whether to
+    retry or escalate, invoke two tools in parallel, then wait for human approval." Any of these
+    control-flow patterns — retries, conditional branching, pausing for human input, looping until
+    a condition is satisfied — require something with the structure of a graph, not a straight
+    line of steps. This is the direct reason agent frameworks moved from simple chains toward
+    explicit graph structures as agentic workflows (Phase 8) became genuinely non-linear.
+  </p>
+
+  <h2>Explicit graphs also change how failures are debugged</h2>
+  <p>
+    Because the graph structure is defined before execution and traversed deterministically, a
+    node failure is localized: the graph identifies exactly which step produced the error, what
+    its inputs were, and which downstream nodes never ran as a result. This is a qualitatively
+    different debugging experience than an opaque single long-running process where a failure
+    partway through leaves you guessing what state the system was actually in.
+  </p>
+
+  <div class="figure" id="fig-graph"></div>
+
+  <h2>When you don't need this</h2>
+  <p>
+    If a workflow is genuinely linear — step A always leads to step B always leads to step C, no
+    loops, no conditional branching, no need to persist state across a pause — a simple chain
+    (3.5) is the right tool. Reaching for graph-based orchestration on a workflow that's actually
+    linear adds complexity (state schema design, checkpointing) that isn't earning its keep.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What can a graph-based workflow express that a linear chain cannot?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Loops, conditional branching, retries, and pausing for human input — all requiring the ability to route back to earlier steps or choose between different next steps</button>
+        <button class="q-option" data-correct="false">Making a single LLM API call</button>
+        <button class="q-option" data-correct="false">Nothing — chains and graphs are functionally identical</button>
+      </div>
+      <div class="q-explain">A linear chain only moves forward through a fixed sequence — it has no structural way to loop back, branch conditionally, or pause and resume, all of which a graph's conditional edges and cyclic structure support directly.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What was cited as the majority cause of production agent incidents in the 2026 survey referenced above?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">State-management failures — agents losing context, repeating steps, or crashing without recovery</button>
+        <button class="q-option" data-correct="false">Model providers being too expensive</button>
+        <button class="q-option" data-correct="false">Users writing unclear prompts</button>
+      </div>
+      <div class="q-explain">Over 60% of incidents traced back to state issues in that survey — this is specifically what a persistent, checkpointed state object (as opposed to state that's implicitly discarded between steps) is designed to prevent.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. When is a simple linear chain still the right choice over a graph-based framework?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">When the workflow genuinely has no loops or conditional branching and doesn't need to persist state across a pause</button>
+        <button class="q-option" data-correct="false">Chains should always be replaced by graphs regardless of workflow shape</button>
+        <button class="q-option" data-correct="false">Chains are strictly obsolete as of 2026</button>
+      </div>
+      <div class="q-explain">Graph-based orchestration adds real complexity (state schema, checkpointing) that isn't worth it for a workflow that's actually linear — matching the tool to the actual shape of the task still applies here.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Atlan, "What Is LangGraph?" (2026), citing LangChain's State of Agent Engineering report; Mastra, "LangGraph: stateful multi-agent AI orchestration" (2026); FutureAGI LangGraph explainer (2026).</p>
+
+  <div class="pager">
+    <a href="7-2-fallback-chains.html">&larr; 7.2 Fallback chains</a>
+    <a href="7-4-caching-strategies.html">7.4 Caching strategies &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let state = { draft: null, quality_ok: null, revisions: 0 };
+let step = 0;
+function renderState(log) {
+  document.getElementById('gr-state').textContent = `state = ${JSON.stringify(state, null, 2)}${log ? '\n\n→ ' + log : ''}`;
+}
+renderState();
+document.getElementById('gr-step').addEventListener('click', () => {
+  step++;
+  if (step === 1) {
+    state.draft = "v1 draft";
+    renderState('Node "draft" ran → wrote a first draft into state');
+  } else if (step === 2) {
+    state.quality_ok = state.revisions >= 1;
+    renderState(`Node "quality_check" ran → quality_ok = ${state.quality_ok}`);
+  } else if (step === 3 && !state.quality_ok) {
+    state.revisions++;
+    state.draft = "v" + (state.revisions+1) + " draft (revised)";
+    renderState('Conditional edge: quality failed → looped back to "revise" node (this is what a linear chain cannot do)');
+    step = 1; // loop back
+  } else if (step === 3 && state.quality_ok) {
+    renderState('Conditional edge: quality passed → routed to "publish" node. Workflow complete.');
+    document.getElementById('gr-step').disabled = true;
+  }
+});
+document.getElementById('gr-reset').addEventListener('click', () => {
+  state = { draft: null, quality_ok: null, revisions: 0 };
+  step = 0;
+  document.getElementById('gr-step').disabled = false;
+  renderState();
+});
+
+document.getElementById('fig-graph').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: graph with draft node, quality check node, conditional edge looping back to revise or forward to publish">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <rect x="30" y="70" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="95" y="100" text-anchor="middle">Draft</text>
+  <line x1="160" y1="95" x2="230" y2="95" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a9)"/>
+  <rect x="230" y="70" width="140" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="300" y="100" text-anchor="middle">Quality check</text>
+  <line x1="370" y1="85" x2="450" y2="85" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a9g)"/>
+  <text x="410" y="75" fill="#3ecf8e" font-size="10">pass</text>
+  <rect x="450" y="60" width="130" height="50" rx="8" fill="#182238" stroke="#3ecf8e"/>
+  <text x="515" y="90" text-anchor="middle" fill="#3ecf8e">Publish</text>
+  <path d="M 300 120 C 300 160, 95 160, 95 122" fill="none" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a9f)"/>
+  <text x="200" y="155" fill="#f2b84b" text-anchor="middle" font-size="10">fail → loop back to Draft</text>
+  <defs>
+    <marker id="a9" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a9g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="a9f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

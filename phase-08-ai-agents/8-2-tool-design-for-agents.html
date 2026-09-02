@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.2 Tool design for agents | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.td-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.td-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.td-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.td-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.td-result { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 16px; border-radius: 8px; }
+.td-result.good { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.td-result.bad { background: rgba(229,72,77,0.1); border: 1px solid #e5484d; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · AI agents</div>
+  <h1>8.2 Tool design for agents</h1>
+  <p class="subtitle">In a single tool call (4.2), a bad description costs you one wrong answer. In an agent loop, it costs you a runaway chain of them.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Everything from 4.2 about tool schemas applies here, at higher stakes: an agent selects tools
+    repeatedly, autonomously, across many steps with no human reviewing each individual choice. A
+    vague tool description that occasionally misfires in a single-call context can compound into
+    genuine goal drift or wasted work across a long agent loop. Good agent tool design means narrow,
+    single-purpose tools with unambiguous names and descriptions, explicit boundaries on what the
+    tool does and doesn't do, and — critically — giving the agent only the tools it actually needs
+    for its task, not everything available.
+  </div>
+
+  <h2>Try it: same task, two tool description qualities</h2>
+  <div class="td-box">
+    <div class="td-toggle">
+      <div class="td-toggle-btn active" data-q="vague">Vague description</div>
+      <div class="td-toggle-btn" data-q="specific">Specific description</div>
+    </div>
+    <pre id="td-schema" style="margin-bottom:0;"></pre>
+    <div class="td-result" id="td-result"></div>
+  </div>
+
+  <h2>The principle of least privilege, applied to agent tools</h2>
+  <p>
+    This connects directly back to 3.4's defense-in-depth guidance: give an agent only the tools
+    and data access it strictly needs for its specific task, nothing more. An agent that can't send
+    email cannot be tricked into exfiltrating data via email, regardless of what a prompt injection
+    or a reasoning error tells it to do. This isn't a security afterthought bolted on — it's a
+    design decision made when the tool list is first assembled.
+  </p>
+
+  <h2>Narrow tools beat swiss-army-knife tools</h2>
+  <p>
+    A single tool that does five different things based on a "mode" parameter is harder for a model
+    to select correctly than five separate, narrowly-scoped tools each with an unambiguous purpose.
+    This mirrors good API design generally, but the stakes are higher here: a human developer
+    reading confusing documentation can still figure out the right call by trial and error; an
+    agent making the wrong tool selection autonomously, mid-loop, often just proceeds confidently
+    with the wrong result unless something explicitly catches it.
+  </p>
+
+  <h2>Explicit failure handling in the tool contract</h2>
+  <p>
+    A tool's schema should make clear what happens when it fails — a malformed input, a timeout, a
+    permission error — rather than leaving the agent to guess. Production agent frameworks
+    typically require this explicitly: what error shape gets returned, and what the agent should do
+    with it (retry, escalate, report back to the user), rather than assuming the agent will figure
+    out sensible fallback behavior from an empty or ambiguous error response.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does tool description quality matter more in an agent loop than in a single tool call?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An agent selects tools repeatedly and autonomously across many steps, so a bad selection can compound into wasted work or goal drift rather than a single isolated wrong answer</button>
+        <button class="q-option" data-correct="false">Agent loops don't actually use tool schemas at all</button>
+        <button class="q-option" data-correct="false">Tool descriptions only matter for the first call in a loop</button>
+      </div>
+      <div class="q-explain">Every tool selection in an agent loop compounds — a subtly wrong choice early on can cascade through subsequent reasoning and actions, unlike a single tool call where the "blast radius" of a bad selection is contained to that one exchange.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is giving an agent only the minimum tools it needs a security practice, not just tidiness?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An agent that lacks a capability (like sending email) can't be manipulated into misusing it, regardless of what a prompt injection or reasoning error suggests</button>
+        <button class="q-option" data-correct="false">Fewer tools always make the agent respond faster</button>
+        <button class="q-option" data-correct="false">Tool count has no bearing on security at all</button>
+      </div>
+      <div class="q-explain">This is the same principle from 3.4's defense-in-depth guidance, applied to tool design directly — restricting capability is a real mitigation against both prompt injection and simple agent reasoning errors.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why do narrow, single-purpose tools tend to work better than one multi-mode tool?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A model can select unambiguously among clearly-scoped tools more reliably than it can pick the right "mode" within one overloaded tool</button>
+        <button class="q-option" data-correct="false">Narrow tools always execute faster than multi-mode tools</button>
+        <button class="q-option" data-correct="false">Multi-mode tools are technically impossible to implement</button>
+      </div>
+      <div class="q-explain">This mirrors general API design wisdom, but the stakes for an autonomous agent are higher — a wrong "mode" selection often proceeds silently rather than being caught the way a confused human developer might catch their own mistake.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Beam.ai "6 Multi-Agent Orchestration Patterns for Production" (2026); Paiteq multi-agent orchestration patterns guide (2026); Anthropic Claude Platform tool use documentation.</p>
+
+  <div class="pager">
+    <a href="8-1-react-loop.html">&larr; 8.1 The ReAct loop</a>
+    <a href="8-3-multi-agent-patterns.html">8.3 Multi-agent patterns &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SCHEMAS = {
+  vague: {
+    code: `{
+  "name": "manage_data",
+  "description": "Does stuff with data",
+  "input_schema": { "type": "object", "properties": { "input": {"type": "string"} } }
+}`,
+    verdict: "bad",
+    text: "⚠ The agent can't reliably tell when to use this over any other tool, or what \"input\" should even contain. In a loop, this ambiguity compounds across every step where the agent has to decide whether this tool applies."
+  },
+  specific: {
+    code: `{
+  "name": "delete_expired_cache_entries",
+  "description": "Deletes cache entries older than the given TTL. Use only when explicitly asked to clean up stale cache data — never as a general-purpose deletion tool.",
+  "input_schema": { "type": "object", "properties": { "ttl_hours": {"type": "integer"} }, "required": ["ttl_hours"] }
+}`,
+    verdict: "good",
+    text: "✓ Narrow purpose, explicit boundary on when to use it, unambiguous required input. The agent has a clear, low-risk signal for exactly when this tool applies — and when it doesn't."
+  }
+};
+function renderTd(key) {
+  const s = SCHEMAS[key];
+  document.getElementById('td-schema').innerHTML = `<code>${s.code}</code>`;
+  document.getElementById('td-result').className = 'td-result ' + s.verdict;
+  document.getElementById('td-result').textContent = s.text;
+}
+document.querySelectorAll('.td-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.td-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTd(btn.dataset.q);
+  });
+});
+renderTd('vague');
+</script>
+</body>
+</html>

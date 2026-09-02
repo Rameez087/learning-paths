@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.4 Caching strategies | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-query-btn { padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 10px; }
+.cs-query-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.cs-result { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; margin-top: 12px; font-size: 13px; }
+.cs-slider-row { display: flex; align-items: center; gap: 14px; margin: 16px 0; }
+.cs-slider-row input[type=range] { flex: 1; }
+.cs-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; margin-top: 12px; }
+.cs-metric { background: var(--surface-2); border-radius: 8px; padding: 12px; text-align: center; }
+.cs-metric .n { font-size: 18px; font-weight: 700; }
+.cs-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Multi-LLM orchestration</div>
+  <h1>7.4 Caching strategies</h1>
+  <p class="subtitle">Two different questions that sound identical to a human can be made to look identical to a cache too.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Beyond prompt-prefix caching (4.4), <strong>semantic caching</strong> catches a different kind
+    of repetition: two textually different queries that mean the same thing ("what's your return
+    policy" vs. "how do I return an item"). It embeds the incoming query, compares it against
+    previously cached query embeddings, and returns the cached response if similarity clears a
+    threshold — skipping the LLM call entirely. Real published production hit rates run
+    20&ndash;45%, not the 90%+ figures sometimes quoted in marketing material — and even a modest
+    20% hit rate on a large bill saves real money while cutting cache-hit latency to under 5ms
+    versus multiple seconds for a fresh generation.
+  </div>
+
+  <h2>Try it: watch the cache decide hit or miss</h2>
+  <div class="cs-box">
+    <div class="cs-query-btn active" data-q="q1">"What's your return policy?"</div>
+    <div class="cs-query-btn" data-q="q2">"How do I return an item I bought?"</div>
+    <div class="cs-query-btn" data-q="q3">"What's the weather like in Boston?"</div>
+    <div class="cs-result" id="cs-result"></div>
+  </div>
+
+  <h2>Two-layer caching: exact first, semantic second</h2>
+  <p>
+    Production guidance from 2026 converges on a specific order of operations: check an
+    <strong>exact-match cache</strong> first (hash the full prompt including model, temperature,
+    and other parameters — fast, zero risk of a wrong match), and only fall back to
+    <strong>semantic matching</strong> if the exact check misses. Semantic caching adds real
+    complexity — an embedding model, a vector store, a similarity threshold to tune — so most
+    teams are advised to start with exact caching and add semantic caching only if the marginal
+    improvement over exact-match alone actually justifies that complexity.
+  </p>
+
+  <h2>Try it: hit rate vs. latency at scale</h2>
+  <div class="cs-box">
+    <div class="cs-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:100px;">Cache hit rate</label>
+      <input type="range" id="cs-slider" min="0" max="60" value="30">
+      <span id="cs-readout" style="font-weight:700; min-width:36px; text-align:right;">30%</span>
+    </div>
+    <div class="cs-metrics" id="cs-metrics"></div>
+  </div>
+
+  <h2>What determines whether the threshold is set right</h2>
+  <p>
+    Typical similarity thresholds sit around 0.85 to 0.95 cosine similarity. Set it too low, and
+    genuinely different questions get served the same cached (wrong) answer — a fast, confidently
+    wrong response is worse than a slow correct one. Set it too high, and the cache barely fires at
+    all, adding embedding and lookup overhead for negligible savings. This threshold isn't a
+    universal constant; production guidance recommends per-template tuning, because different
+    query types have very different natural levels of phrasing variation.
+  </p>
+
+  <h2>Where semantic caching helps least</h2>
+  <p>
+    Creative writing, open-ended brainstorming, and other tasks where the user genuinely wants a
+    fresh, varied response every time tend to show hit rates under 10% — too low to justify the
+    added architecture. Semantic caching earns its complexity specifically on repetitive,
+    high-volume, fact-based query patterns (customer support FAQs are the canonical example), not
+    on tasks where variety is the point.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What can semantic caching catch that prompt-prefix caching (4.4) cannot?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Two textually different queries that share the same underlying meaning or intent</button>
+        <button class="q-option" data-correct="false">Requests using an identical, byte-for-byte prompt</button>
+        <button class="q-option" data-correct="false">Requests to different models entirely</button>
+      </div>
+      <div class="q-explain">Prefix caching matches on exact repeated text; semantic caching matches on meaning via embedding similarity, catching paraphrased repeats that prefix caching would treat as entirely unrelated requests.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do production guides recommend checking an exact-match cache before falling back to semantic matching?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Exact matching is fast and carries zero risk of a wrong match, while semantic caching adds real complexity that should only be added if genuinely needed</button>
+        <button class="q-option" data-correct="false">Exact-match caching is always more expensive to run</button>
+        <button class="q-option" data-correct="false">Semantic caching cannot function without an exact-match layer first</button>
+      </div>
+      <div class="q-explain">The two-layer approach captures the cheap, risk-free wins first (identical repeated prompts) before reaching for the more complex, threshold-tuned semantic layer.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What real risk comes from setting the similarity threshold too low?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Genuinely different questions can be served the same cached — and now wrong — answer, confidently and fast</button>
+        <button class="q-option" data-correct="false">The cache will never return any results at all</button>
+        <button class="q-option" data-correct="false">Embedding costs increase dramatically</button>
+      </div>
+      <div class="q-explain">A cache hit returns instantly and confidently — if the similarity threshold is too permissive, that speed and confidence get attached to an answer that doesn't actually match what was asked, which is a worse failure mode than a slow correct answer.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DEV Community "LLM Semantic Caching: The 95% Hit Rate Myth" (2026); FutureAGI semantic caching definition guide (2026); GetMaxim.ai semantic caching solutions guide (2026).</p>
+
+  <div class="pager">
+    <a href="7-3-orchestration-frameworks.html">&larr; 7.3 Orchestration frameworks</a>
+    <a href="../index.html">Phase 8: AI agents &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CACHE_RESULTS = {
+  q1: { sim: null, verdict: "First time seeing this query — cache miss. Response generated fresh and stored under this embedding for future lookups." },
+  q2: { sim: 0.91, verdict: "Cache HIT (similarity 0.91, above 0.85 threshold) — semantically equivalent to \"What's your return policy?\", served in under 5ms instead of a fresh LLM call." },
+  q3: { sim: 0.12, verdict: "Cache MISS (similarity 0.12, far below threshold) — completely unrelated topic. Fresh generation required." },
+};
+function renderCache(key) {
+  const r = CACHE_RESULTS[key];
+  document.getElementById('cs-result').textContent = (r.sim !== null ? `Similarity to nearest cached query: ${r.sim}\n\n` : '') + r.verdict;
+}
+document.querySelectorAll('.cs-query-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cs-query-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCache(btn.dataset.q);
+  });
+});
+renderCache('q1');
+
+function renderCsMetrics() {
+  const rate = parseInt(document.getElementById('cs-slider').value, 10);
+  document.getElementById('cs-readout').textContent = rate + '%';
+  const avgLatencyMs = Math.round((1 - rate/100) * 2000 + (rate/100) * 4);
+  const costSavedPct = rate;
+  document.getElementById('cs-metrics').innerHTML = `
+    <div class="cs-metric"><div class="n">${avgLatencyMs}ms</div><div class="l">avg response latency</div></div>
+    <div class="cs-metric"><div class="n">${costSavedPct}%</div><div class="l">LLM calls avoided</div></div>
+  `;
+}
+document.getElementById('cs-slider').addEventListener('input', renderCsMetrics);
+renderCsMetrics();
+</script>
+</body>
+</html>

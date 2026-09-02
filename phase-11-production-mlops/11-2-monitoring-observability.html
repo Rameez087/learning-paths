@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.2 Monitoring &amp; observability | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.tr-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.tr-span { padding: 10px 14px; border-radius: 6px; margin-bottom: 6px; font-size: 12.5px; font-family: var(--font-mono); cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.tr-span.indent1 { margin-left: 20px; }
+.tr-span.indent2 { margin-left: 40px; }
+.tr-span:hover { border-color: var(--accent); }
+.tr-span.selected { background: var(--accent-bg); border-color: var(--accent); }
+.tr-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 60px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Production &amp; MLOps</div>
+  <h1>11.2 Monitoring &amp; observability</h1>
+  <p class="subtitle">"The response reads well" is not the same claim as "the agent actually did the right thing."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Traditional monitoring (latency, error rate, uptime) doesn't capture LLM-specific failure —
+    an agent can hallucinate, answer a different question than asked, or skip a tool and make
+    something up, and the response can still read perfectly well and return a healthy status code.
+    <strong>LLM observability</strong> adds a layer on top: a tree of <strong>spans</strong>
+    recording every LLM call, tool invocation, and retrieval step in a multi-step run, letting you
+    reconstruct exactly what an agent did rather than just what it returned. One 2026 industry
+    survey found 89% of teams running some form of agent observability, yet a majority still cite
+    quality visibility as the top barrier to shipping agents reliably.
+  </div>
+
+  <h2>Try it: explore a trace, span by span</h2>
+  <div class="tr-box">
+    <div id="tr-spans"></div>
+    <div class="tr-detail" id="tr-detail">Click a span above to see its detail.</div>
+  </div>
+
+  <h2>Why classical monitoring falls short for LLMs</h2>
+  <p>
+    Classical distributed tracing was built for a world where the same input reliably produces the
+    same output and roughly the same latency. LLMs break that assumption structurally — output is
+    non-deterministic even with identical input, and a "successful" response (valid format, fast,
+    no error) can still be substantively wrong in a way no infrastructure metric would ever flag.
+    This is exactly the same insight from 11.1's deployment discussion, extended into ongoing
+    production monitoring rather than just the rollout window.
+  </p>
+
+  <h2>The four things a trace needs to capture</h2>
+  <ul>
+    <li><strong>LLM calls</strong> — the prompt sent, the response received, tokens used, latency.</li>
+    <li><strong>Tool invocations</strong> — which tool was called, with what arguments, what result came back (8.2's tool contracts, now logged in production).</li>
+    <li><strong>Retrieval steps</strong> — what was retrieved for a RAG-backed query (Phase 6), and how relevant it actually was.</li>
+    <li><strong>Reasoning/decision points</strong> — for agents, the intermediate thoughts and branch decisions from the ReAct loop (8.1), not just the final output.</li>
+  </ul>
+  <p>
+    Without all four captured as nested, parent-child-linked spans, reconstructing what an agent
+    actually did during a multi-step failure is close to impossible — you're left staring at a
+    final wrong answer with no way to see which of the several steps that produced it actually
+    went wrong.
+  </p>
+
+  <div class="figure" id="fig-trace"></div>
+
+  <h2>Monitoring vs. observability — a real distinction, not just jargon</h2>
+  <p>
+    Monitoring tracks a fixed, predefined set of metrics — latency, cost, uptime. Observability
+    goes further: it captures the full execution trace of a workflow, letting you reconstruct and
+    debug a failure you didn't specifically anticipate ahead of time, including non-deterministic
+    ones that a simple log line could never fully explain. You need both — monitoring for
+    always-on alerting against known thresholds, observability for actually understanding a novel
+    failure once one shows up.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't "the response reads well" reliably indicate that an agent worked correctly?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An agent can hallucinate, misread the question, or skip a required tool and still produce a fluent, plausible-looking response</button>
+        <button class="q-option" data-correct="false">LLMs never produce fluent-sounding text when they fail</button>
+        <button class="q-option" data-correct="false">Response quality and correctness are mathematically identical</button>
+      </div>
+      <div class="q-explain">Fluency and correctness are separate properties — a confidently wrong answer reads exactly as well as a correct one, which is precisely why span-level tracing matters more than just checking the final output.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the key difference between monitoring and observability, as used in this context?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Monitoring tracks a fixed set of predefined metrics; observability captures the full execution trace, enabling debugging of failures that weren't anticipated in advance</button>
+        <button class="q-option" data-correct="false">They are exactly the same thing with different names</button>
+        <button class="q-option" data-correct="false">Observability only applies to non-agentic, single-call LLM systems</button>
+      </div>
+      <div class="q-explain">Monitoring is good for always-on alerting against known thresholds (latency, cost); observability is what lets you reconstruct and understand a specific, possibly novel failure after the fact.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does a trace need to capture reasoning/decision points, not just the final LLM output?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">In a multi-step agent failure, the final wrong answer alone doesn't reveal which intermediate step actually caused the problem</button>
+        <button class="q-option" data-correct="false">Reasoning steps are never useful for debugging any kind of failure</button>
+        <button class="q-option" data-correct="false">Capturing reasoning steps is only relevant for single-call, non-agentic systems</button>
+      </div>
+      <div class="q-explain">This connects directly to the ReAct loop from 8.1 — without visibility into the individual thought/action/observation steps, a wrong final answer gives you no way to localize which step in the chain actually went wrong.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: MLflow "Top LLM Observability Tools in 2026"; Mastra "What is LLM observability? A span-by-span breakdown" (2026), citing LangChain's State of Agent Engineering 2025 survey; Braintrust "Agent observability: The complete guide for 2026".</p>
+
+  <div class="pager">
+    <a href="11-1-deployment-patterns.html">&larr; 11.1 Deployment patterns</a>
+    <a href="11-3-drift-detection.html">11.3 Drift detection &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SPANS = [
+  { indent: 0, label: "▸ Agent run: \"cancel my subscription\"", detail: "Root span — the full agent execution for this user request. Total latency: 2.4s. Total cost: $0.008." },
+  { indent: 1, label: "▸ Reasoning: identify intent", detail: "Thought: \"User wants to cancel. I should look up their account first.\" (8.1's ReAct thought step, captured as its own span)" },
+  { indent: 1, label: "▸ Tool call: lookup_account(user_id)", detail: "Arguments: {user_id: \"u_4471\"}. Result: {plan: \"Pro\", status: \"active\"}. Latency: 340ms." },
+  { indent: 1, label: "▸ Retrieval: cancellation policy chunks", detail: "RAG query embedded, top-3 chunks retrieved from the policy document index. Relevance scores: 0.91, 0.87, 0.62 (6.4's context precision, visible per-request here)." },
+  { indent: 1, label: "▸ Tool call: cancel_subscription(user_id)", detail: "Arguments: {user_id: \"u_4471\"}. Result: {success: true}. Latency: 210ms." },
+  { indent: 1, label: "▸ Final generation", detail: "Model produces the user-facing confirmation message, grounded in the retrieved policy chunks and the tool results above." },
+];
+document.getElementById('tr-spans').innerHTML = SPANS.map((s,i) =>
+  `<div class="tr-span indent${s.indent}" data-i="${i}">${s.label}</div>`
+).join('');
+document.querySelectorAll('.tr-span').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.tr-span').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('tr-detail').textContent = SPANS[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-trace').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: parent span for an agent run containing nested child spans for reasoning, tool calls, and retrieval">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <rect x="20" y="20" width="640" height="140" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="40" y="45" fill="#a9c1ff">Agent run (parent span)</text>
+  <rect x="40" y="60" width="140" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <text x="110" y="82" text-anchor="middle" font-size="11">Reasoning</text>
+  <rect x="200" y="60" width="140" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <text x="270" y="82" text-anchor="middle" font-size="11">Tool call</text>
+  <rect x="360" y="60" width="140" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <text x="430" y="82" text-anchor="middle" font-size="11">Retrieval</text>
+  <rect x="520" y="60" width="120" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <text x="580" y="82" text-anchor="middle" font-size="11">Generation</text>
+  <text x="40" y="130" fill="#7891c9" font-size="11" font-weight="400">Each child span is nested under the parent — this hierarchy is what lets you reconstruct exactly what happened, and in what order.</text>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 Attention mechanism deep dive | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.att-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.att-sentence { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.att-word { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 15px; transition: all 0.2s; }
+.att-word:hover { border-color: var(--accent); }
+.att-word.selected { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.att-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.att-bar-label { width: 60px; font-size: 14px; text-align: right; }
+.att-bar-track { flex: 1; height: 22px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.att-bar-fill { height: 100%; background: var(--fill-warning, #f2b84b); border-radius: 4px; transition: width 0.35s ease; }
+.att-bar-pct { width: 46px; font-size: 13px; text-align: right; color: var(--text-secondary); }
+.temp-row { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.temp-row input[type=range] { flex: 1; }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.3</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 2 · Transformers &amp; foundation models</div>
+  <h1>2.3 Attention mechanism deep dive</h1>
+  <p class="subtitle">The full mechanics behind the intuition from 1.2, now with numbers you can actually move.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    For every token, attention computes a <strong>query</strong> (what am I looking for),
+    and every token (including itself) offers a <strong>key</strong> (what do I contain) and a
+    <strong>value</strong> (what information do I carry). The query is compared against every key
+    to produce a relevance score, those scores are turned into a probability distribution via
+    softmax, and each token's value is blended into the output weighted by that distribution.
+    Every token does this simultaneously &mdash; that's what "self-attention" means.
+  </div>
+
+  <h2>Try it: click a word, see what it attends to</h2>
+  <p>
+    Click any word below to make it the "query." The bars show an illustrative attention
+    distribution &mdash; how much that word's representation would be influenced by every other
+    word in the sentence, based on typical patterns real attention heads learn for this kind of
+    sentence structure.
+  </p>
+
+  <div class="att-box">
+    <div class="att-sentence" id="att-sentence"></div>
+    <div id="att-bars"></div>
+  </div>
+
+  <h2>The three roles: query, key, value</h2>
+  <p>
+    Every token's embedding gets projected three separate ways, using three learned weight
+    matrices:
+  </p>
+  <ul>
+    <li><strong>Query (Q)</strong> &mdash; "what information am I looking for?" Computed from the token that's currently trying to update its understanding.</li>
+    <li><strong>Key (K)</strong> &mdash; "what do I have to offer?" Computed from every token, including the one asking the query.</li>
+    <li><strong>Value (V)</strong> &mdash; "here's my actual content, if you want it." Also computed from every token.</li>
+  </ul>
+  <p>
+    The relevance score between a query and a key is their dot product &mdash; a similarity
+    measure, same underlying idea as the cosine similarity from 2.2. Those raw scores get scaled
+    and passed through <strong>softmax</strong>, which converts arbitrary numbers into a clean
+    probability distribution that sums to 1. That distribution is then used to compute a weighted
+    average of every token's value vector &mdash; the result becomes the query token's updated,
+    context-aware representation.
+  </p>
+
+  <div class="figure" id="fig-qkv"></div>
+
+  <h2>Multi-head attention: several perspectives at once</h2>
+  <p>
+    A real transformer doesn't run this process once per layer &mdash; it runs it many times in
+    parallel, called <strong>attention heads</strong> (commonly 8 to 96+ depending on model size).
+    Each head learns its own Q/K/V projections, so different heads end up specializing: research
+    into trained models has found heads that track grammatical subject-verb agreement, heads that
+    resolve pronouns back to the noun they refer to, and heads that track long-range narrative
+    dependencies like the "murderer was" example from 1.2. Their outputs get concatenated and
+    combined, giving the model several independent "lenses" on the same sentence simultaneously.
+  </p>
+
+  <h2>Temperature: what happens after attention decides</h2>
+  <p>
+    Attention determines <em>which</em> context matters. Once the model has produced a probability
+    distribution over the next token, <strong>temperature</strong> determines how the model
+    samples from it. Try the slider below on a toy distribution.
+  </p>
+
+  <div class="att-box">
+    <div id="temp-bars"></div>
+    <div class="temp-row">
+      <label style="font-size:14px; color:var(--text-secondary); min-width:90px;">Temperature</label>
+      <input type="range" id="temp-slider" min="1" max="200" value="100">
+      <span id="temp-readout" style="font-weight:600; min-width:40px; text-align:right;">1.0</span>
+    </div>
+    <p class="vec-hint" style="margin-top:10px; font-size:13px; color:var(--text-muted);">
+      Low temperature sharpens the distribution toward the top choice; high temperature flattens
+      it, giving lower-probability tokens a real chance of being picked.
+    </p>
+  </div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. What role does the "key" vector play in attention?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It determines the final output text directly</button>
+        <button class="q-option" data-correct="true">It represents what a token "has to offer," compared against the query to compute relevance</button>
+        <button class="q-option" data-correct="false">It stores the position of the token in the sequence</button>
+      </div>
+      <div class="q-explain">The key is compared against the query via dot product to produce a relevance score — it's the "advertisement" of what that token contains, separate from the value, which is the actual content passed forward.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. Why do transformers use multiple attention heads instead of just one?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">To make the model run faster</button>
+        <button class="q-option" data-correct="true">Each head can specialize in a different kind of relationship (grammar, pronouns, long-range dependencies)</button>
+        <button class="q-option" data-correct="false">To reduce the total number of parameters</button>
+      </div>
+      <div class="q-explain">Multi-head attention lets the model attend to the same sentence from several independent "perspectives" simultaneously, with different heads often specializing in different linguistic patterns.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. What does raising the temperature do to the next-token distribution?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It sharpens the distribution toward the single most likely token</button>
+        <button class="q-option" data-correct="true">It flattens the distribution, giving lower-probability tokens a more realistic chance of being sampled</button>
+        <button class="q-option" data-correct="false">It changes which tokens the attention mechanism considers</button>
+      </div>
+      <div class="q-explain">Temperature is applied after attention has already produced the raw distribution — it reshapes how sharply peaked that distribution is during sampling, not what the model attended to in order to produce it.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Vaswani et al., "Attention Is All You Need" (2017); mechanistic interpretability
+    research on specialized attention head behavior (Elhage et al. 2021; Wang et al. 2023, Indirect
+    Object Identification).
+  </p>
+
+  <div class="pager">
+    <a href="2-2-embeddings-vector-space.html">&larr; 2.2 Embeddings &amp; vector space</a>
+    <a href="2-4-transformers-vs-rnns.html">2.4 Why transformers replaced RNNs &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// --- Interactive attention: click a word, see its distribution ---
+const SENTENCE = ["The", "trophy", "didn't", "fit", "in", "the", "suitcase", "because", "it", "was", "too", "big"];
+// Illustrative attention weights when each word is the query (hand-set to reflect plausible linguistic patterns)
+const ATTENTION_MAP = {
+  "it":     {"The":0.03,"trophy":0.38,"didn't":0.02,"fit":0.05,"in":0.02,"the":0.02,"suitcase":0.30,"because":0.03,"it":0.05,"was":0.03,"too":0.02,"big":0.05},
+  "was":    {"The":0.03,"trophy":0.10,"didn't":0.05,"fit":0.05,"in":0.02,"the":0.02,"suitcase":0.08,"because":0.05,"it":0.45,"was":0.05,"too":0.03,"big":0.07},
+  "big":    {"The":0.02,"trophy":0.28,"didn't":0.03,"fit":0.10,"in":0.02,"the":0.02,"suitcase":0.20,"because":0.03,"it":0.15,"was":0.10,"too":0.03,"big":0.02},
+  "fit":    {"The":0.05,"trophy":0.30,"didn't":0.15,"fit":0.04,"in":0.06,"the":0.04,"suitcase":0.26,"because":0.02,"it":0.03,"was":0.02,"too":0.01,"big":0.02},
+};
+function defaultDist(query) {
+  // fallback: mostly self + slight neighbors
+  const dist = {};
+  SENTENCE.forEach((w,i) => dist[w+i] = 0);
+  return null;
+}
+let selectedWord = "it";
+
+function renderSentence() {
+  const el = document.getElementById('att-sentence');
+  el.innerHTML = SENTENCE.map(w => {
+    const key = w.toLowerCase().replace(/[^a-z]/g,'');
+    const clickable = ATTENTION_MAP[key] ? '' : '';
+    return `<span class="att-word${key===selectedWord?' selected':''}" data-key="${key}">${w}</span>`;
+  }).join('');
+  el.querySelectorAll('.att-word').forEach(elm => {
+    elm.addEventListener('click', () => {
+      const key = elm.dataset.key;
+      if (!ATTENTION_MAP[key]) return; // only demo words are wired up
+      selectedWord = key;
+      renderSentence();
+      renderBars();
+    });
+  });
+}
+
+function renderBars() {
+  const dist = ATTENTION_MAP[selectedWord];
+  const container = document.getElementById('att-bars');
+  if (!dist) { container.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Click "it", "was", "big", or "fit" above — those are wired up for this demo.</p>'; return; }
+  const entries = Object.entries(dist).sort((a,b) => b[1]-a[1]).slice(0,6);
+  container.innerHTML = entries.map(([w,p]) => `
+    <div class="att-bar-row">
+      <div class="att-bar-label">${w}</div>
+      <div class="att-bar-track"><div class="att-bar-fill" style="width:${p*100}%"></div></div>
+      <div class="att-bar-pct">${Math.round(p*100)}%</div>
+    </div>
+  `).join('');
+}
+renderSentence();
+renderBars();
+
+// --- Temperature slider on toy distribution ---
+const BASE_LOGITS = [4.2, 2.1, 1.8, 0.9, 0.3];
+const LABELS = ["intent", "weather", "number", "dog", "banana"];
+function softmaxWithTemp(logits, temp) {
+  const scaled = logits.map(l => l / temp);
+  const max = Math.max(...scaled);
+  const exps = scaled.map(l => Math.exp(l - max));
+  const sum = exps.reduce((a,b) => a+b, 0);
+  return exps.map(e => e/sum);
+}
+function renderTempBars() {
+  const t = document.getElementById('temp-slider').value / 100;
+  document.getElementById('temp-readout').textContent = t.toFixed(2);
+  const probs = softmaxWithTemp(BASE_LOGITS, t);
+  const container = document.getElementById('temp-bars');
+  container.innerHTML = LABELS.map((label,i) => `
+    <div class="att-bar-row">
+      <div class="att-bar-label">${label}</div>
+      <div class="att-bar-track"><div class="att-bar-fill" style="width:${probs[i]*100}%; background:#5b8cff;"></div></div>
+      <div class="att-bar-pct">${Math.round(probs[i]*100)}%</div>
+    </div>
+  `).join('');
+}
+document.getElementById('temp-slider').addEventListener('input', renderTempBars);
+renderTempBars();
+
+document.getElementById('fig-qkv').innerHTML = `
+<svg viewBox="0 0 680 220" width="100%" role="img" aria-label="Diagram: query compared against keys via dot product, softmax normalizes scores, weighted sum of values produces output">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 13px; font-weight: 600; }
+    .sub { font-size: 11px; fill: #9aa4b5; }
+  </style>
+  <rect x="20" y="20" width="130" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="85" y="50" class="lbl" text-anchor="middle">Query (Q)</text>
+
+  <rect x="20" y="140" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="85" y="170" class="lbl" text-anchor="middle">Keys (K)</text>
+
+  <line x1="150" y1="45" x2="220" y2="90" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="150" y1="165" x2="220" y2="100" stroke="#6b7386" stroke-width="1.5"/>
+  <rect x="220" y="70" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="285" y="90" class="lbl" text-anchor="middle">Dot product</text>
+  <text x="285" y="106" class="sub" text-anchor="middle">relevance scores</text>
+
+  <line x1="350" y1="95" x2="410" y2="95" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a5)"/>
+  <rect x="410" y="70" width="110" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="465" y="90" class="lbl" text-anchor="middle">Softmax</text>
+  <text x="465" y="106" class="sub" text-anchor="middle">probabilities</text>
+
+  <line x1="520" y1="95" x2="560" y2="95" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a5)"/>
+  <rect x="20" y="180" width="130" height="34" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <text x="85" y="201" class="lbl" text-anchor="middle" font-size="12">Values (V)</text>
+  <line x1="150" y1="197" x2="590" y2="130" stroke="#6b7386" stroke-width="1.5"/>
+
+  <rect x="560" y="70" width="100" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+  <text x="610" y="90" class="lbl" text-anchor="middle" fill="#a9c1ff">Output</text>
+  <text x="610" y="106" class="sub" text-anchor="middle" fill="#7891c9">weighted sum</text>
+
+  <defs><marker id="a5" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+
+</body>
+</html>

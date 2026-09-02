@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 Streaming responses | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.stream-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.stream-output { background: var(--code-bg); border: 1px solid var(--border-strong); border-radius: 8px; padding: 16px; min-height: 90px; font-size: 15px; margin-bottom: 14px; }
+.stream-cursor { display: inline-block; width: 8px; height: 16px; background: var(--accent); animation: blink 0.8s step-end infinite; vertical-align: text-bottom; }
+@keyframes blink { 50% { opacity: 0; } }
+.stream-controls { display: flex; align-items: center; gap: 12px; }
+.stream-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.stream-timer { display: flex; gap: 24px; margin-top: 14px; }
+.stream-timer .metric { background: var(--surface-2); border-radius: 8px; padding: 10px 16px; text-align: center; }
+.stream-timer .n { font-size: 20px; font-weight: 700; }
+.stream-timer .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Working with LLM APIs</div>
+  <h1>4.1 Streaming responses</h1>
+  <p class="subtitle">Same total wait time, radically different feel — and when it's not worth the complexity.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Without streaming, the server builds the entire response before sending a single byte — the
+    user stares at a blank screen for the full generation time. Streaming ships each token over
+    <strong>Server-Sent Events (SSE)</strong> the moment it's produced, so perceived latency drops
+    from seconds to milliseconds even though total generation time is identical. Roughly 80% of
+    user-facing calls benefit from streaming; roughly 80% of backend, non-interactive calls don't
+    — matching the tool to the task matters more than defaulting to either.
+  </div>
+
+  <h2>Try it: same total time, two experiences</h2>
+  <p>Both bars below take the same 3 seconds to fully complete. Watch the difference.</p>
+  <div class="stream-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">Without streaming</p>
+    <div class="stream-output" id="nostream-output" style="color:var(--text-muted);">Waiting for full response…</div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">With streaming</p>
+    <div class="stream-output" id="stream-output"></div>
+    <div class="stream-controls">
+      <button class="stream-btn" id="stream-run">Run both</button>
+    </div>
+    <div class="stream-timer">
+      <div class="metric"><div class="n" id="stream-first-token">&mdash;</div><div class="l">time to first visible text (streamed)</div></div>
+      <div class="metric"><div class="n" id="stream-total">&mdash;</div><div class="l">total time (identical either way)</div></div>
+    </div>
+  </div>
+
+  <h2>The mechanism: Server-Sent Events</h2>
+  <p>
+    Streaming works over an HTTP connection kept open, with the server pushing small chunks as
+    they're ready rather than closing the connection after one full response. Client code sets
+    <code>stream=True</code> on the request, then reads incrementally: parse each incoming chunk
+    as it arrives, extract the token, append it to the display, repeat.
+  </p>
+  <pre><code>with client.messages.stream(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Explain quicksort."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</code></pre>
+
+  <h2>When streaming is overhead, not benefit</h2>
+  <ul>
+    <li><strong>Short responses under ~50 tokens.</strong> If the full response completes in under half a second anyway, the connection management and chunk-parsing overhead of streaming adds complexity without a visible UX improvement.</li>
+    <li><strong>Backend, non-interactive calls.</strong> A batch job classifying 10,000 support tickets overnight has no user watching a screen — there's nothing to make feel faster, so plain request/response is simpler and easier to reason about.</li>
+    <li><strong>Anywhere you need the complete response before proceeding.</strong> If your code parses the full output as structured JSON (3.2) before doing anything with it, streaming individual tokens doesn't help — you're waiting for the closing brace regardless.</li>
+  </ul>
+
+  <h2>Streaming and tool calls interact carefully</h2>
+  <p>
+    When a model can call tools (4.2), the stream needs to distinguish plain text chunks from
+    tool-call chunks as they arrive — production streaming code checks the event type on each
+    chunk rather than assuming everything is displayable text. Getting this wrong is a real
+    failure mode: partially-streamed tool call arguments displayed as if they were prose confuses
+    users and can even leak internal call structure into a chat UI.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Does streaming reduce the total time an LLM takes to generate a full response?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Yes, streaming makes generation itself faster</button>
+        <button class="q-option" data-correct="true">No — total generation time is unchanged; only when the user starts seeing output changes</button>
+        <button class="q-option" data-correct="false">Streaming only works with shorter responses</button>
+      </div>
+      <div class="q-explain">Streaming is purely a delivery mechanism — it changes perceived latency, not the underlying compute time the model needs to produce every token.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might a backend batch job NOT benefit from streaming?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">There's no user watching a screen, so there's no perceived-latency benefit to gain</button>
+        <button class="q-option" data-correct="false">Streaming is incompatible with any automated pipeline</button>
+        <button class="q-option" data-correct="false">Batch jobs can't use LLM APIs at all</button>
+      </div>
+      <div class="q-explain">Streaming's entire value proposition is about the user's experience of waiting — a job with no human watching in real time gains nothing from token-by-token delivery.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does mixing streaming with tool calls require extra care?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Chunks can be plain text or tool-call data, and code must distinguish them rather than displaying everything as prose</button>
+        <button class="q-option" data-correct="false">Streaming disables tool calling entirely</button>
+        <button class="q-option" data-correct="false">Tool calls always arrive before streaming starts</button>
+      </div>
+      <div class="q-explain">A streamed response can interleave text and tool-call chunks — treating a tool-call chunk as displayable text is a real production bug that can leak internal structure into a user-facing UI.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: machinelearningplus.com LLM streaming tutorial (2026); DevToolKit.cloud LLM API integration patterns guide (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-03-prompt-engineering/3-5-prompt-chaining-decomposition.html">&larr; 3.5 Prompt chaining &amp; decomposition</a>
+    <a href="4-2-function-calling-tool-use.html">4.2 Function calling &amp; tool use &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const RESPONSE = "Quicksort picks a pivot element, partitions the array so smaller values go left and larger go right, then recursively sorts each side.";
+document.getElementById('stream-run').addEventListener('click', () => {
+  document.getElementById('nostream-output').textContent = 'Waiting for full response…';
+  document.getElementById('nostream-output').style.color = 'var(--text-muted)';
+  document.getElementById('stream-output').innerHTML = '<span class="stream-cursor"></span>';
+  document.getElementById('stream-first-token').textContent = '—';
+  document.getElementById('stream-total').textContent = '—';
+  const start = Date.now();
+  let firstTokenMarked = false;
+  const words = RESPONSE.split(' ');
+  let i = 0;
+  const interval = 3000 / words.length;
+  function tick() {
+    if (i >= words.length) {
+      document.getElementById('stream-output').innerHTML = RESPONSE;
+      document.getElementById('nostream-output').textContent = RESPONSE;
+      document.getElementById('nostream-output').style.color = 'var(--text)';
+      document.getElementById('stream-total').textContent = '3.0s';
+      return;
+    }
+    if (!firstTokenMarked) {
+      document.getElementById('stream-first-token').textContent = ((Date.now()-start)/1000).toFixed(2) + 's';
+      firstTokenMarked = true;
+    }
+    document.getElementById('stream-output').innerHTML = words.slice(0, i+1).join(' ') + ' <span class="stream-cursor"></span>';
+    i++;
+    setTimeout(tick, interval);
+  }
+  tick();
+});
+</script>
+</body>
+</html>

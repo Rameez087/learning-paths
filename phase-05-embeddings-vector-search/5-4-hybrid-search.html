@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.4 Hybrid search | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.hs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.hs-query-btn { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 8px; }
+.hs-query-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.hs-results { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.hs-col h4 { font-size: 13px; margin: 0 0 10px; color: var(--text-secondary); }
+.hs-result-item { padding: 8px 10px; background: var(--surface-2); border-radius: 6px; margin-bottom: 6px; font-size: 12.5px; }
+.hs-result-item.miss { opacity: 0.35; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Embeddings &amp; vector search</div>
+  <h1>5.4 Hybrid search</h1>
+  <p class="subtitle">Semantic search finds meaning. Keyword search finds exact strings. Real queries often need both.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Vector search excels at conceptual, paraphrased queries but genuinely struggles with exact
+    matches — error codes, product IDs, specific numbers — because embeddings capture meaning, not
+    literal tokens. <strong>Hybrid search</strong> runs both a vector search and a traditional
+    keyword search (typically BM25, a scoring algorithm over an inverted index) in parallel, then
+    merges the results. Reported enterprise data shows hybrid search improving recall by around
+    17%, and a large majority of enterprises using it report meaningfully better query accuracy
+    versus vector search alone.
+  </div>
+
+  <h2>Try it: same document set, two very different query types</h2>
+  <div class="hs-box">
+    <div>
+      <div class="hs-query-btn active" data-q="semantic">"how do I recover from a database outage"</div>
+      <div class="hs-query-btn" data-q="exact">"error code 504"</div>
+    </div>
+    <div class="hs-results">
+      <div class="hs-col">
+        <h4>Vector search only</h4>
+        <div id="hs-vector"></div>
+      </div>
+      <div class="hs-col">
+        <h4>Hybrid (vector + BM25 keyword)</h4>
+        <div id="hs-hybrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Why vector search alone misses exact matches</h2>
+  <p>
+    An embedding represents overall meaning — "kafka error code 504" and "kafka timeout in
+    distributed systems" can land close together in vector space because they're conceptually
+    related, even though only one of them contains the literal string "504" the user actually
+    typed. For a query that's fundamentally about an exact identifier, that conceptual closeness
+    is the wrong signal — the user wants the document containing that specific code, not documents
+    about vaguely similar topics.
+  </p>
+
+  <h2>How the two search paths combine</h2>
+  <p>
+    A common architecture keeps the vector index and a keyword index (an inverted index, using an
+    algorithm like BM25) as two separate systems, each optimized for its own kind of matching —
+    not redundant storage, but purpose-specific indexing. Both run against the same query, and
+    their result sets get merged and re-ranked (often the reranking step covered in Phase 6)
+    before the final top results are handed to the LLM.
+  </p>
+
+  <div class="figure" id="fig-hybrid"></div>
+
+  <h2>The cost of doing this</h2>
+  <p>
+    Maintaining two indexes over the same underlying content is more operational overhead than a
+    single vector index — a single source of truth typically feeds pipelines that keep both
+    indexes synchronized. Enterprises report tolerating this added complexity specifically because
+    the accuracy gain is large enough to justify it, not because it's free.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a query like "error code 504" often fail with vector search alone?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Embeddings capture conceptual similarity, not exact string matching, so a related-but-different document can score just as high or higher</button>
+        <button class="q-option" data-correct="false">Vector databases cannot index numbers</button>
+        <button class="q-option" data-correct="false">Error codes are always excluded from embeddings during training</button>
+      </div>
+      <div class="q-explain">A document about "timeout in distributed systems" can be conceptually close to "error code 504" in embedding space without containing the literal code — exact-match precision isn't what vector similarity optimizes for.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does BM25 provide that a vector index doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Precise keyword/exact-term matching via a traditional inverted index</button>
+        <button class="q-option" data-correct="false">Semantic understanding of paraphrased queries</button>
+        <button class="q-option" data-correct="false">Automatic document summarization</button>
+      </div>
+      <div class="q-explain">BM25 is a keyword-scoring algorithm over an inverted index — its strength is exact and near-exact term matching, which is precisely the case vector search handles poorly.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why do production hybrid search systems generally maintain two separate indexes rather than one combined structure?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each index type (vector, keyword) is purpose-built for a different kind of matching, and enterprises find the accuracy gain worth the added sync complexity</button>
+        <button class="q-option" data-correct="false">It's technically impossible to combine them into any single query path</button>
+        <button class="q-option" data-correct="false">Two indexes are always cheaper to operate than one</button>
+      </div>
+      <div class="q-explain">This is a deliberate trade-off, not a limitation — the reported recall improvement from combining both search types is large enough that teams accept the extra operational overhead of keeping two indexes synchronized.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DEV Community 2026 RAG production benchmarks (Pinecone, Qdrant, Weaviate data); Anil Goyal, "Inside Vector Databases for RAG" (2026); Oracle hybrid vector index documentation.</p>
+
+  <div class="pager">
+    <a href="5-3-chunking-strategies.html">&larr; 5.3 Chunking strategies</a>
+    <a href="../index.html">Phase 6: RAG systems &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const RESULTS = {
+  semantic: {
+    vector: [
+      { text: "How to restore service after a database outage", hit: true },
+      { text: "Disaster recovery runbook for production DBs", hit: true },
+      { text: "Failover procedures when the primary node goes down", hit: true },
+    ],
+    hybrid: [
+      { text: "How to restore service after a database outage", hit: true },
+      { text: "Disaster recovery runbook for production DBs", hit: true },
+      { text: "Failover procedures when the primary node goes down", hit: true },
+    ]
+  },
+  exact: {
+    vector: [
+      { text: "Kafka timeout in distributed systems (general)", hit: false },
+      { text: "Common HTTP gateway issues overview", hit: false },
+      { text: "Debugging network latency in microservices", hit: false },
+    ],
+    hybrid: [
+      { text: "Kafka error code 504 — troubleshooting guide", hit: true },
+      { text: "504 Gateway Timeout: root causes checklist", hit: true },
+      { text: "Kafka timeout in distributed systems (general)", hit: false },
+    ]
+  }
+};
+function renderHybrid(qType) {
+  const data = RESULTS[qType];
+  document.getElementById('hs-vector').innerHTML = data.vector.map(r =>
+    `<div class="hs-result-item ${r.hit ? '' : 'miss'}">${r.hit ? '✓' : '✗'} ${r.text}</div>`
+  ).join('');
+  document.getElementById('hs-hybrid').innerHTML = data.hybrid.map(r =>
+    `<div class="hs-result-item ${r.hit ? '' : 'miss'}">${r.hit ? '✓' : '✗'} ${r.text}</div>`
+  ).join('');
+}
+document.querySelectorAll('.hs-query-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.hs-query-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderHybrid(btn.dataset.q);
+  });
+});
+renderHybrid('semantic');
+
+document.getElementById('fig-hybrid').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: query fans out to both a vector index and a keyword index, results merge and rerank">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <rect x="290" y="20" width="100" height="40" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="340" y="45" text-anchor="middle">Query</text>
+  <line x1="320" y1="60" x2="200" y2="95" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="360" y1="60" x2="480" y2="95" stroke="#6b7386" stroke-width="1.5"/>
+  <rect x="130" y="95" width="140" height="40" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="200" y="120" text-anchor="middle" fill="#a9c1ff">Vector index</text>
+  <rect x="410" y="95" width="140" height="40" rx="8" fill="#1a2029" stroke="#f2b84b"/>
+  <text x="480" y="120" text-anchor="middle" fill="#f2b84b">BM25 keyword</text>
+  <line x1="200" y1="135" x2="330" y2="150" stroke="#6b7386" stroke-width="1"/>
+  <line x1="480" y1="135" x2="350" y2="150" stroke="#6b7386" stroke-width="1"/>
+  <text x="340" y="158" text-anchor="middle" fill="#9aa4b5" font-weight="400">merge + rerank</text>
+</svg>
+`;
+</script>
+</body>
+</html>

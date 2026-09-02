@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.4 Evaluating retrieval quality | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ev-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ev-metric-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.ev-metric-row .label { min-width: 150px; font-size: 13px; }
+.ev-metric-row .bar-track { flex: 1; height: 20px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.ev-metric-row .bar-fill { height: 100%; border-radius: 4px; }
+.ev-metric-row .val { min-width: 40px; text-align: right; font-weight: 700; font-size: 13px; }
+.ev-scenario-btn { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 12px; }
+.ev-scenario-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.ev-diagnosis { padding: 12px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · RAG systems</div>
+  <h1>6.4 Evaluating retrieval quality</h1>
+  <p class="subtitle">A great faithfulness score can hide a broken retriever. You need both halves measured.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    RAG has two failure surfaces — retrieval and generation — and a single aggregate score can
+    mask which one is actually broken. The four canonical metrics (from the widely-used RAGAS
+    framework): <strong>context precision</strong> and <strong>context recall</strong> measure the
+    retriever (is what's retrieved relevant? is everything needed actually retrieved?);
+    <strong>faithfulness</strong> and <strong>answer relevancy</strong> measure the generator (is
+    the answer grounded in the retrieved context? does it address the question?). A system can
+    score high on generation metrics while its retriever is quietly failing — you need to measure
+    both halves separately to know which one to fix.
+  </div>
+
+  <h2>Try it: same faithfulness score, two very different root causes</h2>
+  <div class="ev-box">
+    <div>
+      <div class="ev-scenario-btn active" data-s="healthy">Healthy system</div>
+      <div class="ev-scenario-btn" data-s="broken">Faithfulness looks fine — but is it?</div>
+    </div>
+    <div id="ev-metrics"></div>
+    <div class="ev-diagnosis" id="ev-diagnosis"></div>
+  </div>
+
+  <h2>The four metrics, precisely</h2>
+  <ul>
+    <li><strong>Context precision</strong> — of everything retrieved, how much is actually relevant? Low precision means the retriever is pulling in noise alongside the useful chunks, diluting what the generator sees.</li>
+    <li><strong>Context recall</strong> — of everything needed to fully answer the question, how much was actually retrieved? Low recall means information is missing entirely, regardless of how clean the retrieved chunks are.</li>
+    <li><strong>Faithfulness</strong> — of the claims in the generated answer, how many are actually supported by the retrieved context? Low faithfulness means the model is adding unsupported claims — hallucinating, even with correct context in front of it.</li>
+    <li><strong>Answer relevancy</strong> — does the generated answer actually address the question asked? A technically faithful answer can still be relevancy-low if it goes off-topic or answers a related-but-different question.</li>
+  </ul>
+
+  <h2>Why this decomposition matters more than one aggregate number</h2>
+  <p>
+    A documented real-world failure pattern: a legal research RAG system scores 0.91 on
+    faithfulness in its offline evaluation set — looking excellent. Weeks into production, users
+    report the system misses a key statute roughly one time in six on multi-hop questions
+    (questions requiring information from more than one source). The faithfulness dashboard still
+    reads 0.91, unchanged — because faithfulness only measures whether the <em>generated</em>
+    answer is grounded in whatever <em>was</em> retrieved. Checking context recall reveals the
+    real problem: it had dropped to 0.62. The retriever was missing the second statute on
+    multi-hop questions; the generator was answering coherently and faithfully from the partial
+    context it had, so faithfulness stayed high while the actual answers were incomplete. No
+    generation-only metric would ever have surfaced this regression.
+  </p>
+
+  <h2>Precision@k, Recall@k, and when you need labeled data</h2>
+  <p>
+    When you have labeled "gold" documents per query (a known-correct answer set), classic
+    information-retrieval metrics apply directly: Precision@k and Recall@k at a specific cutoff,
+    plus ranking-aware metrics like MRR (Mean Reciprocal Rank) and NDCG, which matter because a
+    correct chunk buried at position 8 of 10 retrieved results is often functionally invisible to
+    the model. When you don't have labeled gold documents, LLM-judge versions of context precision
+    and answer relevancy can substitute — though context recall specifically still needs some form
+    of reference answer or gold chunk set to compute reliably.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can a RAG system show high faithfulness while still giving incomplete answers?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Faithfulness only checks whether the answer matches what was retrieved — it says nothing about whether the retriever found everything needed</button>
+        <button class="q-option" data-correct="false">Faithfulness and completeness are mathematically identical measurements</button>
+        <button class="q-option" data-correct="false">High faithfulness always guarantees complete retrieval</button>
+      </div>
+      <div class="q-explain">This is exactly the legal-research example — faithfulness measures generation quality given whatever context was retrieved, so a retriever quietly missing information can hide behind a perfectly consistent faithfulness score.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does context recall specifically measure?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Whether all the information needed to fully answer the question was actually retrieved</button>
+        <button class="q-option" data-correct="false">Whether the generated answer is grammatically correct</button>
+        <button class="q-option" data-correct="false">How fast the retrieval query executes</button>
+      </div>
+      <div class="q-explain">Context recall is a retrieval-stage metric checking completeness of what was retrieved against what was actually needed — distinct from faithfulness, which only checks the generator's use of whatever was retrieved.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does ranking matter (MRR, NDCG) beyond just whether the correct chunk was retrieved at all?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A correct chunk buried deep in the retrieved results (e.g. position 8 of 10) is often effectively missed by the model in practice</button>
+        <button class="q-option" data-correct="false">Ranking metrics are purely cosmetic and have no effect on model behavior</button>
+        <button class="q-option" data-correct="false">Models always weigh every retrieved chunk equally regardless of position</button>
+      </div>
+      <div class="q-explain">Presence alone isn't sufficient — where a relevant chunk lands in the returned ranking affects whether it meaningfully influences the model's answer, which is exactly what ranking-aware metrics like MRR and NDCG are built to capture.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: RAGAS framework (Es et al., 2024); FutureAGI "RAG Evaluation Metrics in 2026"; Atlan "RAG Evaluation: Metrics, Tools, and the Context Gap" (2026); Confident AI RAG evaluation metrics guide.</p>
+
+  <div class="pager">
+    <a href="6-3-hyde-query-transformation.html">&larr; 6.3 HyDE &amp; query transformation</a>
+    <a href="../index.html">Phase 7: Multi-LLM orchestration &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SCENARIOS = {
+  healthy: {
+    metrics: [
+      { label: "Context precision", val: 0.88, color: "#5b8cff" },
+      { label: "Context recall", val: 0.91, color: "#5b8cff" },
+      { label: "Faithfulness", val: 0.93, color: "#3ecf8e" },
+      { label: "Answer relevancy", val: 0.90, color: "#3ecf8e" },
+    ],
+    diagnosis: "All four metrics are strong — both retrieval and generation are healthy. This is what a well-functioning RAG pipeline looks like across the board."
+  },
+  broken: {
+    metrics: [
+      { label: "Context precision", val: 0.85, color: "#5b8cff" },
+      { label: "Context recall", val: 0.62, color: "#e5484d" },
+      { label: "Faithfulness", val: 0.91, color: "#3ecf8e" },
+      { label: "Answer relevancy", val: 0.89, color: "#3ecf8e" },
+    ],
+    diagnosis: "⚠ Faithfulness (0.91) and answer relevancy look great — the generator is doing its job well with whatever it receives. But context recall has dropped to 0.62: the retriever is missing a meaningful share of the information actually needed. This is the exact legal-research failure pattern described above — a generation-only dashboard would never catch this."
+  }
+};
+function renderEv(key) {
+  const s = SCENARIOS[key];
+  document.getElementById('ev-metrics').innerHTML = s.metrics.map(m => `
+    <div class="ev-metric-row">
+      <div class="label">${m.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${m.val*100}%; background:${m.color};"></div></div>
+      <div class="val">${m.val.toFixed(2)}</div>
+    </div>
+  `).join('');
+  document.getElementById('ev-diagnosis').textContent = s.diagnosis;
+}
+document.querySelectorAll('.ev-scenario-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ev-scenario-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderEv(btn.dataset.s);
+  });
+});
+renderEv('healthy');
+</script>
+</body>
+</html>

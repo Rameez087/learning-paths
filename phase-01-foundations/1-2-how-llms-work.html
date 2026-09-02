@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 How LLMs actually work | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.2</div>
+</nav>
+
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.2 How LLMs actually work</h1>
+  <p class="subtitle">No math. Just the mechanism &mdash; because everything else in this track depends on this being solid.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An LLM does one thing, over and over: given the text so far, it predicts a probability for
+    every possible next token, picks one, appends it, and repeats. There's no lookup table, no
+    stored "facts" in the way a database has facts &mdash; just a very good statistical guess at
+    what comes next, refined by an architecture called the <strong>transformer</strong>, whose key
+    trick is called <strong>attention</strong>: the ability for every word to look at every other
+    word and decide how relevant it is.
+  </div>
+
+  <h2>Step 1: text becomes tokens</h2>
+  <p>
+    Before any prediction happens, your input text is broken into <strong>tokens</strong> &mdash;
+    chunks that are often whole words, sometimes word pieces ("ing", "un-"), sometimes single
+    characters for rare words. This isn't a detail to skim past: token count is literally what you
+    pay for on every API call, and it's why a model can "run out of context" mid-conversation.
+  </p>
+  <p>
+    Each token is converted into a list of numbers &mdash; an <strong>embedding</strong> &mdash;
+    that represents its meaning as a point in high-dimensional space. Words with similar meanings
+    end up as nearby points. We'll go deeper on embeddings in Phase 5; for now, just know: token in,
+    numbers out.
+  </p>
+
+  <h2>Step 2: attention &mdash; every token looks at every other token</h2>
+  <p>
+    This is the actual breakthrough, introduced in the 2017 paper that started the current era of
+    AI. Before transformers, models processed text mostly in order, one word after another, which
+    made it hard to connect a word to something said much earlier in a long passage.
+  </p>
+  <p>
+    Attention fixes this by letting every token directly examine every other token in the input,
+    all at once, and assign each one a relevance score. Consider a sentence ending in
+    "...therefore the murderer was" &mdash; to predict the next word correctly, the model needs the
+    final token to have absorbed information from potentially the entire preceding passage: who
+    had a motive, who was in the room, what clue was dropped three paragraphs back. Attention is
+    the mechanism that lets that happen &mdash; it lets information flow from any token to any
+    other token, weighted by relevance, regardless of distance between them.
+  </p>
+
+  <div class="figure" id="fig-attention"></div>
+
+  <div class="callout paper">
+    <div class="callout-label">Landmark paper</div>
+    <strong>Attention Is All You Need</strong> &mdash; Vaswani et al., 2017. Introduced the
+    transformer architecture and the self-attention mechanism described above, replacing the
+    recurrent (step-by-step) architectures that came before it. Nearly every LLM in production
+    today &mdash; GPT, Claude, Gemini, Llama &mdash; is a descendant of this paper's architecture.
+    <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arxiv.org/abs/1706.03762</a>
+  </div>
+
+  <h2>Step 3: predict, sample, repeat</h2>
+  <p>
+    After attention has let every token gather context from the others, the model produces a
+    probability for <em>every token in its entire vocabulary</em> (tens of thousands of
+    possibilities) being the next one. It then samples a token from that distribution &mdash; not
+    always the single most likely one, which is where <strong>temperature</strong> comes in: a
+    setting that controls how often the model picks a lower-probability token instead of the top
+    guess. Temperature 0 is nearly deterministic; higher temperature means more variety, and
+    occasionally more nonsense.
+  </p>
+  <p>
+    That new token gets appended to the sequence, and the entire process repeats: re-attend over
+    everything so far (including the token you just generated), predict the next distribution,
+    sample again. An LLM generating a 500-word answer is running this loop roughly 500+ times,
+    each time re-examining the whole conversation so far.
+  </p>
+
+  <div class="figure" id="fig-loop"></div>
+
+  <h2>What this explains about LLM behavior</h2>
+  <ul>
+    <li><strong>Why LLMs "hallucinate":</strong> there's no fact-checking step. The model is producing the statistically plausible continuation of the text, and a confident-sounding wrong answer is exactly as "natural" a continuation as a correct one, if the training data made it look that way.</li>
+    <li><strong>Why longer context costs more and gets slower:</strong> attention compares every token against every other token, so cost grows faster than the context length itself.</li>
+    <li><strong>Why the same prompt can give different answers:</strong> sampling at nonzero temperature means the model isn't always picking the single most likely token.</li>
+    <li><strong>Why models can "forget" something you said 50 messages ago:</strong> if it fell outside the context window, it's not in the token sequence being attended over at all &mdash; it isn't there to attend to.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+
+    <div class="q-block">
+      <div class="q-prompt">1. What does the attention mechanism actually do?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">It stores facts the model has memorized in a lookup table</button>
+        <button class="q-option" data-correct="true">It lets every token weigh the relevance of every other token, regardless of distance</button>
+        <button class="q-option" data-correct="false">It compresses the input to reduce token count</button>
+      </div>
+      <div class="q-explain">Attention is a relevance-weighting mechanism between tokens, not a storage or compression system &mdash; it's what lets a model connect "was" at the end of a paragraph back to a clue mentioned much earlier.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">2. Why do LLMs sometimes generate confident, plausible-sounding wrong answers?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Because the model is predicting statistically plausible text, not verifying facts</button>
+        <button class="q-option" data-correct="false">Because the attention mechanism is broken in those cases</button>
+        <button class="q-option" data-correct="false">Because the tokenizer failed to encode the input correctly</button>
+      </div>
+      <div class="q-explain">There's no fact-checking step in the generation loop &mdash; the model produces whatever continuation looks statistically plausible given its training, whether or not that continuation is true.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-prompt">3. Setting temperature to 0 does what?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">Disables the attention mechanism</button>
+        <button class="q-option" data-correct="true">Makes the model almost always pick the single highest-probability next token</button>
+        <button class="q-option" data-correct="false">Reduces the token count of the response</button>
+      </div>
+      <div class="q-explain">Temperature controls sampling randomness. At 0, the model consistently picks the top-probability token, making output close to deterministic; higher temperatures introduce more variety by occasionally picking lower-probability tokens.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">
+    Sources: Vaswani et al., "Attention Is All You Need" (2017); 3Blue1Brown's transformer/attention
+    visual series; Transformer Explainer (Polo Club, Georgia Tech).
+  </p>
+
+  <div class="pager">
+    <a href="1-1-what-is-an-ai-engineer.html">&larr; 1.1 What is an AI engineer</a>
+    <a href="1-3-prompting-as-engineering.html">1.3 Prompting as an engineering skill &rarr;</a>
+  </div>
+</main>
+
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (block.dataset.answered) return;
+      block.dataset.answered = "true";
+      options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+      explain.classList.add('show');
+    });
+  });
+});
+
+// Attention diagram: one query token fanning out to all others with weighted lines
+document.getElementById('fig-attention').innerHTML = `
+<svg viewBox="0 0 680 260" width="100%" role="img" aria-label="Diagram: the word sat attending to every other word in the sentence, with line thickness showing attention weight">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .tok { font-size: 13px; }
+    .cap { font-size: 12px; fill: #9aa4b5; }
+  </style>
+  <line x1="340" y1="150" x2="116" y2="66" stroke="#f2b84b" stroke-width="1" opacity="0.25" stroke-linecap="round"/>
+  <line x1="340" y1="150" x2="228" y2="66" stroke="#f2b84b" stroke-width="1.5" opacity="0.4" stroke-linecap="round"/>
+  <line x1="340" y1="150" x2="340" y2="66" stroke="#f2b84b" stroke-width="4" opacity="1" stroke-linecap="round"/>
+  <line x1="340" y1="150" x2="452" y2="66" stroke="#f2b84b" stroke-width="2.5" opacity="0.7" stroke-linecap="round"/>
+  <line x1="340" y1="150" x2="564" y2="66" stroke="#f2b84b" stroke-width="1" opacity="0.2" stroke-linecap="round"/>
+
+  <rect x="80" y="40" width="72" height="34" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <rect x="192" y="40" width="72" height="34" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <rect x="304" y="40" width="72" height="34" rx="6" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <rect x="416" y="40" width="72" height="34" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <rect x="528" y="40" width="72" height="34" rx="6" fill="#1a2029" stroke="#262d3a"/>
+  <text x="116" y="61" class="tok" text-anchor="middle">the</text>
+  <text x="228" y="61" class="tok" text-anchor="middle">cat</text>
+  <text x="340" y="61" class="tok" text-anchor="middle" font-weight="600">sat</text>
+  <text x="452" y="61" class="tok" text-anchor="middle">on</text>
+  <text x="564" y="61" class="tok" text-anchor="middle">the</text>
+
+  <rect x="304" y="133" width="72" height="34" rx="6" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="154" class="tok" text-anchor="middle" font-weight="600">sat</text>
+
+  <text x="340" y="210" class="cap" text-anchor="middle">Line thickness = how much attention "sat" pays to each other token</text>
+</svg>
+`;
+
+// Generation loop diagram
+document.getElementById('fig-loop').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: the generation loop of attend, predict, sample, append, repeat">
+  <style>
+    text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
+    .lbl { font-size: 13px; font-weight: 600; }
+  </style>
+  <rect x="30" y="70" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="95" y="100" class="lbl" text-anchor="middle">Attend over</text>
+  <text x="95" y="116" font-size="11" fill="#9aa4b5" text-anchor="middle">sequence so far</text>
+
+  <line x1="160" y1="95" x2="200" y2="95" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a1)"/>
+  <rect x="200" y="70" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="265" y="100" class="lbl" text-anchor="middle">Predict</text>
+  <text x="265" y="116" font-size="11" fill="#9aa4b5" text-anchor="middle">probability dist.</text>
+
+  <line x1="330" y1="95" x2="370" y2="95" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a1)"/>
+  <rect x="370" y="70" width="130" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="435" y="100" class="lbl" text-anchor="middle">Sample</text>
+  <text x="435" y="116" font-size="11" fill="#9aa4b5" text-anchor="middle">one token</text>
+
+  <line x1="500" y1="95" x2="540" y2="95" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a1)"/>
+  <rect x="540" y="70" width="110" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="595" y="100" class="lbl" text-anchor="middle">Append</text>
+  <text x="595" y="116" font-size="11" fill="#a9c1ff" text-anchor="middle">&amp; repeat</text>
+
+  <path d="M 595 70 C 595 20, 95 20, 95 68" fill="none" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a1)"/>
+  <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+
+</body>
+</html>
