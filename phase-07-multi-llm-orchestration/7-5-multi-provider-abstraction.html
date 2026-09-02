@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.5 Multi-provider abstraction layers | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ab-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ab-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ab-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ab-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Multi-LLM orchestration</div>
+  <h1>7.5 Multi-provider abstraction layers</h1>
+  <p class="subtitle">"An engineer who knows only one SDK is a liability the day rate limits hit or pricing shifts." — 2026 hiring guidance, verbatim.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Every provider's SDK represents the same underlying concepts — tool calls, streaming,
+    structured output — with different shapes: Anthropic's <code>tool_use</code> blocks,
+    OpenAI's <code>tool_calls</code>, Bedrock's Converse API each encode the identical idea
+    differently. An abstraction layer (a library like LiteLLM or Portkey, or one you write
+    yourself) normalizes these differences behind one interface, so routing (7.1), fallback (7.2),
+    and caching (7.4) logic doesn't need provider-specific branches scattered through the
+    codebase. This has become an explicitly named, distinct hiring signal in 2026 — separate from
+    knowing how to prompt any single model well.
+  </div>
+
+  <h2>Try it: the same tool-call concept, three different shapes</h2>
+  <div class="ab-box">
+    <div class="ab-toggle">
+      <div class="ab-toggle-btn active" data-p="anthropic">Anthropic</div>
+      <div class="ab-toggle-btn" data-p="openai">OpenAI</div>
+      <div class="ab-toggle-btn" data-p="bedrock">Bedrock Converse</div>
+    </div>
+    <pre id="ab-code" style="margin-bottom:0;"></pre>
+  </div>
+
+  <h2>Why this became a distinct, named skill in 2026</h2>
+  <p>
+    The single-provider era is explicitly described as over in current hiring guidance. Serious
+    2026 systems route between providers deliberately — Claude for long context and reasoning,
+    GPT for certain structured-output cases, open-weight models on Bedrock or Together for cost —
+    which is exactly the routing logic from 7.1, but it only works cleanly if the underlying calls
+    are normalized first. Provider outages happen, pricing changes on a real cadence, and new
+    model releases force re-benchmarking every quarter — an engineer locked into one SDK's
+    specific shape has to rewrite integration code every time any of that happens; an engineer
+    with a normalized abstraction layer swaps a model in an hour.
+  </p>
+
+  <h2>What "normalizing" actually covers</h2>
+  <ul>
+    <li><strong>Tool calling shape</strong> — the three code panels above are the same concept, three incompatible wire formats.</li>
+    <li><strong>Streaming semantics</strong> — chunk formats and event types differ subtly across providers (4.1's streaming mechanics, multiplied across every provider you support).</li>
+    <li><strong>Structured output conventions</strong> — how each provider signals and enforces schema compliance (3.2) varies in the details.</li>
+    <li><strong>Prompt caching behavior</strong> — which provider caches what, under which conditions, at what discount — 4.4's caching mechanics aren't identical across vendors, and knowing exactly when each provider's caching wins or loses is called out specifically as expected knowledge.</li>
+  </ul>
+
+  <h2>Build vs. buy for the abstraction layer itself</h2>
+  <p>
+    Two legitimate paths: adopt an existing library (LiteLLM and Portkey are the two most commonly
+    named in 2026 discussions) that has already solved this normalization problem across many
+    providers, or write a thin internal wrapper scoped to just the providers and features you
+    actually use. The build path gives more control and fewer dependencies; the buy path gets you
+    working multi-provider support faster and benefits from a wider community catching edge cases.
+    Either way, the architectural goal is the same: your routing, fallback, and caching logic
+    (7.1-7.4) should be written once, against one normalized interface — not duplicated per
+    provider.
+  </p>
+
+  <div class="figure" id="fig-abstraction"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a multi-provider abstraction layer matter for the routing logic covered in 7.1?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Without normalization, routing logic would need separate provider-specific branches for tool calls, streaming, and structured output, scattered throughout the code</button>
+        <button class="q-option" data-correct="false">Routing logic cannot function at all without an abstraction layer</button>
+        <button class="q-option" data-correct="false">Abstraction layers replace the need for routing decisions entirely</button>
+      </div>
+      <div class="q-explain">Routing decides which model handles a request; the abstraction layer is what makes that decision cheap to act on, since the actual API call shape is normalized regardless of which provider gets picked.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. According to current hiring guidance, why is knowing only one provider's SDK considered a liability?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Provider outages, pricing changes, and new model releases happen regularly, and an engineer locked into one SDK has to rewrite integration code every time any of these occur</button>
+        <button class="q-option" data-correct="false">Single-provider SDKs are technically inferior in every respect to multi-provider ones</button>
+        <button class="q-option" data-correct="false">Companies are legally required to use multiple AI providers</button>
+      </div>
+      <div class="q-explain">The specific risk cited is operational fragility to real, recurring events (outages, pricing shifts, model releases) — an abstraction layer is what turns "rewrite the integration" into "swap a config value."</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What is the architectural goal of adopting a library like LiteLLM or writing a custom wrapper?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Writing routing, fallback, and caching logic once against a single normalized interface, rather than duplicating it per provider</button>
+        <button class="q-option" data-correct="false">Reducing the total number of tokens sent in every request</button>
+        <button class="q-option" data-correct="false">Eliminating the need to ever change which model is used</button>
+      </div>
+      <div class="q-explain">The value is architectural simplicity and maintainability — one normalized interface means the orchestration logic from the rest of Phase 7 doesn't need to be rewritten for every provider it might route to.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AYAutomate "15 AI Engineer Skills Every Hire Should Have in 2026"; 365 Data Science "AI Engineer Job Outlook 2026" (Glassdoor posting analysis); DataExpert.io "AI Engineering Career Path: Complete Guide for 2026".</p>
+
+  <div class="pager">
+    <a href="7-4-caching-strategies.html">&larr; 7.4 Caching strategies</a>
+    <a href="../phase-08-ai-agents/8-1-react-loop.html">Phase 8: AI agents &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CODE = {
+  anthropic: `# Anthropic: tool_use content blocks
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    tools=[weather_tool],
+    messages=messages
+)
+if response.stop_reason == "tool_use":
+    block = next(b for b in response.content if b.type == "tool_use")
+    name, args = block.name, block.input`,
+  openai: `# OpenAI: tool_calls on the message object
+response = client.chat.completions.create(
+    model="gpt-5",
+    tools=[weather_tool],
+    messages=messages
+)
+call = response.choices[0].message.tool_calls[0]
+name, args = call.function.name, call.function.arguments`,
+  bedrock: `# Bedrock Converse API: toolUse in content list
+response = bedrock.converse(
+    modelId="anthropic.claude-sonnet-4-6",
+    toolConfig={"tools": [weather_tool]},
+    messages=messages
+)
+block = response["output"]["message"]["content"][0]["toolUse"]
+name, args = block["name"], block["input"]`
+};
+function renderCode(key) {
+  document.getElementById('ab-code').innerHTML = `<code>${CODE[key]}</code>`;
+}
+document.querySelectorAll('.ab-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ab-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCode(btn.dataset.p);
+  });
+});
+renderCode('anthropic');
+
+document.getElementById('fig-abstraction').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: application code talking to one normalized interface which routes to multiple provider SDKs underneath">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <rect x="250" y="20" width="180" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="340" y="50" text-anchor="middle">Your app code</text>
+  <line x1="340" y1="70" x2="340" y2="100" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a16)"/>
+  <rect x="220" y="100" width="240" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="130" text-anchor="middle" fill="#a9c1ff">Normalized abstraction layer</text>
+  <line x1="280" y1="150" x2="130" y2="175" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="150" x2="340" y2="175" stroke="#6b7386" stroke-width="1"/>
+  <line x1="400" y1="150" x2="550" y2="175" stroke="#6b7386" stroke-width="1"/>
+  <text x="130" y="180" text-anchor="middle" font-size="10" fill="#9aa4b5">Anthropic</text>
+  <text x="340" y="180" text-anchor="middle" font-size="10" fill="#9aa4b5">OpenAI</text>
+  <text x="550" y="180" text-anchor="middle" font-size="10" fill="#9aa4b5">Bedrock</text>
+  <defs><marker id="a16" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.5 Knowledge graphs for RAG | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.kg-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.kg-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.kg-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.kg-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.kg-result { padding: 14px 16px; border-radius: 8px; font-size: 13px; }
+.kg-result.fail { background: rgba(229,72,77,0.1); border: 1px solid #e5484d; }
+.kg-result.pass { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · RAG systems</div>
+  <h1>6.5 Knowledge graphs for RAG</h1>
+  <p class="subtitle">Vector search tells you which chunks are similar. A knowledge graph tells you how the things in those chunks actually relate to each other.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Vector RAG (Phases 5-6 so far) represents everything as geometry — meaning as position in
+    vector space. It's fast, cheap, and good at "find me the passage about X." It has no native
+    concept of how X relates to Y unless that relationship happens to be spelled out in the same
+    chunk. A <strong>knowledge graph</strong> stores entities as nodes and explicit relationships
+    as edges, making multi-hop reasoning ("how did A affect B, which affected C?") a graph
+    traversal instead of a hopeful similarity search. <strong>GraphRAG</strong> combines both:
+    vector search for broad recall, graph traversal for connected, relational context. One
+    AWS-published benchmark found adding graph structure lifted answer precision by up to 35% on
+    exactly the query types vector search struggles with.
+  </div>
+
+  <h2>Try it: watch vector RAG fail on a multi-hop question</h2>
+  <div class="kg-box">
+    <p style="font-weight:600; margin-bottom:12px;">Query: "How did the delay in Project Apollo affect Q3 APAC margins?"</p>
+    <div class="kg-toggle">
+      <div class="kg-toggle-btn active" data-m="vector">Vector RAG</div>
+      <div class="kg-toggle-btn" data-m="graph">GraphRAG</div>
+    </div>
+    <div id="kg-result"></div>
+  </div>
+
+  <h2>The ambiguity problem, concretely</h2>
+  <p>
+    Consider the word "Java." Depending on context, it's an island, a programming language, or a
+    coffee brand — and in raw vector space, without enough surrounding text, these can cluster
+    ambiguously. A knowledge graph resolves this structurally: a node for "Java" connected by edges
+    to "runtime environments" and "Oracle" is unambiguous by construction, because the relationship
+    itself is stored explicitly rather than inferred from proximity in embedding space.
+  </p>
+
+  <h2>Where the benchmark gap is largest</h2>
+  <p>
+    Reported results on enterprise analytics queries found vector RAG achieving roughly 16.7%
+    accuracy overall, dropping to 0% specifically on questions requiring aggregation across
+    metrics, KPIs, or strategic entities — while GraphRAG held between 56-80% across those same
+    categories. On multi-hop reasoning tasks more broadly, GraphRAG has been reported reaching
+    80-85% accuracy where vector RAG stalls around 45-50%. The pattern is consistent: the gap
+    widens specifically as query complexity increases — more entities, more logical hops — which
+    is exactly where pure similarity search degrades.
+  </p>
+
+  <div class="figure" id="fig-graphrag"></div>
+
+  <h2>The real cost: this isn't a free upgrade</h2>
+  <p>
+    Building a knowledge graph requires entity extraction and entity resolution (merging different
+    mentions of the same real-world entity — "Bob Smith," "R. Smith," and "the CEO" might all need
+    to resolve to one node), and this is an ongoing process as the corpus grows, not a one-time
+    construction pass. Getting an extraction wrong has a "correction cascade" cost — fixing one bad
+    extraction can require re-checking every downstream summary or aggregation that depended on it.
+    This upfront and ongoing maintenance cost is exactly why GraphRAG is a deliberate, evaluated
+    decision, not a default upgrade over vector RAG.
+  </p>
+
+  <h2>The honest 2026 framing: route, don't replace</h2>
+  <p>
+    Current guidance is specific: don't frame this as "GraphRAG vs. RAG" as a single up-front
+    architectural choice made once. Most real production queries have a content dimension, a
+    relational dimension, or both — the practical pattern is a <strong>hybrid router</strong>
+    (echoing 5.4's hybrid search) that selects a graph path, a vector path, or both per query,
+    rather than committing to graph-only or vector-only as a blanket policy across every request
+    type.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does vector RAG struggle with a query like "how did the delay in Project Apollo affect Q3 APAC margins?"</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It can retrieve documents about each topic separately, but has no native representation of the causal relationship connecting them</button>
+        <button class="q-option" data-correct="false">Vector databases cannot store financial data</button>
+        <button class="q-option" data-correct="false">The query is too short for embedding models to process</button>
+      </div>
+      <div class="q-explain">Vector similarity retrieves relevant chunks about each entity independently — it has no built-in mechanism for representing or traversing the specific causal link between them, which is exactly what a graph edge would capture explicitly.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is entity resolution described as an ongoing process rather than a one-time setup step?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">New entity name variants keep appearing as the corpus grows, requiring continuous merging into canonical nodes</button>
+        <button class="q-option" data-correct="false">Entity resolution only needs to run once and never needs updating</button>
+        <button class="q-option" data-correct="false">Knowledge graphs automatically resolve all entities without any extraction step</button>
+      </div>
+      <div class="q-explain">As new documents are added, new mentions and name variants of existing entities appear, and these need continuous resolution to the correct canonical node — this ongoing cost is part of what makes GraphRAG a deliberate investment.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the recommended 2026 framing for choosing between vector RAG and GraphRAG?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Route per query to graph, vector, or hybrid paths based on the query's actual content and relational needs, rather than picking one architecture as a blanket policy</button>
+        <button class="q-option" data-correct="false">Always replace vector RAG entirely with a knowledge graph for any production system</button>
+        <button class="q-option" data-correct="false">Knowledge graphs are obsolete and vector RAG alone is sufficient for all query types</button>
+      </div>
+      <div class="q-explain">Current guidance specifically warns against treating this as a single once-made architectural choice — most real query traffic has a mix of content-similarity needs and relational needs, best served by routing per query rather than committing entirely to one approach.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Atlan "Knowledge Graph vs RAG: When Each One Wins" (2026), citing AWS benchmark data; TianPan.co "GraphRAG vs. Vector RAG" (2026), citing Diffbot's KG-LM evaluation; Alok, "GraphRAG vs. RAG: When Knowledge Graphs Earn Their Complexity" (2026).</p>
+
+  <div class="pager">
+    <a href="6-4-evaluating-retrieval-quality.html">&larr; 6.4 Evaluating retrieval quality</a>
+    <a href="../phase-07-multi-llm-orchestration/7-1-routing-strategies.html">Phase 7: Multi-LLM orchestration &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const KG_RESULTS = {
+  vector: { cls: "fail", text: "✗ Retrieves documents about \"Project Apollo\" and separately about \"Q3 APAC margins\" — but has no representation of the causal link between them. The model has to guess at the connection from whatever happens to co-occur in the retrieved chunks, if anything does at all." },
+  graph: { cls: "pass", text: "✓ Traverses explicit edges: Project Apollo →(caused delay in)→ supply chain →(impacted)→ APAC distribution →(affected)→ Q3 margins. The relationship path is followed directly rather than inferred from chunk proximity." }
+};
+function renderKg(key) {
+  const r = KG_RESULTS[key];
+  document.getElementById('kg-result').innerHTML = `<div class="kg-result ${r.cls}">${r.text}</div>`;
+}
+document.querySelectorAll('.kg-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.kg-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderKg(btn.dataset.m);
+  });
+});
+renderKg('vector');
+
+document.getElementById('fig-graphrag').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: knowledge graph nodes and edges representing entities and explicit relationships">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <circle cx="100" cy="90" r="45" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="100" y="94" text-anchor="middle" fill="#a9c1ff">Apollo</text>
+  <line x1="145" y1="90" x2="255" y2="90" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a15)"/>
+  <text x="200" y="80" text-anchor="middle" class="s" fill="#f2b84b">delayed</text>
+  <circle cx="300" cy="90" r="45" fill="#1a2029" stroke="#262d3a" stroke-width="1.5"/>
+  <text x="300" y="94" text-anchor="middle">Supply chain</text>
+  <line x1="345" y1="90" x2="455" y2="90" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a15)"/>
+  <text x="400" y="80" text-anchor="middle" class="s" fill="#f2b84b">impacted</text>
+  <circle cx="500" cy="90" r="45" fill="#1a2029" stroke="#262d3a" stroke-width="1.5"/>
+  <text x="500" y="88" text-anchor="middle" font-size="11">APAC</text>
+  <text x="500" y="100" text-anchor="middle" font-size="11">distribution</text>
+  <line x1="500" y1="135" x2="500" y2="150" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a15)" transform="rotate(0)"/>
+  <text x="600" y="130" text-anchor="middle" class="s" fill="#f2b84b">affected</text>
+  <line x1="545" y1="90" x2="620" y2="130" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a15)"/>
+  <circle cx="620" cy="150" r="0" fill="none"/>
+  <text x="620" y="160" text-anchor="middle" font-weight="700" fill="#3ecf8e">Q3 margins</text>
+  <defs><marker id="a15" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

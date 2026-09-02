@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.5 Containerization for AI services | AI Architect</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ct-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ct-service { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); transition: all 0.2s; }
+.ct-service.active { background: var(--accent-bg); border-color: var(--accent); }
+.ct-detail { margin-top: 14px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">AI <span>Architect</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Production &amp; MLOps</div>
+  <h1>11.5 Containerization for AI services</h1>
+  <p class="subtitle">Roughly 87% of ML models reportedly die in the gap between "works in a notebook" and "serves live traffic." Containerization is what closes that gap.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    For most AI engineers building on top of hosted APIs (Phases 4-8 of this track), the
+    containerization job is straightforward: package your <em>application</em> — the RAG pipeline,
+    the agent, the API wrapper — into a Docker image so it runs identically in development,
+    staging, and production, then orchestrate it with Kubernetes for scaling and reliability. This
+    is a distinct, narrower skill from containerizing the model-serving layer itself (running an
+    open-weight model on GPUs with something like vLLM), which is closer to specialized ML
+    infrastructure work. Both are listed as core skills in 2026 AI engineering job postings, but
+    most application-layer engineers primarily need the first one.
+  </div>
+
+  <h2>Try it: explore a typical containerized AI app stack</h2>
+  <div class="ct-box">
+    <div id="ct-services"></div>
+    <div class="ct-detail" id="ct-detail">Click a service above.</div>
+  </div>
+
+  <h2>Why containerize your application layer at all</h2>
+  <ul>
+    <li><strong>Environment consistency</strong> — the same container runs identically in development, staging, and production, eliminating "works on my machine" as a category of bug.</li>
+    <li><strong>Dependency isolation</strong> — Python package versions, system libraries, and any native dependencies are bundled together, avoiding the classic version-conflict problem.</li>
+    <li><strong>Independent scaling</strong> — your API layer, your vector database, and your frontend can each scale independently based on their own load, rather than being locked to the same deployment unit.</li>
+    <li><strong>Orchestration-native</strong> — a containerized service plugs directly into the canary and rollback patterns from 11.1, and the tracing/observability tooling from 11.2, without extra glue code.</li>
+  </ul>
+
+  <h2>A minimal Dockerfile for a RAG/agent API service</h2>
+  <pre><code>FROM python:3.12-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Never bake API keys into the image — inject at runtime
+ENV ANTHROPIC_API_KEY=""
+
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+  <p>
+    Two details worth internalizing: never hardcode a secret into the image itself (same principle
+    as 1.5's environment-variable guidance, now at the infrastructure layer — a leaked image is
+    just as dangerous as leaked source code) and pin dependency versions explicitly so a rebuild
+    six months from now doesn't silently pull incompatible package updates.
+  </p>
+
+  <h2>When you actually need GPU-aware container orchestration</h2>
+  <p>
+    If your work involves self-hosting an open-weight model (rather than calling a provider's API),
+    a different and more specialized layer applies: GPU passthrough via the NVIDIA Container
+    Toolkit, an inference engine like vLLM handling request batching and KV-cache management, and
+    Kubernetes scaling on custom metrics like queue depth rather than plain CPU/memory usage —
+    because unlike a stateless web service, each model replica loads the entire model into GPU
+    memory, so scaling means adding whole replicas, not distributing load more finely across
+    existing ones. This is a real, distinct specialization, and most application-layer AI
+    engineers building on hosted APIs won't need to go this deep — but it's worth knowing the line
+    exists, since job postings sometimes blur the two skill sets together.
+  </p>
+
+  <div class="figure" id="fig-stack"></div>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. For most AI engineers building on hosted LLM APIs, what does "containerization" primarily mean?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Packaging their application (RAG pipeline, agent, API wrapper) into a container — not hosting the LLM itself on GPUs</button>
+        <button class="q-option" data-correct="false">Running the foundation model's full weights inside their own Docker container</button>
+        <button class="q-option" data-correct="false">Containerization is irrelevant for anyone using hosted APIs</button>
+      </div>
+      <div class="q-explain">These are genuinely different skill sets — application-layer containerization is broadly needed, while GPU-aware model-serving containerization is a more specialized track for teams self-hosting open-weight models.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why shouldn't an API key ever be baked directly into a Docker image?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A leaked image exposes the secret exactly like leaked source code would — it should be injected at runtime instead</button>
+        <button class="q-option" data-correct="false">Docker images cannot technically store environment variables</button>
+        <button class="q-option" data-correct="false">Baked-in secrets make the container run slower</button>
+      </div>
+      <div class="q-explain">This is the same principle from 1.5's API key guidance, applied one layer down — an image can end up in a registry or shared accidentally just as easily as a code repository can.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does scaling a self-hosted LLM inference service differ from scaling a typical stateless web service?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each model replica loads the full model into GPU memory, so scaling means adding whole replicas rather than distributing load more finely across shared resources</button>
+        <button class="q-option" data-correct="false">LLM inference services cannot be scaled at all</button>
+        <button class="q-option" data-correct="false">They scale in exactly the same way, with no meaningful difference</button>
+      </div>
+      <div class="q-explain">A stateless web service can often handle more load per instance up to some CPU/memory ceiling; an LLM inference replica's entire capacity is bounded by having a full model resident in GPU memory, making the scaling unit fundamentally coarser.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: KodeKloud "Deploy ML Models with Docker &amp; Kubernetes (2026 Guide)"; Inference.net "vLLM Docker Deployment: Production-Ready Setup Guide (2026)"; DataExpert.io "AI Engineering Career Path: Complete Guide for 2026" (core skills section).</p>
+
+  <div class="pager">
+    <a href="11-4-incident-response.html">&larr; 11.4 Incident response &amp; production readiness</a>
+    <a href="../phase-12-capstones/12-1-capstone-rag-with-evals.html">Phase 12: Capstone projects &rarr;</a>
+  </div>
+</main>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SERVICES = [
+  { name: "API service (your RAG / agent app)", detail: "The container you actually build and own — wraps your Phase 4-8 logic behind a REST/HTTP interface. This is the piece most AI engineers containerize directly." },
+  { name: "Vector database", detail: "Often run as its own container or managed service (5.2) — deliberately separate from your API service so it can scale and be upgraded independently." },
+  { name: "LLM provider (external API)", detail: "Not containerized by you at all — this is a hosted API call (Phase 4) to Anthropic, OpenAI, etc. Only self-hosted open-weight models get their own GPU-aware container." },
+  { name: "Observability sidecar", detail: "Collects traces and spans (11.2) from your API service, often running as a separate container in the same pod so tracing overhead doesn't compete with request-handling resources." },
+];
+document.getElementById('ct-services').innerHTML = SERVICES.map((s,i) =>
+  `<div class="ct-service" data-i="${i}">${s.name}</div>`
+).join('');
+document.querySelectorAll('.ct-service').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.ct-service').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('ct-detail').textContent = SERVICES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-stack').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: containerized API service talking to a vector database container and an external LLM API">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="30" y="60" width="180" height="60" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="120" y="85" text-anchor="middle" fill="#a9c1ff">API service</text>
+  <text x="120" y="102" text-anchor="middle" fill="#7891c9" font-weight="400">container you own</text>
+  <line x1="210" y1="80" x2="270" y2="60" stroke="#6b7386" stroke-width="1"/>
+  <rect x="270" y="20" width="160" height="55" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="350" y="52" text-anchor="middle">Vector DB container</text>
+  <line x1="210" y1="100" x2="270" y2="120" stroke="#6b7386" stroke-width="1"/>
+  <rect x="270" y="105" width="160" height="55" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="350" y="137" text-anchor="middle">Observability sidecar</text>
+  <line x1="210" y1="90" x2="480" y2="90" stroke="#f2b84b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <rect x="480" y="60" width="170" height="60" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="565" y="85" text-anchor="middle" fill="#f2b84b">LLM provider</text>
+  <text x="565" y="102" text-anchor="middle" fill="#c9a05f" font-weight="400">external API, not your container</text>
+</svg>
+`;
+</script>
+</body>
+</html>
