@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.5 Containerizing data pipelines | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cd-node { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.cd-node.active { background: var(--accent-bg); border-color: var(--accent); }
+.cd-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Orchestration &amp; workflow management</div>
+  <h1>7.5 Containerizing data pipelines</h1>
+  <p class="subtitle">Running Airflow on your laptop and running it in production are different engineering problems — containers are what bridges them.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Running Airflow (or any orchestrator) in containers means packaging the webserver, scheduler,
+    workers, and their dependencies into consistent, portable images — deployable via Docker
+    Compose for smaller setups, or Kubernetes for production-scale, auto-scaling deployments. This
+    is the same containerization principle from the AI Engineering track's production phase,
+    applied specifically to orchestration infrastructure: consistent environments, independent
+    scaling of each component, and clean integration with the deployment patterns most modern
+    infrastructure teams already use.
+  </div>
+
+  <h2>Try it: explore the Airflow-on-Kubernetes architecture</h2>
+  <div class="cd-box">
+    <div id="cd-nodes"></div>
+    <div class="cd-detail" id="cd-detail">Click a component above.</div>
+  </div>
+
+  <h2>Docker Compose vs. Kubernetes: matching complexity to actual need</h2>
+  <ul>
+    <li><strong>Docker Compose</strong> — ideal for smaller teams running Airflow's components together on a single host with minimal setup. Good for development and smaller production workloads, but doesn't provide the auto-scaling or high-availability features a large deployment needs.</li>
+    <li><strong>Kubernetes (via the KubernetesExecutor)</strong> — each task runs in its own pod, scaling workers dynamically based on actual load. This is real added operational complexity, but it's the right fit once task volume or reliability requirements outgrow what a single-host setup can handle.</li>
+  </ul>
+
+  <h2>Git-sync: how DAG code actually gets to the running system</h2>
+  <p>
+    A specific, common pattern in containerized Airflow deployments: rather than baking DAG files
+    directly into the container image (which would require a full image rebuild for every DAG
+    change), a git-sync sidecar continuously pulls the latest DAG definitions from a Git
+    repository into a shared volume the scheduler and workers can read from. This means DAG code
+    changes deploy as fast as a git push, without needing to rebuild and redeploy the entire
+    orchestration platform's container images.
+  </p>
+
+  <div class="figure" id="fig-k8s"></div>
+
+  <h2>Why this matters for reproducibility (5.5's other half)</h2>
+  <p>
+    Containerizing the orchestrator itself extends 5.5's reproducibility principle one layer
+    down: not just "can I reproduce this pipeline's output," but "can I reproduce the exact
+    execution environment that produced it." A pinned container image plus version-controlled DAG
+    code means a pipeline run from six months ago can be reproduced in an environment that's
+    genuinely identical to what actually ran then — not just similar.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why might a team choose the KubernetesExecutor over Docker Compose for running Airflow?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Kubernetes provides dynamic worker scaling and high-availability features that a single-host Docker Compose setup doesn't offer</button>
+        <button class="q-option" data-correct="false">Docker Compose cannot technically run any Airflow components at all</button>
+        <button class="q-option" data-correct="false">Kubernetes is always simpler to set up than Docker Compose regardless of scale</button>
+      </div>
+      <div class="q-explain">This is a scale-driven trade-off — Compose is genuinely simpler and sufficient for smaller workloads, while Kubernetes's added complexity earns its keep once volume or reliability needs grow past what a single host can handle.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What problem does a git-sync sidecar solve in a containerized Airflow deployment?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets DAG code changes deploy via a simple git push, without requiring a full container image rebuild for every DAG update</button>
+        <button class="q-option" data-correct="false">It replaces the need for a scheduler entirely</button>
+        <button class="q-option" data-correct="false">It automatically fixes bugs in DAG code before deployment</button>
+      </div>
+      <div class="q-explain">Baking DAGs directly into the image would tie every code change to a slow image rebuild-and-redeploy cycle — git-sync decouples DAG code updates from the container image lifecycle entirely.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does containerizing the orchestrator extend the reproducibility concept from 5.5?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets you reproduce not just the pipeline's output but the exact execution environment that produced it, via a pinned container image</button>
+        <button class="q-option" data-correct="false">Containerization has no relationship to reproducibility</button>
+        <button class="q-option" data-correct="false">Reproducibility only applies to the data itself, never the infrastructure running it</button>
+      </div>
+      <div class="q-explain">A pinned image plus version-controlled DAG code together mean a past run's environment can be recreated exactly, not just approximately — extending reproducibility from "the logic" to "the actual runtime."</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: oneuptime.com "How to Deploy Apache Airflow with Helm for Workflow Orchestration" (2026); RudderStack "What is Apache Airflow? A guide for data engineers" (2026).</p>
+
+  <div class="pager">
+    <a href="7-4-orchestration-observability.html">&larr; 7.4 Orchestration observability</a>
+    <a href="../phase-08-big-data-distributed/8-1-distributed-computing-fundamentals.html">Phase 8: Big data &amp; distributed processing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CD_NODES = [
+  { name: "Webserver", detail: "Serves the Airflow UI — DAG views, task logs, run history. Typically the component users interact with directly." },
+  { name: "Scheduler", detail: "The always-running process deciding what's ready to run (7.2). In Kubernetes, typically run as its own dedicated pod for isolation." },
+  { name: "Workers", detail: "Execute the actual task logic. With KubernetesExecutor, each task gets its own pod, scaling up and down dynamically based on load." },
+  { name: "Metadata DB (Postgres)", detail: "Stores DAG state, task instance history, connections, and variables — the persistent source of truth the scheduler reads from." },
+  { name: "Git-sync sidecar", detail: "Continuously pulls the latest DAG code from a Git repository into a shared volume — decouples DAG deployment from container image rebuilds." },
+];
+document.getElementById('cd-nodes').innerHTML = CD_NODES.map((n,i) =>
+  `<div class="cd-node" data-i="${i}">${n.name}</div>`
+).join('');
+document.querySelectorAll('.cd-node').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.cd-node').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('cd-detail').textContent = CD_NODES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-k8s').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: Kubernetes cluster containing webserver, scheduler, and worker pods, with git-sync pulling DAG code from a repository">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="15" y="15" width="650" height="130" rx="8" fill="none" stroke="#262d3a" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="35" y="35" fill="#9aa4b5" font-size="10">Kubernetes cluster</text>
+  <rect x="40" y="50" width="110" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="95" y="72" text-anchor="middle">Webserver</text>
+  <rect x="170" y="50" width="110" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="225" y="72" text-anchor="middle" fill="#a9c1ff">Scheduler</text>
+  <rect x="300" y="50" width="110" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="355" y="72" text-anchor="middle" fill="#3ecf8e">Worker pod</text>
+  <rect x="430" y="50" width="110" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="485" y="72" text-anchor="middle" fill="#3ecf8e">Worker pod</text>
+  <rect x="40" y="100" width="150" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="115" y="122" text-anchor="middle">Metadata DB</text>
+  <line x1="560" y1="30" x2="600" y2="60" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a33)"/>
+  <text x="600" y="20" fill="#f2b84b" font-size="9">git push</text>
+  <rect x="560" y="60" width="90" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="605" y="82" text-anchor="middle" fill="#f2b84b" font-size="9">git-sync</text>
+  <defs><marker id="a33" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

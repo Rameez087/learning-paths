@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.3 Scheduling &amp; retries | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.rt-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.rt-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.rt-slider-row input[type=range] { flex: 1; }
+.rt-attempt { display: inline-block; padding: 8px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border-strong); margin: 2px; font-size: 12px; font-family: var(--font-mono); opacity: 0; transform: translateY(4px); transition: all 0.25s; }
+.rt-attempt.shown { opacity: 1; transform: translateY(0); }
+.rt-attempt.fail { border-color: #e5484d; color: #ff8b8f; }
+.rt-attempt.success { border-color: #3ecf8e; color: #3ecf8e; }
+.rt-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Orchestration &amp; workflow management</div>
+  <h1>7.3 Scheduling &amp; retries</h1>
+  <p class="subtitle">Transient failures are the normal case, not the exception — the question is whether your pipeline handles them gracefully or pages someone at 3am.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Retry policies (configured per-task or per-DAG) automatically re-attempt a failed task after a
+    delay — critical for transient failures like a brief network blip or a momentarily
+    rate-limited API, which resolve themselves without any human intervention. An
+    <strong>SLA (Service Level Agreement)</strong> defines an expected completion time for a task
+    or DAG; an SLA miss triggers a callback (an alert, typically) so a team knows a pipeline is
+    running behind before downstream consumers are affected, not after.
+  </div>
+
+  <h2>Try it: watch a retry policy handle a transient failure</h2>
+  <div class="rt-box">
+    <div class="rt-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:90px;">Max retries</label>
+      <input type="range" id="rt-slider" min="0" max="5" value="3">
+      <span id="rt-readout" style="font-weight:700; min-width:20px;">3</span>
+    </div>
+    <div id="rt-attempts"></div>
+    <button class="rt-btn" id="rt-run">Simulate a run with a transient failure</button>
+  </div>
+
+  <h2>Why retries need a backoff, not instant re-attempts</h2>
+  <p>
+    Retrying immediately after a failure often just hits the exact same problem again — if an API
+    is briefly rate-limited, an instant retry likely gets rate-limited too. <strong>Exponential
+    backoff</strong> (waiting progressively longer between each retry attempt) gives a transient
+    issue real time to resolve before trying again, and avoids compounding the problem by hammering
+    an already-struggling system with immediate retries.
+  </p>
+
+  <div class="figure" id="fig-sla"></div>
+
+  <h2>SLA misses: catching lateness before it cascades</h2>
+  <p>
+    An SLA miss callback fires when a task or DAG hasn't completed within its expected time window
+    — this is distinct from a task failure, since a task can be technically still running (not
+    failed) while badly missing its SLA. Catching this early matters specifically because
+    downstream tasks and consumers (a dashboard refresh, a scheduled report) are often depending on
+    this pipeline finishing on time — an SLA alert gives the team a chance to intervene before
+    those consumers are affected, not just a post-mortem after they already were.
+  </p>
+
+  <h2>Task-level vs. DAG-level retries</h2>
+  <p>
+    Retry policies can be set per-task (a specific flaky API call gets more retries than a stable
+    local computation) or as a DAG-wide default that individual tasks inherit unless overridden.
+    The practical guidance: set retries based on each task's actual failure characteristics — a
+    network call to an external API genuinely benefits from retries; a task failing due to a bug
+    in your own code will just fail identically every time, and retrying it repeatedly only delays
+    noticing the real problem.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is exponential backoff preferred over immediate retries?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It gives a transient issue real time to resolve, rather than immediately hitting the same problem again (and potentially making it worse)</button>
+        <button class="q-option" data-correct="false">Exponential backoff makes each retry attempt complete faster</button>
+        <button class="q-option" data-correct="false">Backoff is only relevant for tasks that never actually fail</button>
+      </div>
+      <div class="q-explain">An instant retry against a briefly rate-limited or overloaded system often just repeats the failure — progressively longer waits give the underlying issue a genuine chance to clear.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does an SLA miss specifically alert on, distinct from a task failure?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A task or DAG running longer than its expected completion window, even if it's still technically running and hasn't failed</button>
+        <button class="q-option" data-correct="false">The exact same condition as a task failure, just with a different name</button>
+        <button class="q-option" data-correct="false">A task that has already succeeded</button>
+      </div>
+      <div class="q-explain">SLA misses catch a different failure mode — lateness — that a simple success/failure check wouldn't catch on its own, since a slow-but-still-running task isn't a "failure" in the traditional sense.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why would retrying a task that fails due to a bug in your own code not actually help?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A code bug produces the same failure every time regardless of retries, so retrying just delays noticing the real problem</button>
+        <button class="q-option" data-correct="false">Retries always fix any type of failure, including code bugs</button>
+        <button class="q-option" data-correct="false">Code bugs are technically impossible to occur in Airflow tasks</button>
+      </div>
+      <div class="q-explain">Retries are specifically valuable for transient, external failures — a deterministic bug in your own logic will keep failing identically no matter how many times it's retried, making retries the wrong tool for that failure class.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Orchestra "Airflow concepts: Airflow SLA and retries" (2026); Multisoft Systems "Top 30 Apache Airflow Interview Questions Answers 2026".</p>
+
+  <div class="pager">
+    <a href="7-2-airflow-concepts.html">&larr; 7.2 Airflow concepts</a>
+    <a href="7-4-orchestration-observability.html">7.4 Orchestration observability &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('rt-slider').addEventListener('input', (e) => {
+  document.getElementById('rt-readout').textContent = e.target.value;
+});
+
+document.getElementById('rt-run').addEventListener('click', () => {
+  const maxRetries = parseInt(document.getElementById('rt-slider').value, 10);
+  const container = document.getElementById('rt-attempts');
+  container.innerHTML = '';
+  const failUntilAttempt = 2; // simulate transient failure resolving on 3rd attempt (index 2)
+  let attempt = 0;
+  function nextAttempt() {
+    if (attempt > maxRetries) return;
+    const willFail = attempt < failUntilAttempt;
+    const el = document.createElement('div');
+    el.className = 'rt-attempt ' + (willFail ? 'fail' : 'success');
+    const delay = attempt === 0 ? 0 : Math.pow(2, attempt) * 10;
+    el.textContent = `Attempt ${attempt+1}${attempt>0 ? ' (waited '+delay+'s)' : ''}: ${willFail ? 'FAILED (transient)' : 'SUCCESS'}`;
+    container.appendChild(el);
+    setTimeout(() => el.classList.add('shown'), 30);
+    if (!willFail) return; // stop on success
+    attempt++;
+    setTimeout(nextAttempt, 500);
+  }
+  nextAttempt();
+});
+document.getElementById('rt-run').click();
+
+document.getElementById('fig-sla').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: timeline showing expected completion window, actual task progress, and an SLA miss alert firing when the window is exceeded">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <line x1="20" y1="60" x2="660" y2="60" stroke="#262d3a" stroke-width="2"/>
+  <rect x="20" y="50" width="300" height="20" fill="rgba(62,207,142,0.15)"/>
+  <text x="170" y="40" text-anchor="middle" fill="#3ecf8e">Expected window (SLA)</text>
+  <rect x="20" y="50" width="450" height="20" fill="none" stroke="#5b8cff" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="245" y="95" text-anchor="middle" fill="#a9c1ff">Actual task progress</text>
+  <line x1="320" y1="30" x2="320" y2="80" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="320" y="20" text-anchor="middle" fill="#f2b84b">⚠ SLA miss fires here</text>
+</svg>
+`;
+</script>
+</body>
+</html>

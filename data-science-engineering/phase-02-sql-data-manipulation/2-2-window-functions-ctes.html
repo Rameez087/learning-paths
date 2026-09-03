@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.2 Window functions &amp; CTEs | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.wf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.wf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wf-table th, .wf-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.wf-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+.wf-table tr.highlighted { background: var(--accent-bg); }
+.wf-fn-btn { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font-mono); margin-right: 6px; margin-bottom: 12px; }
+.wf-fn-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · SQL &amp; data manipulation</div>
+  <h1>2.2 Window functions &amp; CTEs</h1>
+  <p class="subtitle">The tools that let you answer "how does this row compare to its neighbors" without losing a single row.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>window function</strong> performs a calculation across a set of related rows — but
+    unlike <code>GROUP BY</code>, it doesn't collapse those rows into one output row. Each
+    original row survives, now carrying an extra computed value (a rank, a running total, the
+    previous row's value). A <strong>CTE</strong> (<code>WITH</code> clause) is a named, temporary
+    result set that makes multi-step logic readable — and it's largely superseded plain
+    subqueries for anything beyond the simplest case, especially recursive logic like traversing
+    an org chart.
+  </div>
+
+  <h2>Try it: watch a window function compute per-row, without collapsing rows</h2>
+  <div class="wf-box">
+    <div class="wf-fn-btn active" data-f="rank">RANK()</div>
+    <div class="wf-fn-btn" data-f="running">Running total (SUM OVER)</div>
+    <div class="wf-fn-btn" data-f="lag">LAG() — previous row</div>
+    <table class="wf-table">
+      <thead><tr><th>Employee</th><th>Department</th><th>Salary</th><th id="wf-col-header">Result</th></tr></thead>
+      <tbody id="wf-rows"></tbody>
+    </table>
+  </div>
+
+  <h2>The signature clause: PARTITION BY and ORDER BY</h2>
+  <pre><code>SELECT
+    employee,
+    department,
+    salary,
+    RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+FROM employees;</code></pre>
+  <p>
+    <code>PARTITION BY</code> divides rows into groups (here, by department) — the window
+    function resets for each group. <code>ORDER BY</code> inside the <code>OVER()</code> clause
+    determines the order rows are processed in <em>within</em> each partition — critical for
+    ranking, running totals, and <code>LAG</code>/<code>LEAD</code> (which need to know what
+    "previous" and "next" mean).
+  </p>
+
+  <h2>A subtlety worth internalizing: execution timing</h2>
+  <p>
+    From 2.1's execution order: window functions run <em>after</em> <code>WHERE</code>,
+    <code>GROUP BY</code>, and <code>HAVING</code>, but <em>before</em> <code>ORDER BY</code> and
+    <code>LIMIT</code>. This means you cannot filter directly on a window function's result inside
+    the same query's <code>WHERE</code> clause — exactly the same alias-timing problem from 2.1.
+    The fix is identical: wrap the query in a CTE, then filter the CTE's output.
+  </p>
+  <pre><code>-- Fails: can't filter on dept_rank in the same query's WHERE
+SELECT employee, RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+FROM employees WHERE dept_rank = 1;
+
+-- Works: compute in a CTE, then filter the CTE's output
+WITH ranked AS (
+    SELECT employee, department, salary,
+           RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank
+    FROM employees
+)
+SELECT * FROM ranked WHERE dept_rank = 1;</code></pre>
+
+  <h2>Recursive CTEs: the hardest common interview pattern</h2>
+  <p>
+    A recursive CTE references itself, letting you traverse hierarchical data — an org chart,
+    a category tree, a bill-of-materials — without knowing the depth in advance. This is
+    consistently flagged as one of the harder SQL patterns, showing up more in senior and staff
+    interviews than junior ones, alongside "sessionization" (grouping user events into sessions
+    based on time gaps) and "gaps and islands" (finding consecutive date or number sequences) —
+    we'll build these exact patterns hands-on in 2.5.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the key difference between a window function and GROUP BY?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A window function keeps every original row intact while adding a computed value; GROUP BY collapses rows into one row per group</button>
+        <button class="q-option" data-correct="false">Window functions can only be used with numeric columns</button>
+        <button class="q-option" data-correct="false">GROUP BY and window functions are two names for the same operation</button>
+      </div>
+      <div class="q-explain">This is the defining distinction — GROUP BY reduces the row count, a window function does not, which is exactly why you can rank or compute a running total without losing per-row detail.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can't a window function's result be filtered directly in the same query's WHERE clause?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Window functions execute after WHERE in the database's processing order, so the result doesn't exist yet when WHERE runs</button>
+        <button class="q-option" data-correct="false">Window function results can never be filtered under any circumstances</button>
+        <button class="q-option" data-correct="false">WHERE clauses are incompatible with all analytical queries</button>
+      </div>
+      <div class="q-explain">This mirrors 2.1's alias-timing issue exactly — the fix is the same: wrap the window function in a CTE, then filter that CTE's output in an outer query.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What makes a recursive CTE useful for org-chart or category-tree data specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It can traverse hierarchical relationships of unknown depth by referencing itself repeatedly</button>
+        <button class="q-option" data-correct="false">Recursive CTEs are faster than any other SQL pattern for flat, non-hierarchical data</button>
+        <button class="q-option" data-correct="false">Recursive CTEs only work with exactly two levels of hierarchy</button>
+      </div>
+      <div class="q-explain">The self-referencing structure is exactly what lets a recursive CTE walk arbitrarily deep hierarchies without the query needing to know the depth in advance.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DataVidhya "80 SQL Interview Questions for Data Engineers" (2026); InterviewKickstart "40+ Advanced SQL Interview Questions" (2026); SharpSkill "SQL Window Functions, CTEs &amp; Advanced Queries" (2026); SQL Crash Course "SQL Interview Questions Guide" (2026).</p>
+
+  <div class="pager">
+    <a href="2-1-sql-fundamentals-refresher.html">&larr; 2.1 SQL fundamentals refresher</a>
+    <a href="2-3-query-optimization-execution-plans.html">2.3 Query optimization &amp; execution plans &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DATA = [
+  { emp: "Alice", dept: "Eng", salary: 145000 },
+  { emp: "Bob", dept: "Eng", salary: 130000 },
+  { emp: "Carla", dept: "Eng", salary: 125000 },
+  { emp: "Dan", dept: "Sales", salary: 110000 },
+  { emp: "Eve", dept: "Sales", salary: 108000 },
+];
+function computeRank() {
+  const byDept = {};
+  DATA.forEach(r => { (byDept[r.dept] = byDept[r.dept] || []).push(r); });
+  Object.values(byDept).forEach(rows => {
+    rows.sort((a,b) => b.salary - a.salary);
+    rows.forEach((r,i) => r._rank = i+1);
+  });
+  return DATA.map(r => r._rank);
+}
+function computeRunning() {
+  const byDept = {};
+  DATA.forEach(r => { (byDept[r.dept] = byDept[r.dept] || []).push(r); });
+  Object.values(byDept).forEach(rows => {
+    let sum = 0;
+    rows.forEach(r => { sum += r.salary; r._running = sum; });
+  });
+  return DATA.map(r => '$' + r._running.toLocaleString());
+}
+function computeLag() {
+  const byDept = {};
+  DATA.forEach(r => { (byDept[r.dept] = byDept[r.dept] || []).push(r); });
+  Object.values(byDept).forEach(rows => {
+    rows.forEach((r,i) => { r._lag = i === 0 ? '—' : '$' + rows[i-1].salary.toLocaleString(); });
+  });
+  return DATA.map(r => r._lag);
+}
+function renderTable(fn) {
+  let results, header;
+  if (fn === 'rank') { results = computeRank(); header = 'RANK() OVER dept'; }
+  else if (fn === 'running') { results = computeRunning(); header = 'Running total'; }
+  else { results = computeLag(); header = 'LAG(salary)'; }
+  document.getElementById('wf-col-header').textContent = header;
+  document.getElementById('wf-rows').innerHTML = DATA.map((r,i) => `
+    <tr><td>${r.emp}</td><td>${r.dept}</td><td>$${r.salary.toLocaleString()}</td><td><strong>${results[i]}</strong></td></tr>
+  `).join('');
+}
+document.querySelectorAll('.wf-fn-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.wf-fn-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable(btn.dataset.f);
+  });
+});
+renderTable('rank');
+</script>
+</body>
+</html>

@@ -95,10 +95,11 @@
     } catch (e) {}
   }
 
-  // Determine relative path prefix ("" at root, "../" one level deep)
+  // Determine relative path prefix ("" at track root, "../" one level deep)
   var path = window.location.pathname;
   var atRoot = !/\/phase-\d\d-[a-z-]+\//.test(path);
   var prefix = atRoot ? "" : "../";
+  var hubPrefix = atRoot ? "../" : "../../";
 
   // Identify current slug (filename without extension) for active-state matching
   var currentFile = path.split("/").pop().replace(/\.html?$/, "") || "index";
@@ -117,6 +118,7 @@
 
   // ---- Build sidebar HTML ----
   var html = '';
+  html += '<a class="sb-hub-link" href="' + hubPrefix + 'index.html">&larr; All learning paths</a>';
   html += '<a class="sb-brand" href="' + prefix + 'index.html">AI <span class="plain">Architect</span></a>';
   html += '<div class="sb-progress-wrap"><div class="sb-progress-label"><span>Progress</span><strong>' + visitedTopics + ' / ' + totalTopics + '</strong></div>';
   html += '<div class="sb-progress-track"><div class="sb-progress-fill" style="width:' + Math.round((visitedTopics / totalTopics) * 100) + '%"></div></div></div>';

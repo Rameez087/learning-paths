@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 Descriptive statistics | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ds-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ds-input-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.ds-input-row input { flex: 1; background: var(--code-bg); border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--font-mono); font-size: 13px; }
+.ds-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 10px; }
+.ds-metric { background: var(--surface-2); border-radius: 8px; padding: 12px; text-align: center; }
+.ds-metric .n { font-size: 18px; font-weight: 700; }
+.ds-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:2px; }
+.ds-preset-btn { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Statistics &amp; probability</div>
+  <h1>3.1 Descriptive statistics</h1>
+  <p class="subtitle">One number can't summarize a dataset. Mean and median can disagree — and when they do, that disagreement is itself the insight.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Central tendency</strong> (mean, median, mode) answers "where's the middle?" —
+    <strong>dispersion</strong> (variance, standard deviation, IQR) answers "how spread out is
+    everything around that middle?" Reporting only one of these two is nearly always misleading:
+    two datasets can share an identical mean while one is tightly clustered and the other wildly
+    spread out. When mean and median genuinely disagree, that gap is diagnostic — it's telling you
+    the distribution is skewed, and which measure you should actually trust depends on why.
+  </div>
+
+  <h2>Try it: edit the data, watch every statistic update live</h2>
+  <div class="ds-box">
+    <div style="margin-bottom:10px;">
+      <span class="ds-preset-btn" data-p="normal">Symmetric dataset</span>
+      <span class="ds-preset-btn" data-p="skewed">Skewed (income-like)</span>
+      <span class="ds-preset-btn" data-p="outlier">With an outlier</span>
+    </div>
+    <div class="ds-input-row">
+      <input type="text" id="ds-input" value="45000, 47000, 46000, 48000, 44000, 65000">
+    </div>
+    <div class="ds-metrics" id="ds-metrics"></div>
+  </div>
+
+  <h2>Why mean vs. median tells a diagnostic story</h2>
+  <p>
+    Consider a dataset with mean $65,000 and median $45,000. The gap itself is the finding: it
+    means the distribution is right-skewed — a long tail of a few very high earners is pulling the
+    mean upward, while the median (unaffected by extreme values, since it only cares about
+    position, not magnitude) reflects what a "typical" person in the dataset actually earns far
+    more faithfully. This is exactly why household income is almost always reported as a median,
+    not a mean.
+  </p>
+
+  <div class="figure" id="fig-skew"></div>
+
+  <h2>Variance and standard deviation, precisely</h2>
+  <p>
+    <strong>Variance</strong> averages the squared distance of every point from the mean —
+    squaring is what makes distances on either side of the mean add constructively instead of
+    canceling out, but it also means variance is in squared units (dollars², not dollars), which
+    is hard to interpret directly. <strong>Standard deviation</strong> is the square root of
+    variance, bringing the units back to the original scale — this is why standard deviation, not
+    variance, is almost always the number actually reported and interpreted.
+  </p>
+  <p>
+    For a normal distribution specifically, this gives a genuinely useful rule of thumb: roughly
+    68% of values fall within one standard deviation of the mean, about 95% within two, and about
+    99.7% within three — sometimes called the 68-95-99.7 rule.
+  </p>
+
+  <h2>Why IQR beats range when outliers are present</h2>
+  <p>
+    Range (max minus min) is the simplest spread measure, but it's maximally sensitive to a single
+    extreme value — one data-entry error can make the range look enormous. The
+    <strong>interquartile range</strong> (IQR = Q3 &minus; Q1, the middle 50% of the data) is far
+    more robust, because it deliberately ignores the most extreme quarter on each end. This is
+    also the basis for a standard outlier-detection rule: a point more than 1.5×IQR beyond Q1 or
+    Q3 is commonly flagged as a potential outlier.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. If a dataset's mean is much higher than its median, what does that most likely indicate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The distribution is right-skewed — a long tail of high values is pulling the mean upward while the median stays closer to the "typical" value</button>
+        <button class="q-option" data-correct="false">There must be a calculation error, since mean and median are always equal</button>
+        <button class="q-option" data-correct="false">The dataset has too few data points to compute either statistic accurately</button>
+      </div>
+      <div class="q-explain">Mean and median only coincide for perfectly symmetric distributions — a large gap between them is itself informative about skew, not an error.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is standard deviation reported far more often than variance?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Standard deviation is in the same units as the original data, while variance is in squared units and harder to interpret directly</button>
+        <button class="q-option" data-correct="false">Variance cannot be computed for real-world datasets</button>
+        <button class="q-option" data-correct="false">Standard deviation and variance are the same calculation with different names</button>
+      </div>
+      <div class="q-explain">Squaring distances to compute variance solves the cancellation problem but leaves the result in squared units — taking the square root (standard deviation) restores interpretability in the original scale.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does IQR handle outliers better than range?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">IQR only considers the middle 50% of the data, deliberately excluding the most extreme values on either end</button>
+        <button class="q-option" data-correct="false">IQR and range are calculated identically and behave the same way with outliers</button>
+        <button class="q-option" data-correct="false">IQR requires the dataset to have no outliers at all to be computed</button>
+      </div>
+      <div class="q-explain">Range is defined directly by the two most extreme points, so a single outlier controls it entirely — IQR's focus on the middle 50% makes it structurally robust to exactly that failure mode.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: VrcAcademy "Descriptive Statistics: Complete Guide" (2026); Built In "Intro to Descriptive Statistics for Machine Learning"; TensorTonic "Basic Statistics" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-02-sql-data-manipulation/2-5-data-manipulation-patterns.html">&larr; 2.5 Data manipulation patterns</a>
+    <a href="3-2-probability-distributions.html">3.2 Probability distributions &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function stats(nums) {
+  const n = nums.length;
+  const sorted = [...nums].sort((a,b) => a-b);
+  const mean = nums.reduce((a,b) => a+b, 0) / n;
+  const median = n % 2 === 0 ? (sorted[n/2-1] + sorted[n/2]) / 2 : sorted[(n-1)/2];
+  const variance = nums.reduce((a,b) => a + (b-mean)**2, 0) / n;
+  const std = Math.sqrt(variance);
+  const q1 = sorted[Math.floor(n*0.25)];
+  const q3 = sorted[Math.floor(n*0.75)];
+  const iqr = q3 - q1;
+  const range = sorted[n-1] - sorted[0];
+  return { mean, median, std, iqr, range, min: sorted[0], max: sorted[n-1] };
+}
+
+function fmt(x) { return Math.abs(x) >= 1000 ? Math.round(x).toLocaleString() : x.toFixed(2); }
+
+function renderStats() {
+  const raw = document.getElementById('ds-input').value;
+  const nums = raw.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+  if (nums.length < 2) { document.getElementById('ds-metrics').innerHTML = '<p style="color:var(--text-muted);">Enter at least 2 numbers, comma-separated.</p>'; return; }
+  const s = stats(nums);
+  document.getElementById('ds-metrics').innerHTML = `
+    <div class="ds-metric"><div class="n">${fmt(s.mean)}</div><div class="l">Mean</div></div>
+    <div class="ds-metric"><div class="n">${fmt(s.median)}</div><div class="l">Median</div></div>
+    <div class="ds-metric"><div class="n">${fmt(s.std)}</div><div class="l">Std Dev</div></div>
+    <div class="ds-metric"><div class="n">${fmt(s.iqr)}</div><div class="l">IQR</div></div>
+    <div class="ds-metric"><div class="n">${fmt(s.range)}</div><div class="l">Range</div></div>
+    <div class="ds-metric"><div class="n">${fmt(s.min)} &ndash; ${fmt(s.max)}</div><div class="l">Min &ndash; Max</div></div>
+  `;
+}
+document.getElementById('ds-input').addEventListener('input', renderStats);
+
+const PRESETS = {
+  normal: "45000, 47000, 46000, 48000, 44000, 46500",
+  skewed: "42000, 44000, 43000, 45000, 41000, 210000",
+  outlier: "50, 52, 49, 51, 48, 53, 500",
+};
+document.querySelectorAll('.ds-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('ds-input').value = PRESETS[btn.dataset.p];
+    renderStats();
+  });
+});
+renderStats();
+
+document.getElementById('fig-skew').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: right-skewed distribution with mean pulled right of median due to a long tail">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } </style>
+  <path d="M 30 140 Q 100 30, 180 60 T 400 120 Q 500 135, 650 138" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <line x1="180" y1="20" x2="180" y2="145" stroke="#3ecf8e" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="180" y="15" text-anchor="middle" fill="#3ecf8e">Median</text>
+  <line x1="280" y1="20" x2="280" y2="145" stroke="#f2b84b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="280" y="15" text-anchor="middle" fill="#f2b84b">Mean (pulled right by tail)</text>
+  <text x="500" y="70" fill="#9aa4b5" font-size="11" font-weight="400">long right tail</text>
+</svg>
+`;
+</script>
+</body>
+</html>

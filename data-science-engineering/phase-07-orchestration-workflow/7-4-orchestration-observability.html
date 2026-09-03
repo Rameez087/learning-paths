@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.4 Orchestration observability | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ob-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ob-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ob-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ob-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Orchestration &amp; workflow management</div>
+  <h1>7.4 Orchestration observability</h1>
+  <p class="subtitle">Knowing a pipeline is running is easy. Knowing whether it's healthy takes a specific set of metrics, watched continuously.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Orchestration observability means tracking task duration, DAG run frequency, scheduler lag,
+    and worker availability — typically via Prometheus/Grafana or a dedicated platform like
+    Datadog — layered on top of the orchestrator's own built-in logging and alerting. This is
+    specifically about the health of the <em>orchestration layer itself</em>: is the scheduler
+    keeping up, are tasks taking longer than usual, are workers available — a different concern
+    from data quality observability (Phase 11), which asks whether the data flowing through is
+    actually correct.
+  </div>
+
+  <h2>Try it: explore the key orchestration metrics</h2>
+  <div class="ob-box">
+    <div class="ob-tabs">
+      <div class="ob-tab active" data-m="duration">Task duration</div>
+      <div class="ob-tab" data-m="frequency">DAG run frequency</div>
+      <div class="ob-tab" data-m="lag">Scheduler lag</div>
+      <div class="ob-tab" data-m="workers">Worker availability</div>
+    </div>
+    <div id="ob-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Scheduler lag: the metric most teams don't watch until it's a crisis</h2>
+  <p>
+    Scheduler lag measures the gap between when a task was supposed to start and when it actually
+    started. A growing lag usually means the scheduler itself is overloaded — too many DAGs,
+    too much parsing overhead, insufficient scheduler resources — and it's a leading indicator:
+    tasks might still all be technically succeeding while quietly starting later and later, which
+    eventually cascades into missed SLAs (7.3) across the entire platform, not just one pipeline.
+  </p>
+
+  <div class="figure" id="fig-alerting"></div>
+
+  <h2>Alert routing: getting the right signal to the right channel</h2>
+  <p>
+    Built-in orchestrator alerting typically supports routing to email, Slack, PagerDuty, or a
+    metrics platform. The practical design question isn't just "does an alert fire" but "does it
+    reach the person who can actually act on it, with enough context to act quickly" — a
+    scheduler-lag alert buried in the same channel as routine daily success notifications is
+    functionally the same as no alert at all, since it gets lost in noise.
+  </p>
+
+  <h2>Orchestration observability vs. data observability: keep them separate</h2>
+  <p>
+    This is worth stating precisely, echoing 7.2's "green DAG run" point: orchestration
+    observability answers "is the pipeline machinery healthy" (is the scheduler keeping up, are
+    tasks finishing on time, are workers available). Data observability (Phase 11) answers "is the
+    data itself healthy" (is it fresh, complete, matching expected patterns). A platform can have
+    perfect orchestration health — every task green, no lag, no SLA misses — while still silently
+    processing corrupted or incomplete data. Both layers are necessary; neither substitutes for
+    the other.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does a growing scheduler lag typically indicate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The scheduler itself is overloaded — too many DAGs, too much parsing overhead, or insufficient resources — causing tasks to start later than intended</button>
+        <button class="q-option" data-correct="false">A specific task's business logic contains a bug</button>
+        <button class="q-option" data-correct="false">The underlying data has become corrupted</button>
+      </div>
+      <div class="q-explain">Scheduler lag is specifically an orchestration-layer health signal, distinct from a task-level failure or a data quality issue — it's about the scheduling infrastructure itself falling behind.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is alert routing described as being about more than just "does an alert fire"?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An alert that reaches the wrong channel or gets lost among routine notifications is functionally equivalent to no alert at all</button>
+        <button class="q-option" data-correct="false">All alerting channels are functionally identical regardless of configuration</button>
+        <button class="q-option" data-correct="false">Alert routing has no bearing on how quickly a team can respond to an issue</button>
+      </div>
+      <div class="q-explain">The practical value of an alert depends on it reaching someone who can act on it with enough urgency and context — buried or noisy alerting undermines the entire point of having alerts at all.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why can't perfect orchestration observability substitute for data observability?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A pipeline can have flawless task execution and timing while still silently processing corrupted or incomplete data — these are genuinely separate concerns</button>
+        <button class="q-option" data-correct="false">They measure exactly the same thing, so either one alone is sufficient</button>
+        <button class="q-option" data-correct="false">Orchestration observability automatically implies the data is correct</button>
+      </div>
+      <div class="q-explain">This is the direct extension of 7.2's "green DAG run" limitation — orchestration health and data health are independent properties, and a platform needs both types of observability to be genuinely trustworthy.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: RudderStack "What is Apache Airflow? A guide for data engineers" (2026); DataTalks.Club Podcast Wiki "Apache Airflow" (2026).</p>
+
+  <div class="pager">
+    <a href="7-3-scheduling-and-retries.html">&larr; 7.3 Scheduling &amp; retries</a>
+    <a href="7-5-containerizing-data-pipelines.html">7.5 Containerizing data pipelines &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const OB_INFO = {
+  duration: "How long each task takes to run, tracked over time. A sudden increase often signals a data volume change, a resource constraint, or an upstream dependency slowing down — worth catching before it causes an SLA miss (7.3).",
+  frequency: "How often each DAG actually runs versus its intended schedule. Gaps reveal missed runs — a DAG that's supposed to run daily but silently stopped triggering for three days is a real incident hiding in plain sight.",
+  lag: "The delay between a task's scheduled start time and when it actually started. Rising lag is a leading indicator of scheduler overload, often visible well before any individual task technically fails.",
+  workers: "Whether enough execution capacity is available to run queued tasks. Low worker availability during peak load means tasks queue up and start late, even though nothing is technically broken.",
+};
+function renderOb(key) { document.getElementById('ob-detail').textContent = OB_INFO[key]; }
+document.querySelectorAll('.ob-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ob-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderOb(tab.dataset.m);
+  });
+});
+renderOb('duration');
+
+document.getElementById('fig-alerting').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: orchestration metrics flowing into monitoring platform then routed to the right alert channel">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="50" width="150" height="40" rx="8" fill="#1a2029" stroke="#262d3a"/><text x="95" y="74" text-anchor="middle">Task/DAG metrics</text>
+  <line x1="170" y1="70" x2="220" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a32)"/>
+  <rect x="220" y="50" width="150" height="40" rx="8" fill="#182238" stroke="#5b8cff"/><text x="295" y="74" text-anchor="middle" fill="#a9c1ff">Prometheus/Grafana</text>
+  <line x1="370" y1="60" x2="430" y2="30" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a32)"/>
+  <line x1="370" y1="80" x2="430" y2="110" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a32)"/>
+  <rect x="430" y="10" width="120" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="490" y="32" text-anchor="middle" fill="#3ecf8e">Slack (routine)</text>
+  <rect x="430" y="95" width="120" height="35" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="490" y="117" text-anchor="middle" fill="#ff8b8f">PagerDuty (urgent)</text>
+  <defs><marker id="a32" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.1 Capstone: End-to-end data pipeline | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone projects</div>
+  <h1>12.1 Capstone: End-to-end data pipeline</h1>
+  <p class="subtitle">Phases 1, 5, 6, 7, and 11 — assembled into one real, working pipeline you built yourself.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build a real ELT pipeline: extract data from a genuine source (a public API, a CSV export, a
+    small database), land it raw, transform it through bronze/silver/gold layers (6.5) into a
+    proper star schema (6.2), orchestrate it with Airflow or Dagster (Phase 7) on a schedule, and
+    add at least one data quality test (11.2) that would actually catch a realistic failure. This
+    capstone is deliberately about the full chain working together, not any single piece in
+    isolation.
+  </div>
+
+  <h2>What to build</h2>
+  <ul>
+    <li>A real data source — a public API (weather, sports stats, a government open-data portal), or a CSV/Excel export from somewhere you actually care about.</li>
+    <li>An extraction step that lands raw data untransformed (5.1's ELT principle) into a local database or a free-tier cloud warehouse.</li>
+    <li>A transformation layer organized as bronze → silver → gold (6.5), culminating in at least one proper star schema with a fact table and 2+ dimension tables (6.2).</li>
+    <li>Orchestration via Airflow or Dagster (7.1-7.2) running on an actual schedule, with retries configured (7.3) for at least one plausibly flaky step.</li>
+    <li>At least 2 dbt-style tests (11.2) — not_null, unique, or a custom range check — that would genuinely catch a realistic data quality failure in your specific pipeline.</li>
+  </ul>
+
+  <h2>Track your progress</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <p>
+    A README documenting your source choice and why, your bronze/silver/gold transformation logic,
+    your star schema design (which columns are facts, which are dimensions, and why), your
+    orchestration schedule and retry configuration, and — importantly — what your data quality
+    tests actually check and why you picked those specific checks over other possible ones.
+  </p>
+
+  <h2>Common places this goes wrong</h2>
+  <ul>
+    <li><strong>Skipping the raw/bronze layer entirely</strong> — jumping straight from source to final model loses 5.1's core benefit: the ability to re-derive a corrected transformation without re-extracting.</li>
+    <li><strong>A "star schema" that's really just one flat denormalized table</strong> — recall 6.2's actual test: does this column belong in a fact table (aggregated) or dimension table (filtered/grouped)?</li>
+    <li><strong>Tests that would never actually fail on realistic bad data</strong> — a not_null test on a column that's never actually null in practice doesn't demonstrate you understood 11.2's purpose.</li>
+  </ul>
+
+  <p class="sources" style="margin-top:32px">This capstone synthesizes Phases 1 (foundations), 5 (data engineering fundamentals), 6 (warehousing), 7 (orchestration), and 11 (data quality) into a single working project.</p>
+
+  <div class="pager">
+    <a href="../phase-11-data-quality-governance/11-4-data-governance-basics.html">&larr; 11.4 Data governance basics</a>
+    <a href="12-2-capstone-eda-to-ml-project.html">12.2 Capstone: EDA-to-ML project &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+const ITEMS = [
+  "Real data source identified and extraction step built",
+  "Raw/bronze layer preserved untransformed",
+  "Bronze → silver → gold transformation implemented",
+  "Proper star schema: 1 fact table + 2+ dimension tables",
+  "Orchestrated with Airflow/Dagster on a real schedule, with retries configured",
+  "At least 2 meaningful data quality tests implemented",
+  "README documenting all design choices and reasoning",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} milestones checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

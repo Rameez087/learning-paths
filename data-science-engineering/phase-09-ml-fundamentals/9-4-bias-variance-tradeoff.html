@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.4 Bias-variance tradeoff | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.bv-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.bv-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.bv-slider-row input[type=range] { flex: 1; }
+.bv-metrics { display: flex; gap: 16px; margin-top: 12px; }
+.bv-metric { background: var(--surface-2); border-radius: 8px; padding: 10px 16px; text-align: center; }
+.bv-metric .n { font-size: 18px; font-weight: 700; }
+.bv-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+.bv-verdict { margin-top: 10px; font-size: 13px; padding: 10px 14px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Machine learning fundamentals</div>
+  <h1>9.4 Bias-variance tradeoff</h1>
+  <p class="subtitle">Not abstract theory — a diagnostic lens senior candidates are specifically expected to apply to every training run.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Bias</strong> is error from a model being too simple — it misses real signal in the
+    data (underfitting). <strong>Variance</strong> is error from a model being too reactive — it
+    memorizes noise and quirks specific to the training data rather than learning the true
+    underlying pattern (overfitting). As model complexity increases, bias tends to decrease while
+    variance increases — this produces a U-shaped total error curve, and the goal is finding the
+    complexity level near the bottom of that U, not the extreme of either end.
+  </div>
+
+  <h2>Try it: drag model complexity, watch the U-shaped curve</h2>
+  <div class="bv-box">
+    <div class="bv-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:120px;">Model complexity</label>
+      <input type="range" id="bv-slider" min="1" max="20" value="10">
+      <span id="bv-readout" style="font-weight:700; min-width:20px;">10</span>
+    </div>
+    <div id="bv-fig"></div>
+    <div class="bv-metrics" id="bv-metrics"></div>
+    <div class="bv-verdict" id="bv-verdict"></div>
+  </div>
+
+  <h2>How to actually diagnose which problem you have</h2>
+  <p>
+    A practical diagnostic senior candidates are specifically expected to articulate: use learning
+    curves and a clean validation strategy (10.1's train/validation/test split). If both training
+    and validation error are high, that's <strong>high bias</strong> — the model is too rigid,
+    missing real signal. If training error is low but validation error is much higher, that's
+    <strong>high variance</strong> — the model has memorized training-specific quirks that don't
+    generalize.
+  </p>
+
+  <div class="figure" id="fig-diagnosis"></div>
+
+  <h2>What actually fixes each problem</h2>
+  <ul>
+    <li><strong>High bias fixes</strong> — increase model complexity, add more informative features, use a less constrained model family, or relax regularization (9.5).</li>
+    <li><strong>High variance fixes</strong> — simplify or stabilize the model, apply stronger regularization, remove leaky or high-cardinality features, or gather more training data if genuinely available (more data is described as the most effective regularizer of all).</li>
+  </ul>
+  <p>
+    A specifically named trap to avoid: don't try to "tune your way out" of what's actually a data
+    problem. If the training data itself is too small, too noisy, or missing genuinely predictive
+    features, no amount of hyperparameter adjustment on the model side will fully compensate.
+  </p>
+
+  <h2>Cross-validation: getting a more reliable read on where you stand</h2>
+  <p>
+    A single train/validation split can give a misleading picture purely from how the split
+    happened to fall. Cross-validation divides the data into multiple folds, trains and tests
+    across different combinations of those folds, and averages the results — reducing the risk
+    that a model looking good is really just a model that got lucky with one particular split.
+    Full treatment in Phase 10.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does it mean for a model to have high bias?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The model is too simple to capture the real underlying pattern in the data, resulting in underfitting</button>
+        <button class="q-option" data-correct="false">The model has memorized noise specific to the training data</button>
+        <button class="q-option" data-correct="false">The model always produces perfectly accurate predictions</button>
+      </div>
+      <div class="q-explain">Bias is specifically about a model being too rigid or constrained to represent the true pattern — the opposite failure mode from variance, which is about being too flexible.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How would you diagnose high variance using training and validation error?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Training error is low but validation error is much higher — the model fits training data well but doesn't generalize</button>
+        <button class="q-option" data-correct="false">Both training and validation error are high and roughly equal</button>
+        <button class="q-option" data-correct="false">Training error is always higher than validation error in high-variance models</button>
+      </div>
+      <div class="q-explain">This gap — good on training data, poor on unseen validation data — is the signature of overfitting, distinct from high bias where both errors are high because the model can't fit even the training data well.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is it a mistake to try to "tune your way out" of what's actually a data problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If the training data itself is too small, noisy, or missing predictive features, no amount of hyperparameter adjustment on the model can fully compensate</button>
+        <button class="q-option" data-correct="false">Hyperparameter tuning always fixes any underlying data quality issue given enough attempts</button>
+        <button class="q-option" data-correct="false">Data problems and model problems are indistinguishable in practice</button>
+      </div>
+      <div class="q-explain">This is a specifically named practitioner caution — model-side adjustments have real limits, and correctly diagnosing a data-quality root cause (rather than repeatedly re-tuning) is what actually solves the problem.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: GeeksforGeeks "Bias-Variance Trade Off - Machine Learning" (2026); InterviewPal "25 Machine Learning Interview Questions for 2026"; opodab.com "Machine Learning Fundamentals &amp; Algorithms" (2026).</p>
+
+  <div class="pager">
+    <a href="9-3-feature-engineering.html">&larr; 9.3 Feature engineering</a>
+    <a href="9-5-regularization.html">9.5 Regularization &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderBv() {
+  const c = parseInt(document.getElementById('bv-slider').value, 10);
+  document.getElementById('bv-readout').textContent = c;
+  const bias = Math.max(2, 40 - c * 1.8);
+  const variance = Math.max(2, (c - 5) * 2.2);
+  const total = bias + variance;
+
+  document.getElementById('bv-metrics').innerHTML = `
+    <div class="bv-metric"><div class="n">${bias.toFixed(1)}</div><div class="l">Bias²</div></div>
+    <div class="bv-metric"><div class="n">${variance.toFixed(1)}</div><div class="l">Variance</div></div>
+    <div class="bv-metric"><div class="n">${total.toFixed(1)}</div><div class="l">Total error</div></div>
+  `;
+  const verdict = document.getElementById('bv-verdict');
+  if (c < 7) { verdict.style.background='rgba(242,184,75,0.1)'; verdict.style.border='1px solid var(--warning)'; verdict.textContent = 'High bias zone: model too simple, underfitting.'; }
+  else if (c > 14) { verdict.style.background='rgba(229,72,77,0.1)'; verdict.style.border='1px solid #e5484d'; verdict.textContent = 'High variance zone: model too complex, overfitting.'; }
+  else { verdict.style.background='rgba(62,207,142,0.1)'; verdict.style.border='1px solid var(--success)'; verdict.textContent = 'Sweet spot: reasonable balance between bias and variance.'; }
+
+  // Draw the U-curve with a marker at current complexity
+  const width = 640, height = 160;
+  let biasPath = `M 20 ${height-20}`;
+  let varPath = `M 20 ${height-20}`;
+  let totalPath = `M 20 ${height-20}`;
+  for (let x = 1; x <= 20; x++) {
+    const px = 20 + (x/20)*(width-40);
+    const b = Math.max(2, 40 - x*1.8);
+    const v = Math.max(2, (x-5)*2.2);
+    const t = b + v;
+    biasPath += ` L ${px} ${height-20-b*2.2}`;
+    varPath += ` L ${px} ${height-20-v*2.2}`;
+    totalPath += ` L ${px} ${height-20-t*1.1}`;
+  }
+  const markerX = 20 + (c/20)*(width-40);
+  document.getElementById('bv-fig').innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Chart: bias decreasing and variance increasing with model complexity, total error forming a U shape">
+      <style>text{font-family:-apple-system,sans-serif;font-size:10px;fill:#9aa4b5;}</style>
+      <path d="${biasPath}" fill="none" stroke="#f2b84b" stroke-width="2"/>
+      <path d="${varPath}" fill="none" stroke="#e5484d" stroke-width="2"/>
+      <path d="${totalPath}" fill="none" stroke="#5b8cff" stroke-width="2.5"/>
+      <line x1="${markerX}" y1="10" x2="${markerX}" y2="${height-10}" stroke="#e6e9ef" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="60" y="20" fill="#f2b84b">Bias</text>
+      <text x="120" y="20" fill="#e5484d">Variance</text>
+      <text x="220" y="20" fill="#5b8cff">Total error</text>
+    </svg>
+  `;
+}
+document.getElementById('bv-slider').addEventListener('input', renderBv);
+renderBv();
+
+document.getElementById('fig-diagnosis').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: high bias shows both training and validation error high, high variance shows a gap between low training error and high validation error">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <text x="170" y="20" text-anchor="middle" font-size="12">High bias</text>
+  <rect x="30" y="70" width="80" height="40" fill="#f2b84b" opacity="0.7"/><text x="70" y="130" text-anchor="middle" font-size="9">Training error</text>
+  <rect x="130" y="70" width="80" height="40" fill="#f2b84b" opacity="0.7"/><text x="170" y="130" text-anchor="middle" font-size="9">Validation error</text>
+  <text x="170" y="60" text-anchor="middle" fill="#f2b84b" font-size="9">both high, similar</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="12">High variance</text>
+  <rect x="410" y="95" width="80" height="15" fill="#3ecf8e" opacity="0.7"/><text x="450" y="130" text-anchor="middle" font-size="9">Training error</text>
+  <rect x="510" y="50" width="80" height="60" fill="#e5484d" opacity="0.7"/><text x="550" y="130" text-anchor="middle" font-size="9">Validation error</text>
+  <text x="480" y="40" text-anchor="middle" fill="#e5484d" font-size="9">big gap</text>
+</svg>
+`;
+</script>
+</body>
+</html>

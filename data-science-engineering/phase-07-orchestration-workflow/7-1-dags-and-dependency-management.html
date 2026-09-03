@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.1 DAGs &amp; dependency management | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dg-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dg-node { padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-strong); background: var(--surface-2); cursor: pointer; }
+.dg-node.running { background: var(--accent-bg); border-color: var(--accent); }
+.dg-node.done { background: rgba(62,207,142,0.12); border-color: var(--success); }
+.dg-node.blocked { opacity: 0.4; }
+.dg-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Orchestration &amp; workflow management</div>
+  <h1>7.1 DAGs &amp; dependency management</h1>
+  <p class="subtitle">Every orchestration tool you'll touch is built around one idea: some tasks can't start until others finish.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>DAG</strong> (Directed Acyclic Graph) is a collection of tasks with explicit
+    dependencies and a defined execution order — directed (dependencies point one way) and acyclic
+    (no task can depend on itself, even indirectly, which would create an infinite loop). This is
+    the foundational structure every major orchestration tool (Airflow, Dagster, Prefect) is built
+    around, because it makes task sequencing and failure handling predictable and repeatable
+    rather than an ad-hoc script with implicit ordering buried in the code.
+  </div>
+
+  <h2>Try it: run a real DAG and watch dependencies get respected</h2>
+  <div class="dg-box">
+    <div id="dg-nodes"></div>
+    <button class="dg-btn" id="dg-step">Run next ready task &rarr;</button>
+  </div>
+
+  <h2>Why "acyclic" is a hard requirement, not a style preference</h2>
+  <p>
+    If Task C depended on Task A, and Task A depended on Task C, neither could ever start — each
+    is waiting on the other. This is a real, structural failure a DAG's definition rules out by
+    construction: since dependencies only ever point forward, a cycle is simply impossible to
+    express in a valid DAG. Orchestration tools validate this at DAG-definition time specifically
+    to catch this class of error before anything ever runs.
+  </p>
+
+  <div class="figure" id="fig-dag"></div>
+
+  <h2>Explicit dependencies vs. implicit ordering</h2>
+  <p>
+    Before DAG-based orchestration became standard, a common pattern was a single script or cron
+    job that ran steps in whatever order they happened to be written — the "dependency" between
+    step 2 and step 3 existed only in the fact that step 2's code appeared first. A DAG makes this
+    dependency an explicit, first-class object: task B literally declares "I depend on task A,"
+    which the orchestrator can inspect, visualize, and use to parallelize independent branches
+    automatically.
+  </p>
+
+  <h2>What this buys you in practice</h2>
+  <ul>
+    <li><strong>Automatic parallelization</strong> — tasks with no dependency on each other can run simultaneously, without anyone manually coding that logic.</li>
+    <li><strong>Precise failure isolation</strong> — when a task fails, the orchestrator knows exactly which downstream tasks were depending on it and can hold those back rather than running them against incomplete upstream data.</li>
+    <li><strong>Visual debugging</strong> — a DAG's graph structure can be rendered directly as a diagram, making it far easier to reason about a complex pipeline than reading through a long procedural script.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why must a DAG be acyclic?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A cycle would mean two or more tasks are each waiting on each other, so none of them could ever start</button>
+        <button class="q-option" data-correct="false">Acyclic graphs run faster than cyclic ones on identical hardware</button>
+        <button class="q-option" data-correct="false">Cyclic graphs are technically impossible to draw as diagrams</button>
+      </div>
+      <div class="q-explain">A cycle creates a deadlock by definition — every task in the cycle is blocked on another task in the same cycle, so nothing can ever satisfy its dependency and begin.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the key difference between a DAG's explicit dependencies and a script's implicit ordering?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A DAG makes each dependency a declared, inspectable object the orchestrator can reason about, rather than an ordering that only exists implicitly in code layout</button>
+        <button class="q-option" data-correct="false">Scripts and DAGs produce identical behavior with no meaningful difference</button>
+        <button class="q-option" data-correct="false">DAGs cannot express any ordering between tasks at all</button>
+      </div>
+      <div class="q-explain">The explicitness is what enables automatic parallelization and precise failure handling — an orchestrator can't safely parallelize or isolate failures in a script whose ordering is just "whatever line comes next."</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does DAG-based orchestration enable automatic parallelization?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Tasks with no dependency relationship to each other can be identified and run simultaneously without anyone manually coding that logic</button>
+        <button class="q-option" data-correct="false">All tasks in a DAG always run in parallel regardless of dependencies</button>
+        <button class="q-option" data-correct="false">Parallelization requires abandoning the DAG structure entirely</button>
+      </div>
+      <div class="q-explain">Because dependencies are explicit, the orchestrator can determine which tasks are truly independent and safely run them concurrently — this is a direct benefit of making the dependency graph explicit rather than implicit.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Multisoft Systems "Top 30 Apache Airflow Interview Questions Answers 2026"; DataTalks.Club Podcast Wiki "Apache Airflow" (2026); RudderStack "What is Apache Airflow? A guide for data engineers" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-06-data-modeling-warehousing/6-6-cloud-data-platforms.html">&larr; 6.6 Cloud data platforms</a>
+    <a href="7-2-airflow-concepts.html">7.2 Airflow concepts &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DG_TASKS = [
+  { id: "extract_orders", deps: [] },
+  { id: "extract_customers", deps: [] },
+  { id: "clean_orders", deps: ["extract_orders"] },
+  { id: "join_and_model", deps: ["clean_orders", "extract_customers"] },
+  { id: "publish_dashboard", deps: ["join_and_model"] },
+];
+let dgDone = new Set();
+function renderDg() {
+  document.getElementById('dg-nodes').innerHTML = DG_TASKS.map(t => {
+    const ready = t.deps.every(d => dgDone.has(d)) && !dgDone.has(t.id);
+    const cls = dgDone.has(t.id) ? 'done' : (ready ? '' : 'blocked');
+    return `<div class="dg-node ${cls}">${dgDone.has(t.id)?'✓ ':''}${t.id}${t.deps.length?' (needs: '+t.deps.join(', ')+')':''}</div>`;
+  }).join('');
+  const allDone = DG_TASKS.every(t => dgDone.has(t.id));
+  document.getElementById('dg-step').textContent = allDone ? 'DAG complete' : 'Run next ready task \u2192';
+  document.getElementById('dg-step').disabled = allDone;
+}
+document.getElementById('dg-step').addEventListener('click', () => {
+  const next = DG_TASKS.find(t => !dgDone.has(t.id) && t.deps.every(d => dgDone.has(d)));
+  if (next) { dgDone.add(next.id); renderDg(); }
+});
+renderDg();
+
+document.getElementById('fig-dag').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: two extract tasks feeding into clean and join steps, converging on a final publish task">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="42" text-anchor="middle">extract_orders</text>
+  <rect x="20" y="120" width="140" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="142" text-anchor="middle">extract_customers</text>
+  <line x1="160" y1="37" x2="220" y2="55" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a30)"/>
+  <rect x="220" y="40" width="120" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="280" y="62" text-anchor="middle">clean_orders</text>
+  <line x1="340" y1="57" x2="400" y2="85" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a30)"/>
+  <line x1="160" y1="137" x2="400" y2="100" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a30)"/>
+  <rect x="400" y="75" width="130" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="465" y="97" text-anchor="middle" fill="#a9c1ff">join_and_model</text>
+  <line x1="530" y1="92" x2="580" y2="92" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a30)"/>
+  <rect x="580" y="75" width="90" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="625" y="97" text-anchor="middle" fill="#3ecf8e">publish</text>
+  <defs><marker id="a30" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

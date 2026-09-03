@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.3 Feature engineering | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fe-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fe-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.fe-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.fe-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Machine learning fundamentals</div>
+  <h1>9.3 Feature engineering</h1>
+  <p class="subtitle">A better feature often beats a fancier algorithm — this is where SQL (Phase 2) and ML meet.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Feature engineering is the process of transforming raw data into the inputs a model can
+    actually learn from effectively — encoding categorical variables numerically, scaling numeric
+    ranges, creating new derived features from domain knowledge (day-of-week from a timestamp,
+    ratio features from two existing columns), and handling missing values thoughtfully rather
+    than blindly. Feature <em>selection</em> — removing irrelevant or redundant features — is a
+    closely related practice that simplifies the model and reduces variance (9.4), directly
+    improving how well it generalizes to new data.
+  </div>
+
+  <h2>Try it: explore common transformation techniques</h2>
+  <div class="fe-box">
+    <div class="fe-tabs">
+      <div class="fe-tab active" data-t="encoding">Categorical encoding</div>
+      <div class="fe-tab" data-t="scaling">Scaling</div>
+      <div class="fe-tab" data-t="derived">Derived features</div>
+      <div class="fe-tab" data-t="missing">Missing values</div>
+    </div>
+    <div id="fe-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why raw categorical text can't go directly into most models</h2>
+  <p>
+    A column like <code>city</code> containing "Austin", "Denver", "Chicago" has no inherent
+    numeric meaning — most ML algorithms need numeric input. <strong>One-hot encoding</strong>
+    creates a separate binary column per category (is_austin, is_denver, is_chicago).
+    <strong>Label encoding</strong> assigns each category an arbitrary integer instead — simpler,
+    but risks implying a false ordering (Chicago=2 isn't "more" than Austin=0) unless the
+    algorithm is specifically robust to that, like tree-based models.
+  </p>
+
+  <div class="figure" id="fig-encoding"></div>
+
+  <h2>Feature engineering is where domain knowledge actually pays off</h2>
+  <p>
+    A raw timestamp column is rarely useful directly, but deriving day-of-week, hour-of-day, or
+    "is this a holiday" from it can capture genuinely predictive patterns a model couldn't infer
+    on its own from the raw timestamp value. This is the concrete point where subject-matter
+    expertise about the business problem translates directly into model performance — no
+    algorithm, however sophisticated, can invent a feature idea that requires knowing something
+    specific about how the business actually works.
+  </p>
+
+  <h2>Leakage: the feature engineering mistake that inflates results falsely</h2>
+  <p>
+    A feature "leaks" information from the future or from the target itself if it wouldn't
+    actually be available at prediction time in production. A classic example: including
+    "total amount refunded" as a feature when predicting whether an order will be returned — this
+    information wouldn't exist until after the return already happened. Leaked features can make
+    a model look impressively accurate during development while being completely unusable in
+    production, because that information genuinely isn't available when a real prediction is
+    needed.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What risk does label encoding introduce that one-hot encoding avoids?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It can imply a false numeric ordering between categories that don't actually have one</button>
+        <button class="q-option" data-correct="false">Label encoding cannot technically be applied to text data</button>
+        <button class="q-option" data-correct="false">One-hot encoding always produces fewer columns than label encoding</button>
+      </div>
+      <div class="q-explain">Assigning integers to categories can be misread by algorithms sensitive to magnitude as implying "more" or "less," even when the categories have no true order — this is exactly the risk one-hot encoding avoids by using independent binary columns instead.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can deriving day-of-week from a timestamp improve model performance?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It surfaces a genuinely predictive pattern (like weekday vs. weekend behavior) that the model couldn't easily infer from the raw timestamp value alone</button>
+        <button class="q-option" data-correct="false">Derived features are always mathematically identical to the raw feature they came from</button>
+        <button class="q-option" data-correct="false">Timestamps cannot be used as model inputs in any form</button>
+      </div>
+      <div class="q-explain">This is the core value of feature engineering — translating domain knowledge (weekly patterns exist) into a form the model can actually use directly, rather than hoping the model discovers the pattern from raw data.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is a leaked feature dangerous even though it can make a model look highly accurate during development?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The information genuinely isn't available at real prediction time in production, so the model can't actually use it once deployed</button>
+        <button class="q-option" data-correct="false">Leaked features always cause a model to fail to train at all</button>
+        <button class="q-option" data-correct="false">Leakage only affects unsupervised learning models, never supervised ones</button>
+      </div>
+      <div class="q-explain">The danger is specifically the gap between development-time accuracy (using information that shouldn't be available) and production reality (where that information doesn't exist yet) — the model's apparent skill is an illusion.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Springer "Introduction to Machine Learning" chapter (2026); course.careers "Machine Learning Engineer Roadmap 2026"; GeeksforGeeks "ML Bias Variance Trade Off" (2026), feature selection section.</p>
+
+  <div class="pager">
+    <a href="9-2-classical-ml-algorithms.html">&larr; 9.2 Classical ML algorithms</a>
+    <a href="9-4-bias-variance-tradeoff.html">9.4 Bias-variance tradeoff &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const FE_INFO = {
+  encoding: "One-hot encoding creates a binary column per category (safe, no false ordering, but many columns for high-cardinality features). Label encoding assigns integers (compact, but risks implying false order — usually fine for tree-based models, risky for linear ones).",
+  scaling: "Many algorithms (KNN, gradient descent-based models) are sensitive to feature magnitude — a feature ranging 0-1,000,000 can dominate one ranging 0-1 even if both are equally important. Standardization (mean 0, unit variance) or min-max scaling puts features on comparable scales.",
+  derived: "New features built from existing ones using domain knowledge: day-of-week from a timestamp, price-per-unit from price and quantity, a ratio of two related columns. Often the single highest-leverage feature engineering step.",
+  missing: "Blindly filling missing values with the column mean can distort the data if the missingness itself is meaningful (5.5's 'imputing without checking patterns' EDA mistake). Sometimes 'is this value missing' is itself a useful feature to add.",
+};
+function renderFe(key) { document.getElementById('fe-detail').textContent = FE_INFO[key]; }
+document.querySelectorAll('.fe-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.fe-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderFe(tab.dataset.t);
+  });
+});
+renderFe('encoding');
+
+document.getElementById('fig-encoding').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: one-hot encoding creates three binary columns while label encoding assigns a single integer column">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <text x="150" y="20" text-anchor="middle" font-size="12">One-hot encoding</text>
+  <rect x="20" y="35" width="80" height="30" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="60" y="54" text-anchor="middle" fill="#a9c1ff" font-size="8">is_austin</text>
+  <rect x="110" y="35" width="80" height="30" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="150" y="54" text-anchor="middle" fill="#a9c1ff" font-size="8">is_denver</text>
+  <rect x="200" y="35" width="80" height="30" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="240" y="54" text-anchor="middle" fill="#a9c1ff" font-size="8">is_chicago</text>
+  <text x="150" y="85" text-anchor="middle" font-size="9" fill="#9aa4b5">no false ordering implied</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="12">Label encoding</text>
+  <rect x="420" y="35" width="160" height="30" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="500" y="54" text-anchor="middle" fill="#f2b84b" font-size="9">city_code: 0, 1, 2</text>
+  <text x="500" y="85" text-anchor="middle" font-size="9" fill="#9aa4b5">compact, but risks false order</text>
+</svg>
+`;
+</script>
+</body>
+</html>

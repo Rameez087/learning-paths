@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1.3 Prompting as an engineering skill | AI Architect</title>
 <link rel="stylesheet" href="../assets/style.css">
+<style>
+.pb-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.pb-chip { display: inline-block; padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 10px; }
+.pb-chip.used { opacity: 0.4; cursor: default; }
+.pb-output { background: var(--code-bg); border-radius: 8px; padding: 14px; font-family: var(--font-mono); font-size: 13px; min-height: 80px; white-space: pre-wrap; }
+.pb-reset { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 10px; }
+.cot-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+.cot-toggle-btn { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.cot-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.cot-metric { display: flex; gap: 16px; }
+.cot-metric .m { background: var(--surface-2); border-radius: 8px; padding: 10px 16px; text-align: center; }
+.cot-metric .n { font-size: 18px; font-weight: 700; }
+.cot-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+</style>
 </head>
 <body>
 
@@ -39,6 +53,13 @@
   </p>
 
   <div class="figure" id="fig-structure"></div>
+
+  <div class="pb-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Try it: click each element to build a real prompt live, in order</p>
+    <div id="pb-chips"></div>
+    <div class="pb-output" id="pb-output">Click "Role" to start building...</div>
+    <button class="pb-reset" id="pb-reset">Reset</button>
+  </div>
 
   <h2>Few-shot: show, don't just tell</h2>
   <p>
@@ -84,6 +105,15 @@ Category:</code></pre>
     <li><strong>Skip it for dedicated reasoning models.</strong> Models with built-in extended thinking (Claude's Extended Thinking, OpenAI's o-series, Gemini's Thinking Mode) already reason internally before responding &mdash; explicitly telling them to "think step by step" on top of that is redundant.</li>
     <li><strong>Separate the reasoning from the final answer.</strong> The production pattern that works well: let the model reason at length internally, then require a short, fixed-format final answer &mdash; "return only the recommendation, top risks, and next action as bullet points." This keeps the output reviewable without losing the accuracy benefit of the reasoning.</li>
   </ul>
+
+  <div class="pb-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Try it: see the actual trade-off chain-of-thought introduces</p>
+    <div class="cot-toggle">
+      <div class="cot-toggle-btn active" data-c="off">Direct answer</div>
+      <div class="cot-toggle-btn" data-c="on">"Think step by step" first</div>
+    </div>
+    <div class="cot-metric" id="cot-metric"></div>
+  </div>
 
   <h2>Structured output: making responses parseable</h2>
   <p>
@@ -171,6 +201,56 @@ document.querySelectorAll('.q-block').forEach(block => {
     });
   });
 });
+
+// --- Interactive prompt builder ---
+const PB_PARTS = {
+  role: "You are a senior backend engineer reviewing this PR.\n\n",
+  context: "The PR modifies the authentication middleware used across all API routes.\n\n",
+  task: "Identify any security risks introduced by this change.\n\n",
+  format: "Return your answer as a bulleted list, most severe risk first.",
+};
+const PB_ORDER = ["role","context","task","format"];
+let pbUsed = [];
+function renderPb() {
+  document.getElementById('pb-chips').innerHTML = PB_ORDER.map(k =>
+    `<span class="pb-chip${pbUsed.includes(k)?' used':''}" data-k="${k}">${k[0].toUpperCase()+k.slice(1)}</span>`
+  ).join('');
+  document.getElementById('pb-output').textContent = pbUsed.length ? pbUsed.map(k => PB_PARTS[k]).join('') : 'Click "Role" to start building...';
+  document.querySelectorAll('.pb-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const k = chip.dataset.k;
+      if (pbUsed.includes(k)) return;
+      const nextExpected = PB_ORDER[pbUsed.length];
+      if (k !== nextExpected) return; // enforce natural order, but no error shown - just no-op
+      pbUsed.push(k);
+      renderPb();
+    });
+  });
+}
+document.getElementById('pb-reset').addEventListener('click', () => { pbUsed = []; renderPb(); });
+renderPb();
+
+// --- Interactive chain-of-thought cost/accuracy toggle ---
+const COT_DATA = {
+  off: { tokens: "~40 output tokens", accuracy: "Lower on multi-step logic", latency: "~0.4s" },
+  on: { tokens: "~280 output tokens", accuracy: "Higher on multi-step logic", latency: "~2.1s" },
+};
+function renderCot(key) {
+  const d = COT_DATA[key];
+  document.getElementById('cot-metric').innerHTML = `
+    <div class="m"><div class="n">${d.tokens}</div><div class="l">Output length</div></div>
+    <div class="m"><div class="n">${d.accuracy}</div><div class="l">Reasoning accuracy</div></div>
+    <div class="m"><div class="n">${d.latency}</div><div class="l">Illustrative latency</div></div>
+  `;
+}
+document.querySelectorAll('.cot-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cot-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCot(btn.dataset.c);
+  });
+});
+renderCot('off');
 
 document.getElementById('fig-structure').innerHTML = `
 <svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: four elements of a prompt - role, context, task, format">

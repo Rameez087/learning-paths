@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 The data lifecycle | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dl-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dl-stage { padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.dl-stage.active { background: var(--accent-bg); border-color: var(--accent); }
+.dl-detail { margin-top: 14px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.2 The data lifecycle</h1>
+  <p class="subtitle">Every dashboard, model, and report you've ever seen traveled this exact path first.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Data moves through five stages before it becomes a decision: <strong>generation</strong> (an
+    app, sensor, or system produces it), <strong>ingestion</strong> (it's extracted and moved
+    somewhere central), <strong>storage</strong> (it lands in a warehouse or lake),
+    <strong>transformation</strong> (raw data becomes clean, modeled tables), and
+    <strong>consumption</strong> (dashboards, reports, or ML models use it). This entire track is
+    organized around this lifecycle — later phases go deep on each stage in order.
+  </div>
+
+  <h2>Try it: walk through the lifecycle</h2>
+  <div class="dl-box">
+    <div id="dl-stages"></div>
+    <div class="dl-detail" id="dl-detail">Click a stage above.</div>
+  </div>
+
+  <h2>Why ELT won over ETL for most analytical workloads</h2>
+  <p>
+    A long-running architectural debate has largely settled: modern practice loads raw data
+    directly into a powerful warehouse first, then transforms it there (<strong>ELT</strong> —
+    Extract, Load, Transform) rather than transforming it in a separate step before loading
+    (<strong>ETL</strong> — Extract, Transform, Load). This shift happened because cloud
+    warehouses (Snowflake, BigQuery) became powerful and cheap enough to handle transformation
+    workloads directly, and keeping the raw, untransformed data around turned out to be valuable —
+    it means you can always re-derive a new transformation later without re-extracting from the
+    original source. We'll cover this distinction in full in Phase 5.
+  </p>
+
+  <div class="figure" id="fig-elt"></div>
+
+  <h2>Where each later phase of this track fits</h2>
+  <ul>
+    <li><strong>Generation &amp; ingestion</strong> — Phase 5 (data engineering fundamentals), Phase 7 (orchestration)</li>
+    <li><strong>Storage</strong> — Phase 6 (data modeling &amp; warehousing), Phase 8 (big data &amp; distributed processing)</li>
+    <li><strong>Transformation</strong> — Phase 2 (SQL), Phase 6 (warehousing/modeling)</li>
+    <li><strong>Consumption</strong> — Phase 4 (EDA &amp; visualization), Phase 9-10 (machine learning)</li>
+    <li><strong>Cutting across every stage</strong> — Phase 11 (data quality, governance &amp; observability) — because a broken stage anywhere in this chain silently corrupts everything downstream of it.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What are the five stages of the data lifecycle, in order?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Generation, ingestion, storage, transformation, consumption</button>
+        <button class="q-option" data-correct="false">Storage, generation, consumption, transformation, ingestion</button>
+        <button class="q-option" data-correct="false">Transformation, storage, generation, ingestion, consumption</button>
+      </div>
+      <div class="q-explain">Data has to exist and be moved before it can be stored, and has to be stored before it can be cleaned up and modeled, and modeled before it's useful for a dashboard or model — the order reflects real dependency, not an arbitrary list.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why did ELT become the dominant approach over ETL for analytical workloads?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Modern cloud warehouses became powerful and cheap enough to handle transformation directly, and keeping raw data around allows re-deriving new transformations later</button>
+        <button class="q-option" data-correct="false">ETL was fundamentally impossible to implement with modern tools</button>
+        <button class="q-option" data-correct="false">ELT eliminates the need for a data warehouse entirely</button>
+      </div>
+      <div class="q-explain">The shift was driven by warehouse compute becoming cheap and powerful, plus the practical value of retaining raw untransformed data as a flexible source for future transformations.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does data quality/observability need to span the entire lifecycle rather than living in one stage?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A problem introduced at any single stage silently propagates and corrupts everything downstream of it</button>
+        <button class="q-option" data-correct="false">Data quality only matters at the final consumption stage</button>
+        <button class="q-option" data-correct="false">Data quality issues are always caught automatically by the warehouse</button>
+      </div>
+      <div class="q-explain">Because each stage depends on the one before it, an issue introduced early (bad ingestion, a broken transformation) flows forward invisibly unless something is actively checking at every stage, not just the end.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Precision AI Academy "Data Pipeline Guide 2026" and "Data Engineering 2026"; Uvik Software "Data Engineering Tools 2026".</p>
+
+  <div class="pager">
+    <a href="1-1-data-science-vs-data-engineering.html">&larr; 1.1 Data science vs. data engineering vs. analytics engineering</a>
+    <a href="1-3-tools-landscape-2026.html">1.3 The 2026 tools landscape &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const STAGES = [
+  { name: "1. Generation", detail: "An application, sensor, user action, or external system produces raw data — a purchase event, a page view, an SAP transaction record." },
+  { name: "2. Ingestion", detail: "Tools like Fivetran, Airbyte, or custom scripts extract that raw data from its source and move it into a central store, on a schedule or in real time." },
+  { name: "3. Storage", detail: "The raw (or lightly processed) data lands in a warehouse (Snowflake, BigQuery) or a lake/lakehouse (Delta Lake, Iceberg) — queryable, but not yet clean or modeled." },
+  { name: "4. Transformation", detail: "SQL-based tools like dbt turn raw, messy tables into clean, tested, documented, business-ready models — this is the analytics engineer's home turf." },
+  { name: "5. Consumption", detail: "Analysts query the modeled data for dashboards and reports; data scientists use it (or raw data directly) to build predictive models." },
+];
+document.getElementById('dl-stages').innerHTML = STAGES.map((s,i) =>
+  `<div class="dl-stage" data-i="${i}">${s.name}</div>`
+).join('');
+document.querySelectorAll('.dl-stage').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.dl-stage').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('dl-detail').textContent = STAGES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-elt').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: ETL transforms before loading, ELT loads raw data first then transforms inside the warehouse">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:12px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <text x="20" y="25" font-size="13">ETL (older pattern)</text>
+  <rect x="20" y="40" width="90" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="65" y="64" text-anchor="middle" font-size="11">Extract</text>
+  <rect x="130" y="40" width="90" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="175" y="64" text-anchor="middle" font-size="11" fill="#f2b84b">Transform</text>
+  <rect x="240" y="40" width="90" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="285" y="64" text-anchor="middle" font-size="11">Load</text>
+
+  <text x="20" y="110" font-size="13">ELT (2026 default)</text>
+  <rect x="20" y="125" width="90" height="0" fill="none"/>
+  <rect x="380" y="40" width="90" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="425" y="64" text-anchor="middle" font-size="11">Extract</text>
+  <rect x="490" y="40" width="90" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="535" y="64" text-anchor="middle" font-size="11">Load</text>
+  <rect x="600" y="40" width="70" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="635" y="64" text-anchor="middle" font-size="10" fill="#a9c1ff">Transform</text>
+  <text x="500" y="115" class="s">transform happens inside the warehouse, after loading</text>
+</svg>
+`;
+</script>
+</body>
+</html>

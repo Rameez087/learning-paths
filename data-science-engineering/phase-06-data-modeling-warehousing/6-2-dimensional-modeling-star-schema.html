@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 Dimensional modeling &amp; star schema | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dm-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dm-item-btn { display: inline-block; padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 10px; }
+.dm-item-btn.placed { opacity: 0.35; cursor: default; }
+.dm-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.dm-col { border: 1px dashed var(--border-strong); border-radius: 8px; padding: 12px; min-height: 70px; }
+.dm-col .name { font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px; }
+.dm-tag { display: inline-block; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 6px; padding: 3px 8px; font-size: 11px; margin: 2px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Data modeling &amp; warehousing</div>
+  <h1>6.2 Dimensional modeling &amp; star schema</h1>
+  <p class="subtitle">Every number in your business is either a measurement or the context around one. Dimensional modeling is just taking that split seriously.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Dimensional modeling, developed by Ralph Kimball, organizes a warehouse around exactly two
+    table types: <strong>fact tables</strong> hold the quantitative, measurable events of the
+    business (revenue, quantity, duration — numbers that grow into the billions of rows) and
+    <strong>dimension tables</strong> hold the descriptive context around those measurements (who,
+    what, where, when). A <strong>star schema</strong> — one central fact table directly joined to
+    several dimension tables — is the simplest, most common form, and outperforms more normalized
+    alternatives on roughly 90% of real analytical query workloads specifically because it needs
+    fewer joins.
+  </div>
+
+  <h2>Try it: sort each column into fact or dimension</h2>
+  <div class="dm-box">
+    <div id="dm-items"></div>
+    <div class="dm-columns">
+      <div class="dm-col" data-t="fact"><span class="name">Fact table (measurements)</span><div id="dm-fact-tags"></div></div>
+      <div class="dm-col" data-t="dimension"><span class="name">Dimension table (context)</span><div id="dm-dim-tags"></div></div>
+    </div>
+    <p id="dm-feedback" style="font-size:12px; color:var(--warning); margin-top:8px; min-height:18px;"></p>
+  </div>
+
+  <h2>The golden rule</h2>
+  <p>
+    A fact table contains the numbers your business actually measures — revenue amount, quantity
+    sold, duration, clicks. A dimension table describes the context those numbers happened in —
+    the customer, the product, the store, the date. A useful test when you're unsure: if the
+    column is something you'd sum, average, or count, it's probably a fact; if it's something
+    you'd group by or filter on, it's probably a dimension.
+  </p>
+
+  <div class="figure" id="fig-star"></div>
+
+  <h2>Star vs. snowflake: the trade-off, in one sentence</h2>
+  <p>
+    A star schema keeps dimension tables flat and denormalized — everything about a product lives
+    in one <code>dim_product</code> table, even if that duplicates some category information. A
+    snowflake schema normalizes those dimensions further, splitting <code>dim_product</code> into
+    separate linked tables for product, category, and subcategory. Star schemas win on roughly 90%
+    of query workloads specifically because fewer joins means faster queries — snowflake schemas
+    trade that query speed for reduced storage redundancy, which matters far less than it used to
+    now that storage is cheap. Full treatment in 6.3.
+  </p>
+
+  <h2>Four types of fact tables worth knowing</h2>
+  <ul>
+    <li><strong>Transactional</strong> — one row per business event (a single sale, a single click). The most common type.</li>
+    <li><strong>Periodic snapshot</strong> — one row per defined time interval capturing a state (daily account balance).</li>
+    <li><strong>Accumulating snapshot</strong> — one row per process instance, updated as it moves through stages (an order's full fulfillment lifecycle).</li>
+    <li><strong>Factless</strong> — records that an event happened with no numeric measure attached (a student attended a class) — useful for counting occurrences.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the simplest test for whether a column belongs in a fact table or a dimension table?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If it's something you'd sum, average, or count, it's likely a fact; if it's something you'd group by or filter on, it's likely a dimension</button>
+        <button class="q-option" data-correct="false">Fact tables only contain text, dimension tables only contain numbers</button>
+        <button class="q-option" data-correct="false">There is no meaningful difference between fact and dimension columns</button>
+      </div>
+      <div class="q-explain">This distinction maps directly onto how the column would actually be used in a query — aggregated (fact) versus used for grouping/filtering (dimension).</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do star schemas outperform snowflake schemas on most real analytical workloads?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Star schemas keep dimensions denormalized and flat, requiring fewer joins per query than snowflake schemas' further-normalized dimensions</button>
+        <button class="q-option" data-correct="false">Snowflake schemas cannot technically be queried by standard SQL</button>
+        <button class="q-option" data-correct="false">Star schemas always use less storage than snowflake schemas</button>
+      </div>
+      <div class="q-explain">The performance difference comes directly from join count — fewer joins in a star schema's flatter dimension tables generally means faster query execution, which is why it wins on the large majority of real workloads.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What makes a "factless" fact table useful despite having no numeric measure?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It records that an event occurred, which is useful specifically for counting occurrences (e.g. how many students attended a class)</button>
+        <button class="q-option" data-correct="false">Factless fact tables are a data modeling error and should always be avoided</button>
+        <button class="q-option" data-correct="false">Factless fact tables replace the need for any dimension tables</button>
+      </div>
+      <div class="q-explain">Sometimes the interesting question is simply "did this happen, and how often" rather than "how much" — a factless fact table captures exactly that, with the counting happening via COUNT(*) rather than SUM() on a measure column.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kimball Group "Star Schema OLAP Cube"; JobPrep Arena Academy "The Evolution of Data Modeling: From Third Normal Form to the Star Schema"; daily.dev "Data Modeling for Analytics Engineers" (2026); Fivetran "Star schemas: An efficient way to put your data to work".</p>
+
+  <div class="pager">
+    <a href="6-1-oltp-vs-olap.html">&larr; 6.1 OLTP vs. OLAP</a>
+    <a href="6-3-snowflake-schema-and-normalization.html">6.3 Snowflake schema &amp; normalization &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DM_ITEMS = [
+  { label: "revenue_amount", type: "fact" },
+  { label: "customer_name", type: "dimension" },
+  { label: "quantity_sold", type: "fact" },
+  { label: "product_category", type: "dimension" },
+  { label: "order_date", type: "dimension" },
+  { label: "duration_seconds", type: "fact" },
+];
+let dmSelected = null;
+let dmPlaced = {};
+function renderDm() {
+  document.getElementById('dm-items').innerHTML = DM_ITEMS.map((it,i) =>
+    `<span class="dm-item-btn${dmPlaced[i]?' placed':''}" data-i="${i}">${it.label}</span>`
+  ).join('');
+  document.getElementById('dm-fact-tags').innerHTML = Object.entries(dmPlaced).filter(([i,t])=>t==='fact').map(([i])=>`<span class="dm-tag">${DM_ITEMS[i].label}</span>`).join('');
+  document.getElementById('dm-dim-tags').innerHTML = Object.entries(dmPlaced).filter(([i,t])=>t==='dimension').map(([i])=>`<span class="dm-tag">${DM_ITEMS[i].label}</span>`).join('');
+  document.querySelectorAll('.dm-item-btn').forEach(el => {
+    el.addEventListener('click', () => {
+      if (dmPlaced[el.dataset.i]) return;
+      document.querySelectorAll('.dm-item-btn').forEach(o=>o.style.borderColor='');
+      el.style.borderColor = 'var(--accent)';
+      dmSelected = parseInt(el.dataset.i,10);
+    });
+  });
+  document.querySelectorAll('.dm-col').forEach(col => {
+    col.onclick = () => {
+      if (dmSelected === null) return;
+      const feedback = document.getElementById('dm-feedback');
+      if (DM_ITEMS[dmSelected].type === col.dataset.t) {
+        dmPlaced[dmSelected] = col.dataset.t;
+        feedback.style.color = 'var(--success)'; feedback.textContent = 'Correct!';
+        dmSelected = null;
+        renderDm();
+      } else {
+        feedback.style.color = '#ff8b8f'; feedback.textContent = 'Not quite — think about whether you\'d aggregate or filter on this column.';
+      }
+    };
+  });
+}
+renderDm();
+
+document.getElementById('fig-star').innerHTML = `
+<svg viewBox="0 0 680 220" width="100%" role="img" aria-label="Diagram: star schema with a central fact table connected to four surrounding dimension tables">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="290" y="90" width="100" height="45" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="117" text-anchor="middle" fill="#a9c1ff">fct_sales</text>
+  <rect x="290" y="10" width="100" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="34" text-anchor="middle" fill="#3ecf8e">dim_date</text>
+  <rect x="290" y="170" width="100" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="194" text-anchor="middle" fill="#3ecf8e">dim_product</text>
+  <rect x="120" y="90" width="120" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="180" y="114" text-anchor="middle" fill="#3ecf8e">dim_customer</text>
+  <rect x="440" y="90" width="120" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="500" y="114" text-anchor="middle" fill="#3ecf8e">dim_store</text>
+  <line x1="340" y1="90" x2="340" y2="50" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="135" x2="340" y2="170" stroke="#6b7386" stroke-width="1"/>
+  <line x1="290" y1="105" x2="240" y2="108" stroke="#6b7386" stroke-width="1"/>
+  <line x1="390" y1="105" x2="440" y2="108" stroke="#6b7386" stroke-width="1"/>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.2 Batch vs. streaming | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.bs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.bs-scenario-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13.5px; margin-bottom: 8px; }
+.bs-scenario-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.bs-result { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Data engineering fundamentals</div>
+  <h1>5.2 Batch vs. streaming</h1>
+  <p class="subtitle">Freshness is never free. Every hour you shave off latency costs real operational complexity.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Batch</strong> processes data in scheduled chunks — simple, cost-effective, and
+    perfect when consumers can tolerate delay. <strong>Streaming</strong> processes events
+    continuously with minimal delay — necessary when freshness itself is the requirement, but it
+    demands strict duplicate handling, stable ordering, and genuinely more operational complexity.
+    <strong>Micro-batching</strong> sits between the two: small batches processed frequently,
+    approximating real-time behavior with a simpler execution model than full streaming. Most
+    production data platforms in 2026 run a <strong>hybrid</strong> of all three, not one
+    exclusively.
+  </div>
+
+  <h2>Try it: match each scenario to its ingestion pattern</h2>
+  <div class="bs-box">
+    <button class="bs-scenario-btn active" data-s="report">Daily sales report, 24-hour delay is fine</button>
+    <button class="bs-scenario-btn" data-s="iot">IoT sensor data needing real-time alerts</button>
+    <button class="bs-scenario-btn" data-s="sync">Syncing a 100GB database that changes 1% daily</button>
+    <button class="bs-scenario-btn" data-s="ml">Large historical dataset for one-time ML training</button>
+    <button class="bs-scenario-btn" data-s="clickstream">User clickstream feeding live personalization</button>
+    <div class="bs-result" id="bs-result"></div>
+  </div>
+
+  <h2>Why streaming isn't just "batch, but faster"</h2>
+  <p>
+    Streaming treats the dataset as fundamentally unbounded — there's no defined "end" to wait
+    for, so state has to be managed through offsets, checkpoints, and time windows rather than a
+    clean start-to-finish job. This introduces real operational demands that batch mostly avoids:
+    strict handling of duplicate events, stable ordering guarantees, and managing backpressure
+    (what happens when data arrives faster than it can be processed) and consumer lag (how far
+    behind a consumer has fallen). None of this is optional complexity — it's what makes
+    "continuous and low-latency" actually reliable rather than just fast and fragile.
+  </p>
+
+  <h2>Change Data Capture (CDC): a distinct third pattern</h2>
+  <p>
+    CDC specifically watches a source database's transaction log and captures only the rows that
+    actually changed, rather than re-reading the entire table on every run (batch) or requiring
+    the source to emit events itself (streaming). This is the standard pattern for keeping a
+    downstream copy of a database in sync efficiently — syncing a 100GB database that only
+    changes 1% daily via full batch reload would mean repeatedly moving 100GB for a 1GB change;
+    CDC (via tools like Debezium) moves only the actual delta.
+  </p>
+
+  <div class="figure" id="fig-bs"></div>
+
+  <h2>The concrete cost case for incremental over full-reload</h2>
+  <p>
+    As data volume grows, a full-reload batch job's processing time and cost grow roughly
+    proportionally with total table size — reprocessing everything, every time, whether or not
+    most of it changed. Incremental patterns (CDC, or batch jobs scoped to just new/changed
+    records) keep processing cost roughly constant regardless of how large the total table gets.
+    Reported case studies describe cost reductions of 50% or more from migrating full-reload batch
+    jobs to incremental architectures, even as data volumes grew by an order of magnitude.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does streaming require stricter duplicate and ordering handling than batch processing?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Streaming treats data as unbounded and continuous, with state managed via offsets and checkpoints rather than a clean, bounded job with a defined end</button>
+        <button class="q-option" data-correct="false">Streaming systems are technically incapable of processing duplicate events</button>
+        <button class="q-option" data-correct="false">Batch processing never has duplicate or ordering concerns of any kind</button>
+      </div>
+      <div class="q-explain">The unbounded, continuous nature of streaming means there's no natural "restart clean" point the way a batch job has — this structural difference is what forces stricter handling of duplicates, ordering, and retries.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What specifically does CDC capture that a full batch reload doesn't optimize for?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Only the rows that actually changed, read from the source database's transaction log, rather than re-reading the entire table every run</button>
+        <button class="q-option" data-correct="false">CDC captures the exact same data as a full batch reload, just faster</button>
+        <button class="q-option" data-correct="false">CDC only works with unstructured data sources like log files</button>
+      </div>
+      <div class="q-explain">CDC's efficiency comes specifically from targeting the delta via the transaction log — this is why it dramatically outperforms full reloads for large tables with small daily change rates.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does incremental processing keep costs roughly constant as data volume grows, while full-reload batch doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Incremental processing only touches new or changed records regardless of total table size; full reload reprocesses the entire table every run</button>
+        <button class="q-option" data-correct="false">Incremental processing and full reload have identical cost scaling characteristics</button>
+        <button class="q-option" data-correct="false">Full-reload batch jobs are always cheaper than incremental jobs regardless of data volume</button>
+      </div>
+      <div class="q-explain">This scaling difference is exactly why the reported 50%+ cost reductions occurred even as data volumes grew substantially — the cost driver (total table size) was removed from the processing cost equation.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Unstructured.io "What Is Data Ingestion? Foundations of Data Pipelines" (2026); Aakeef, "Data Ingestion Design Patterns: Batch, Streaming &amp; CDC" (2026); Databricks "Data Pipeline Best Practices" (2026).</p>
+
+  <div class="pager">
+    <a href="5-1-etl-vs-elt.html">&larr; 5.1 ETL vs. ELT</a>
+    <a href="5-3-data-pipeline-design-patterns.html">5.3 Data pipeline design patterns &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const BS_MAP = {
+  report: "→ Batch (scheduled). A 24-hour delay is explicitly acceptable, so the simpler, cheaper, easier-to-operate pattern wins — no need for streaming's added complexity here.",
+  iot: "→ Streaming (Kafka or similar). Real-time alerts require minimal delay between an event occurring and a response — this is exactly the case streaming is built for, complexity included.",
+  sync: "→ CDC (log-based). A 1% daily change rate on a 100GB database means a full reload moves 99x more data than necessary — CDC captures only the actual delta from the transaction log.",
+  ml: "→ Batch (one-time load). A large historical training set is bounded and doesn't need freshness — a single, well-optimized batch load is the simplest fit.",
+  clickstream: "→ Streaming (event-driven). Live personalization needs the event to be usable almost immediately after it happens — batch's inherent delay would defeat the purpose.",
+};
+document.querySelectorAll('.bs-scenario-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bs-scenario-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('bs-result').textContent = BS_MAP[btn.dataset.s];
+  });
+});
+document.getElementById('bs-result').textContent = BS_MAP['report'];
+
+document.getElementById('fig-bs').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: latency vs complexity spectrum from batch through micro-batch to streaming">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <line x1="40" y1="80" x2="640" y2="80" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="80" cy="80" r="8" fill="#3ecf8e"/>
+  <text x="80" y="110" text-anchor="middle">Batch</text>
+  <text x="80" y="125" text-anchor="middle" class="s">hours-days</text>
+  <circle cx="340" cy="80" r="8" fill="#f2b84b"/>
+  <text x="340" y="110" text-anchor="middle">Micro-batch</text>
+  <text x="340" y="125" text-anchor="middle" class="s">minutes</text>
+  <circle cx="600" cy="80" r="8" fill="#e5484d"/>
+  <text x="600" y="110" text-anchor="middle">Streaming</text>
+  <text x="600" y="125" text-anchor="middle" class="s">milliseconds-seconds</text>
+  <text x="340" y="30" text-anchor="middle" fill="#9aa4b5" font-weight="400">← lower complexity · higher complexity →</text>
+</svg>
+`;
+</script>
+</body>
+</html>

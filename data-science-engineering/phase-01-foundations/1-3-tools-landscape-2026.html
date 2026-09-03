@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.3 The 2026 tools landscape | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.tl-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.tl-layer { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.tl-layer:hover { border: 1px solid var(--accent); }
+.tl-layer .name { font-weight: 700; font-size: 13px; min-width: 130px; }
+.tl-layer .tools { font-size: 12.5px; color: var(--text-secondary); }
+.tl-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; display:none; }
+.tl-detail.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.3 The 2026 tools landscape</h1>
+  <p class="subtitle">One stack shows up in nearly every 2026 data engineering job posting. Here it is, layer by layer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The 2026 "modern data stack" default is remarkably consistent across independent sources:
+    <strong>ingestion</strong> (Fivetran, Airbyte, or dlt) &rarr; <strong>storage</strong>
+    (Snowflake, BigQuery, or a Delta Lake/Iceberg lakehouse) &rarr; <strong>transformation</strong>
+    (dbt) &rarr; <strong>orchestration</strong> (Airflow, Dagster, or Prefect) &rarr;
+    <strong>BI/visualization</strong> (Looker, Tableau, Power BI). Kafka and Spark get added
+    specifically when a real streaming or petabyte-scale requirement shows up — not by default,
+    and not before that need is concrete.
+  </div>
+
+  <h2>Try it: explore each layer</h2>
+  <div class="tl-box">
+    <div id="tl-layers"></div>
+    <div class="tl-detail" id="tl-detail"></div>
+  </div>
+
+  <h2>Why dbt + Snowflake/BigQuery + Airflow is called "the gold standard"</h2>
+  <p>
+    This specific combination is repeatedly named across independent 2026 sources as the default
+    for a reason: each tool solves a distinct, well-bounded problem. dbt brought software
+    engineering discipline (version control, automated testing, self-updating documentation) to
+    what used to be undisciplined SQL scripts copy-pasted across projects. Cloud warehouses like
+    Snowflake unbundled compute from storage, so you pay for what you actually query rather than a
+    fixed cluster. Airflow (or Dagster/Prefect) handles the "when does each step run, and what
+    happens if one fails" problem that emerges the moment you have more than one pipeline.
+  </p>
+
+  <h2>The recommended learning order — not the alphabetical one</h2>
+  <p>
+    Multiple 2026 sources converge on the same practical sequencing advice: get fluent in
+    <strong>SQL first</strong> (the single most critical skill across every layer), then
+    <strong>Python</strong> (for pipeline code and orchestration logic), then <strong>dbt</strong>
+    (transformation), then <strong>Airflow or Dagster</strong> (orchestration), then one cloud
+    warehouse end to end. Only after that foundation is solid does it make sense to add
+    <strong>Kafka</strong> (streaming) and <strong>Spark</strong> (large-scale distributed
+    processing) — specifically when a real requirement for either shows up, not preemptively.
+    This track follows that exact order: Phase 2 (SQL) &rarr; Phase 5 (data engineering
+    fundamentals) &rarr; Phase 6 (warehousing) &rarr; Phase 7 (orchestration) &rarr; Phase 8
+    (big data, where Kafka and Spark actually live).
+  </p>
+
+  <div class="figure" id="fig-stack"></div>
+
+  <h2>Team size changes the right answer</h2>
+  <p>
+    A specific, honest caveat worth internalizing early: a fully-managed warehouse like Snowflake
+    abstracts away infrastructure complexity — you write SQL, get results, pay a bill. A lakehouse
+    architecture (Spark, Delta Lake, cloud storage tuning) requires data engineers who understand
+    considerably more infrastructure detail. Reported guidance suggests small teams (under roughly
+    5 data professionals) typically can't justify a lakehouse's operational overhead, while larger
+    teams (15+) more often find the added flexibility and cost control worth the complexity. There
+    is no universally "best" stack — only a stack that fits your team's size and actual workload.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What specific problem did dbt solve that made it central to the modern data stack?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It brought software engineering discipline — version control, automated testing, self-updating docs — to what had been undisciplined, duplicated SQL scripts</button>
+        <button class="q-option" data-correct="false">dbt replaced the need for a data warehouse entirely</button>
+        <button class="q-option" data-correct="false">dbt is primarily an orchestration and scheduling tool</button>
+      </div>
+      <div class="q-explain">dbt's core contribution is treating SQL transformations like real software — tested, versioned, documented — rather than a separate orchestration or storage function.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. According to 2026 guidance, when should someone learn Kafka and Spark relative to the rest of the stack?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">After the SQL/Python/dbt/orchestration/warehouse foundation is solid, and specifically when a real streaming or large-scale requirement appears</button>
+        <button class="q-option" data-correct="false">Before learning SQL, since they are the most fundamental data engineering tools</button>
+        <button class="q-option" data-correct="false">Kafka and Spark should never be learned by application-layer data engineers</button>
+      </div>
+      <div class="q-explain">The recommended sequencing is deliberately need-driven — Kafka and Spark solve specific streaming/scale problems that most projects don't have on day one, so front-loading them ahead of foundational skills is inefficient.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why might a small team (under 5 data professionals) reasonably choose Snowflake over a self-managed lakehouse?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Snowflake abstracts away infrastructure complexity, while a lakehouse requires deeper operational expertise that a small team often can't justify maintaining</button>
+        <button class="q-option" data-correct="false">Lakehouses are strictly more expensive than Snowflake in every scenario</button>
+        <button class="q-option" data-correct="false">Small teams are technically incapable of using Spark under any circumstances</button>
+      </div>
+      <div class="q-explain">This is a team-capability and operational-overhead trade-off, not a technical limitation — larger teams more often have the capacity to justify a lakehouse's added flexibility and complexity.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Precision AI Academy "Data Engineering 2026" and "Data Pipeline Guide 2026"; Uvik Software "Data Engineering Tools 2026: 75+ Best Tools by Stack"; ProInsightsPortal "The Modern Data Stack in 2026".</p>
+
+  <div class="pager">
+    <a href="1-2-the-data-lifecycle.html">&larr; 1.2 The data lifecycle</a>
+    <a href="1-4-your-first-data-pipeline.html">1.4 Your first data pipeline &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const LAYERS = [
+  { name: "Ingestion", tools: "Fivetran, Airbyte, dlt", detail: "Pulls data from sources (APIs, databases, SaaS tools) into a central store. Managed tools (Fivetran) trade cost for convenience; open-source (Airbyte, dlt) trade setup time for flexibility and cost control." },
+  { name: "Storage", tools: "Snowflake, BigQuery, Delta Lake/Iceberg", detail: "A cloud warehouse (structured, fast, governed) or a lakehouse (more flexible, more setup). Snowflake/BigQuery unbundle compute from storage — you pay for what you query." },
+  { name: "Transformation", tools: "dbt", detail: "SQL-based, version-controlled, tested transformations turning raw landed data into clean, documented, reusable tables. This is where the analytics engineer role lives." },
+  { name: "Orchestration", tools: "Airflow, Dagster, Prefect", detail: "Schedules and monitors pipeline runs, manages dependencies between steps, handles retries and failures. Airflow has the largest community; Dagster offers stronger data-aware tooling and local dev experience." },
+  { name: "BI / Visualization", tools: "Looker, Tableau, Power BI, Metabase", detail: "The layer analysts and business users actually touch — dashboards and reports built on top of the transformed, modeled tables." },
+  { name: "Streaming (as-needed)", tools: "Kafka, AWS Kinesis, Flink", detail: "Added specifically when data needs to be fresher than hourly batch runs allow — not a default layer, added only once a real streaming requirement exists." },
+  { name: "Large-scale processing (as-needed)", tools: "Apache Spark", detail: "Added for petabyte-scale batch processing beyond what a warehouse handles efficiently — again, need-driven, not a default starting layer." },
+];
+document.getElementById('tl-layers').innerHTML = LAYERS.map((l,i) => `
+  <div class="tl-layer" data-i="${i}"><span class="name">${l.name}</span><span class="tools">${l.tools}</span></div>
+`).join('');
+document.querySelectorAll('.tl-layer').forEach(el => {
+  el.addEventListener('click', () => {
+    const d = document.getElementById('tl-detail');
+    d.textContent = LAYERS[el.dataset.i].detail;
+    d.classList.add('show');
+  });
+});
+
+document.getElementById('fig-stack').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: learning order from SQL and Python through dbt, orchestration, warehouse, then Kafka and Spark as needed">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="10" y="80" width="90" height="45" rx="6" fill="#182238" stroke="#5b8cff"/><text x="55" y="107" text-anchor="middle" fill="#a9c1ff">SQL</text>
+  <line x1="100" y1="102" x2="130" y2="102" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a18)"/>
+  <rect x="130" y="80" width="90" height="45" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="175" y="107" text-anchor="middle">Python</text>
+  <line x1="220" y1="102" x2="250" y2="102" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a18)"/>
+  <rect x="250" y="80" width="90" height="45" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="295" y="107" text-anchor="middle">dbt</text>
+  <line x1="340" y1="102" x2="370" y2="102" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a18)"/>
+  <rect x="370" y="80" width="110" height="45" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="425" y="107" text-anchor="middle">Orchestration</text>
+  <line x1="480" y1="102" x2="510" y2="102" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a18)"/>
+  <rect x="510" y="80" width="90" height="45" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="555" y="107" text-anchor="middle">Warehouse</text>
+  <line x1="555" y1="125" x2="555" y2="150" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a18f)"/>
+  <rect x="470" y="155" width="170" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="555" y="180" text-anchor="middle" fill="#f2b84b">Kafka + Spark (as needed)</text>
+  <defs>
+    <marker id="a18" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a18f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

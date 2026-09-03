@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.1 Data contracts | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dc-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.dc-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.dc-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Data quality, governance &amp; observability</div>
+  <h1>11.1 Data contracts</h1>
+  <p class="subtitle">"Data quality is not a tool — it's a practice that starts with an agreement between whoever produces the data and whoever depends on it."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A data contract is a formal agreement between a data producer and its consumers, defining
+    schema, semantics, freshness SLAs, and governance rules — turning what used to be an implicit,
+    easily-broken assumption ("that column will always be there") into something explicit,
+    testable, and enforced. The critical design principle: <strong>consumers should never be the
+    first to discover a contract violation</strong> — validation runs on the producer side, and
+    the producer is notified before or at the moment data would be delivered broken, not after a
+    downstream dashboard has already shown wrong numbers to a business user.
+  </div>
+
+  <h2>Try it: where should a schema-change check catch the problem?</h2>
+  <div class="dc-box">
+    <div class="dc-toggle">
+      <div class="dc-toggle-btn active" data-w="no-contract">No contract</div>
+      <div class="dc-toggle-btn" data-w="with-contract">With a contract</div>
+    </div>
+    <div id="dc-fig"></div>
+    <p id="dc-caption" style="font-size:13px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>What a data contract actually specifies</h2>
+  <ul>
+    <li><strong>Schema</strong> — exact column names, types, and whether a column is required or nullable.</li>
+    <li><strong>Semantics</strong> — what a column actually means (is "revenue" gross or net? in which currency?), preventing the same field name from silently meaning different things to different teams.</li>
+    <li><strong>SLAs</strong> — freshness guarantees (data will be updated by 6am daily) and other timing commitments.</li>
+    <li><strong>Governance rules</strong> — access controls, PII handling requirements, retention policies tied to the specific dataset.</li>
+  </ul>
+
+  <h2>Enforcement: contracts are only as good as their automation</h2>
+  <p>
+    A contract that exists only as a document nobody checks against provides essentially no real
+    protection. In practice, contract checks (schema validation, freshness tests, quality rules)
+    get built into the pipeline itself using tools like Great Expectations or Soda, running as
+    validation steps integrated directly into the orchestrator (Airflow, Prefect, Dagster — Phase
+    7). Modern warehouses' rich information schemas can often be queried directly with plain SQL
+    to validate governance rules as well.
+  </p>
+
+  <div class="figure" id="fig-contract-flow"></div>
+
+  <h2>Discoverability: a contract nobody can find isn't useful</h2>
+  <p>
+    Every contract should be published to a data catalog so a consumer evaluating whether to use a
+    dataset can see exactly what the producer has committed to — freshness, schema, semantics —
+    before building something that depends on it. A contract that exists but isn't discoverable
+    provides little more protection than no contract at all, since consumers have no way to know
+    what guarantees actually exist.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the key design principle behind where data contract validation should run?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Validation runs on the producer side, so consumers are never the first to discover a violation</button>
+        <button class="q-option" data-correct="false">Validation should only ever run on the consumer side, after data has already been delivered</button>
+        <button class="q-option" data-correct="false">Data contracts don't require any automated validation at all</button>
+      </div>
+      <div class="q-explain">Catching a violation before delivery (producer-side) prevents broken data from ever reaching a downstream dashboard or model — this is specifically what separates a genuinely protective contract from a documentation exercise.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a data contract's "semantics" specification matter beyond just schema (column names and types)?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Two teams could use the same column name to mean genuinely different things (e.g. gross vs. net revenue), causing silent misinterpretation even when the schema technically matches</button>
+        <button class="q-option" data-correct="false">Semantics and schema are the same concept, so specifying both is redundant</button>
+        <button class="q-option" data-correct="false">Semantics only matter for non-numeric columns</button>
+      </div>
+      <div class="q-explain">A schema check alone (column exists, correct type) can't catch a meaning mismatch — semantics documentation specifically closes this gap by making the intended interpretation explicit.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does a data contract need to be published to a catalog rather than just existing as an internal document?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A contract consumers can't discover provides little practical protection, since they have no way to know what guarantees exist before depending on the data</button>
+        <button class="q-option" data-correct="false">Catalogs are only required for contracts involving personally identifiable information</button>
+        <button class="q-option" data-correct="false">Publishing to a catalog automatically enforces the contract's rules</button>
+      </div>
+      <div class="q-explain">Discoverability and enforcement are separate concerns — a catalog entry makes the contract's terms visible to consumers, which is necessary but not sufficient (automated validation is what actually enforces it).</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Mayurkumar Surani "Data Quality &amp; Observability: Testing, Monitoring, Lineage &amp; Data Contracts" (2026); Atlan "Data Contracts Explained: Key Aspects, Tools, Setup in 2026"; TheDataGovernor "Data Contracts: The Practitioner's Complete Guide" (2026); DataHub "What Are Data Contracts? A Practical Guide" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-10-ml-evaluation-experimentation/10-4-experiment-tracking.html">&larr; 10.4 Experiment tracking</a>
+    <a href="11-2-data-testing-great-expectations.html">11.2 Data testing &amp; Great Expectations &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DC_FIGS = {
+  'no-contract': `<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Without a contract, a schema change flows silently through to a broken dashboard">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:10px;font-weight:600;}</style>
+    <rect x="20" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="85" y="69" text-anchor="middle">Producer changes schema</text>
+    <line x1="150" y1="65" x2="200" y2="65" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a38)"/>
+    <rect x="200" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="265" y="69" text-anchor="middle">Pipeline (no check)</text>
+    <line x1="330" y1="65" x2="380" y2="65" stroke="#e5484d" stroke-width="1.5" marker-end="url(#a38r)"/>
+    <rect x="380" y="45" width="150" height="40" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="455" y="69" text-anchor="middle" fill="#ff8b8f">Dashboard breaks</text>
+    <rect x="550" y="45" width="110" height="40" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="605" y="63" text-anchor="middle" fill="#ff8b8f" font-size="9">Consumer</text><text x="605" y="76" text-anchor="middle" fill="#ff8b8f" font-size="9">discovers it first</text>
+    <defs><marker id="a38" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker><marker id="a38r" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker></defs>
+  </svg>`,
+  'with-contract': `<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="With a contract, a schema change is caught at validation before reaching consumers">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:10px;font-weight:600;}</style>
+    <rect x="20" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="85" y="69" text-anchor="middle">Producer changes schema</text>
+    <line x1="150" y1="65" x2="200" y2="65" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a39)"/>
+    <rect x="200" y="45" width="150" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="275" y="69" text-anchor="middle" fill="#a9c1ff">Contract validation</text>
+    <line x1="350" y1="65" x2="400" y2="65" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a39g)"/>
+    <rect x="400" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="465" y="63" text-anchor="middle" fill="#3ecf8e" font-size="9">Producer alerted</text><text x="465" y="76" text-anchor="middle" fill="#3ecf8e" font-size="9">before delivery</text>
+    <rect x="550" y="45" width="110" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="605" y="69" text-anchor="middle" fill="#3ecf8e" font-size="9">Consumer unaffected</text>
+    <defs><marker id="a39" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker><marker id="a39g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+  </svg>`
+};
+const DC_CAPTIONS = {
+  'no-contract': "Without a contract, a breaking schema change flows straight through to production — the consumer's dashboard is where the problem first surfaces.",
+  'with-contract': "With a contract validated on the producer side, the same change is caught and the producer alerted before it ever reaches a consumer.",
+};
+function renderDc(key) {
+  document.getElementById('dc-fig').innerHTML = DC_FIGS[key];
+  document.getElementById('dc-caption').textContent = DC_CAPTIONS[key];
+}
+document.querySelectorAll('.dc-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dc-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderDc(btn.dataset.w);
+  });
+});
+renderDc('no-contract');
+
+document.getElementById('fig-contract-flow').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: data contract validation tools like Great Expectations or Soda integrated into orchestrator steps">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="30" y="40" width="150" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="105" y="64" text-anchor="middle">Airflow/Dagster task</text>
+  <line x1="180" y1="60" x2="230" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a40)"/>
+  <rect x="230" y="40" width="180" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="320" y="64" text-anchor="middle" fill="#a9c1ff">Great Expectations / Soda check</text>
+  <line x1="410" y1="60" x2="460" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a40)"/>
+  <rect x="460" y="40" width="190" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="555" y="64" text-anchor="middle" fill="#3ecf8e">Pass → continue / Fail → alert</text>
+  <defs><marker id="a40" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

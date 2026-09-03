@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.4 Data ingestion strategies | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.in-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.in-scenario-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13.5px; margin-bottom: 8px; }
+.in-scenario-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.in-result { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Data engineering fundamentals</div>
+  <h1>5.4 Data ingestion strategies</h1>
+  <p class="subtitle">How data actually gets from a source system into your pipeline in the first place.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Three main ingestion patterns, each fitting a different need: <strong>batch ingestion</strong>
+    (pull everything accumulated on a schedule — simple, works well for reporting), <strong>CDC
+    (Change Data Capture)</strong> (stream only row-level changes from a source's transaction log
+    — efficient, low-impact on the source system), and <strong>streaming ingestion</strong>
+    (continuous, event-by-event, near-real-time). The right choice depends on how fresh the data
+    genuinely needs to be, not on defaulting to whichever sounds most modern.
+  </div>
+
+  <h2>Try it: pick the ingestion pattern for each scenario</h2>
+  <div class="in-box">
+    <button class="in-scenario-btn active" data-s="daily">"Business stakeholders need a daily report on orders and revenue — no real-time need."</button>
+    <button class="in-scenario-btn" data-s="cdc">"We need our warehouse to reflect every update to the orders table without hammering the production database."</button>
+    <button class="in-scenario-btn" data-s="fraud">"We need to flag potentially fraudulent transactions within seconds of them happening."</button>
+    <div class="in-result" id="in-result"></div>
+  </div>
+
+  <h2>Batch ingestion: the delivery truck</h2>
+  <p>
+    Batch ingestion collects everything that's accumulated since the last run and moves it all at
+    once, on a schedule — hourly, daily, weekly. It's the simplest pattern to build, easiest to
+    debug, and often the most cost-effective choice for reporting and analytics workloads that
+    genuinely don't need near-real-time freshness. The instinct to default to something fancier
+    "because streaming is more modern" is worth resisting when batch already meets the actual
+    business need.
+  </p>
+
+  <h2>CDC: the conveyor belt for just the changes</h2>
+  <p>
+    Rather than periodically re-extracting an entire table (expensive and slow at scale), CDC
+    tracks inserts, updates, and deletes directly from the source database's transaction log and
+    streams just those changes. This is specifically valuable because production databases are
+    tuned for small, frequent operational queries — a full-table extract runs against exactly the
+    kind of large analytical scan those systems weren't optimized for, and CDC avoids putting that
+    load on them at all.
+  </p>
+
+  <div class="figure" id="fig-cdc"></div>
+
+  <h2>Streaming: continuous, event-by-event</h2>
+  <p>
+    Streaming ingestion processes each event individually and continuously as it arrives, with
+    latency measured in seconds rather than hours. This is the right fit when a decision genuinely
+    needs to be made close to real time — fraud detection, live dashboards, alerting — but it comes
+    with real added complexity: message ordering, exactly-once vs. at-least-once delivery
+    guarantees, and state management for anything that needs to track values across events (like
+    sessionization from 2.5, now happening as data arrives rather than after the fact in SQL).
+  </p>
+
+  <h2>At-least-once vs. exactly-once: a practical resolution</h2>
+  <p>
+    True exactly-once delivery is genuinely hard to guarantee in a distributed system. In
+    practice, the dominant, pragmatic pattern is <strong>at-least-once delivery combined with
+    idempotent consumers</strong> (5.5) — a message might occasionally be delivered more than
+    once, but if processing that message twice produces the same result as processing it once,
+    the duplication is harmless. This is simpler to build than true exactly-once semantics and
+    nearly as effective in practice.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why might batch ingestion still be the right choice even in 2026, rather than defaulting to streaming?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's simpler to build and debug, and is often more cost-effective for workloads that don't genuinely need near-real-time freshness</button>
+        <button class="q-option" data-correct="false">Batch ingestion is technically impossible to implement using modern cloud tools</button>
+        <button class="q-option" data-correct="false">Streaming is always cheaper than batch regardless of data volume</button>
+      </div>
+      <div class="q-explain">Matching the ingestion pattern to the actual freshness requirement — not defaulting to whichever sounds more modern — is the practical lesson here, echoing the "start simple" theme from earlier phases.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does CDC put less load on a production database than a periodic full-table extract?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">CDC reads incrementally from the transaction log rather than scanning the whole table, matching the small-query pattern the database is actually optimized for</button>
+        <button class="q-option" data-correct="false">CDC doesn't actually read from the production database at all</button>
+        <button class="q-option" data-correct="false">Full-table extracts are always faster than CDC regardless of table size</button>
+      </div>
+      <div class="q-explain">A full extract is a large analytical scan against a system built for small operational queries — CDC's incremental, log-based approach avoids that mismatch entirely.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is "at-least-once delivery + idempotent consumers" the dominant practical pattern over true exactly-once delivery?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">True exactly-once delivery is genuinely hard to guarantee in a distributed system, while idempotent processing makes occasional duplicate delivery harmless</button>
+        <button class="q-option" data-correct="false">At-least-once delivery guarantees no message is ever lost or duplicated</button>
+        <button class="q-option" data-correct="false">Idempotent consumers eliminate the need for any delivery guarantee at all</button>
+      </div>
+      <div class="q-explain">This is a pragmatic engineering trade-off — rather than solving the genuinely hard exactly-once problem at the delivery layer, idempotency (5.5) solves it at the processing layer, which is simpler and nearly as effective.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Medium (Aakeef) "Data Ingestion Design Patterns: Batch, Streaming &amp; CDC" (2025-2026); dataskew.io "Data Pipeline Design Patterns" (2026), exactly-once vs at-least-once section.</p>
+
+  <div class="pager">
+    <a href="5-3-data-pipeline-design-patterns.html">&larr; 5.3 Data pipeline design patterns</a>
+    <a href="5-5-idempotency-and-reliability.html">5.5 Idempotency &amp; reliability &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const IN_RECS = {
+  daily: "→ Batch ingestion. No real-time need means the simplest, cheapest, easiest-to-debug pattern is also the right one — a nightly or hourly pull is sufficient.",
+  cdc: "→ CDC. This scenario explicitly needs both freshness and low impact on the source database — exactly the combination CDC is built for, via the transaction log rather than repeated full scans.",
+  fraud: "→ Streaming ingestion. A seconds-level detection requirement rules out both batch and CDC-to-batch patterns — this needs continuous, event-by-event processing with real-time state tracking.",
+};
+document.querySelectorAll('.in-scenario-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.in-scenario-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('in-result').textContent = IN_RECS[btn.dataset.s];
+  });
+});
+document.getElementById('in-result').textContent = IN_RECS['daily'];
+
+document.getElementById('fig-cdc').innerHTML = `
+<svg viewBox="0 0 680 150" width="100%" role="img" aria-label="Diagram: CDC reads the transaction log incrementally instead of scanning the full table">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } .s{font-size:9px; fill:#9aa4b5; font-weight:400;} </style>
+  <rect x="30" y="40" width="180" height="60" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="120" y="65" text-anchor="middle">Production DB</text>
+  <text x="120" y="82" class="s" text-anchor="middle">transaction log</text>
+  <line x1="210" y1="70" x2="270" y2="70" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a24)"/>
+  <text x="240" y="60" fill="#3ecf8e" font-size="9">just the changes</text>
+  <rect x="270" y="40" width="150" height="60" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="345" y="65" text-anchor="middle" fill="#a9c1ff">CDC tool</text>
+  <text x="345" y="82" class="s" text-anchor="middle" fill="#7891c9">e.g. Debezium</text>
+  <line x1="420" y1="70" x2="480" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a24g)"/>
+  <rect x="480" y="40" width="170" height="60" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="565" y="70" text-anchor="middle">Warehouse (kept in sync)</text>
+  <defs>
+    <marker id="a24" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="a24g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.3 Storytelling with data | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.st-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.st-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.st-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.st-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · EDA &amp; visualization</div>
+  <h1>4.3 Storytelling with data</h1>
+  <p class="subtitle">The chart that wins the room isn't the one with the most information — it's the one where the finding is impossible to miss.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Turning analysis into a story means going from "here is everything I found" to "here is the
+    one thing you need to know, and here's the evidence." That means picking a single clear
+    message, choosing (or building) the one chart that carries it most directly, cutting
+    everything that doesn't serve that message, and guiding the viewer's eye to the specific
+    finding — through annotation, color, or emphasis — rather than presenting a neutral wall of
+    data and hoping the viewer finds it themselves.
+  </div>
+
+  <h2>Try it: same data, exploratory dump vs. focused story</h2>
+  <div class="st-box">
+    <div class="st-toggle">
+      <div class="st-toggle-btn active" data-v="dump">Exploratory dump</div>
+      <div class="st-toggle-btn" data-v="story">Focused story</div>
+    </div>
+    <div id="st-fig"></div>
+  </div>
+
+  <h2>The waterfall chart: a specific storytelling tool worth knowing</h2>
+  <p>
+    A waterfall chart is purpose-built for exactly one story: how a starting value moved to an
+    ending value through a specific sequence of increases and decreases — reducing downtime, an
+    improved marketing campaign, a cost cut. Each bar represents one change and whether it pushed
+    the total up or down, making the cumulative effect of several changes visually traceable in a
+    way a single summary bar never could.
+  </p>
+
+  <h2>Color as a narrative tool, not decoration</h2>
+  <p>
+    In a focused story, color should point at the finding: one category or series highlighted in a
+    saturated accent color, everything else rendered in muted gray. This is a deliberate technique,
+    not a stylistic default — the same chart with every category in a different bright color forces
+    the viewer to do the work of figuring out what matters, exactly the opposite of what a
+    presentation-ready chart should do.
+  </p>
+
+  <h2>Annotations do work that data alone can't</h2>
+  <p>
+    A well-placed text callout ("Revenue dipped here after the pricing change") does something a
+    clean chart alone cannot: it tells the viewer not just what happened, but why it matters and
+    what caused it. Explanatory visualization (4.1) benefits from this directness — you already
+    know the finding, so state it, rather than making the audience independently rediscover what
+    took you hours of EDA to find.
+  </p>
+
+  <h2>The caption is not an afterthought</h2>
+  <p>
+    A chart's caption or title should state the finding itself, not just describe the chart's
+    axes. "Monthly revenue, 2024-2026" describes the chart; "Revenue grew 34% after the March
+    pricing change" states the finding. The second version means a viewer who only skims titles
+    still walks away with the actual insight.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the core difference between an exploratory chart dump and a focused data story?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A focused story picks one clear message and cuts everything that doesn't serve it; an exploratory dump shows everything found without prioritization</button>
+        <button class="q-option" data-correct="false">A focused story must always use more colors than an exploratory dump</button>
+        <button class="q-option" data-correct="false">They are identical — the only difference is chart size</button>
+      </div>
+      <div class="q-explain">This mirrors 4.1's exploratory-vs-explanatory distinction directly — a story is a curated, prioritized version of what exploration turned up, not a bigger or smaller version of the same thing.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What specific story does a waterfall chart tell that a single summary bar chart cannot?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">How a sequence of individual increases and decreases cumulatively moved a value from a starting point to an ending point</button>
+        <button class="q-option" data-correct="false">The correlation between two unrelated variables</button>
+        <button class="q-option" data-correct="false">The full probability distribution of a dataset</button>
+      </div>
+      <div class="q-explain">A waterfall chart's specific value is making each individual contributing change visually traceable within the overall cumulative movement — a single summary bar collapses all of that detail into one number.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should a chart's title state the finding rather than just describe the axes?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A viewer who only skims the title should still walk away with the actual insight, not just know what's being measured</button>
+        <button class="q-option" data-correct="false">Chart titles are purely decorative and have no effect on comprehension</button>
+        <button class="q-option" data-correct="false">Axis-describing titles are always more accurate than finding-stating ones</button>
+      </div>
+      <div class="q-explain">In explanatory (audience-facing) contexts, the title is a high-leverage place to communicate the insight directly, since not every viewer will study the chart in depth.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Knaflic, "Storytelling with Data" (referenced in Veridical Data Science, 2026); PPCExpo "Exploratory Data Analysis: Can You Trust Your Data" (waterfall chart section); Plotivy "Scientific Data Visualization Guide" (2026).</p>
+
+  <div class="pager">
+    <a href="4-2-choosing-the-right-chart.html">&larr; 4.2 Choosing the right chart</a>
+    <a href="4-4-visualization-pitfalls.html">4.4 Visualization pitfalls &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const FIGS = {
+  dump: `<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Exploratory dump: many small charts, all categories in different bright colors, no clear emphasis">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:10px;}</style>
+    ${[0,1,2,3,4,5].map(i => {
+      const x = 20 + (i%3)*220, y = 20 + Math.floor(i/3)*90;
+      const colors = ['#5b8cff','#3ecf8e','#f2b84b','#e5484d','#a78bfa','#f472b6'];
+      return `<rect x="${x}" y="${y}" width="60" height="${30+i*8}" fill="${colors[i]}" opacity="0.8"/>
+              <rect x="${x+70}" y="${y}" width="60" height="${50-i*5}" fill="${colors[(i+1)%6]}" opacity="0.8"/>
+              <rect x="${x+140}" y="${y}" width="60" height="${20+i*6}" fill="${colors[(i+2)%6]}" opacity="0.8"/>`;
+    }).join('')}
+    <text x="340" y="195" text-anchor="middle" fill="#9aa4b5">Every category highlighted equally — no clear takeaway</text>
+  </svg>`,
+  story: `<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Focused story: one series highlighted in accent color, others muted gray, with an annotation pointing at the key finding">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:12px;font-weight:600;}</style>
+    <rect x="60" y="120" width="50" height="50" fill="#262d3a"/>
+    <rect x="130" y="100" width="50" height="70" fill="#262d3a"/>
+    <rect x="200" y="60" width="50" height="110" fill="#5b8cff"/>
+    <rect x="270" y="105" width="50" height="65" fill="#262d3a"/>
+    <rect x="340" y="115" width="50" height="55" fill="#262d3a"/>
+    <line x1="225" y1="50" x2="225" y2="30" stroke="#f2b84b" stroke-width="1.5"/>
+    <text x="225" y="20" text-anchor="middle" fill="#f2b84b" font-size="12">↓ March pricing change</text>
+    <text x="340" y="195" text-anchor="middle" fill="#9aa4b5" font-size="11" font-weight="400">One series highlighted, one annotation, one clear message</text>
+  </svg>`
+};
+function renderSt(key) { document.getElementById('st-fig').innerHTML = FIGS[key]; }
+document.querySelectorAll('.st-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.st-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderSt(btn.dataset.v);
+  });
+});
+renderSt('dump');
+</script>
+</body>
+</html>

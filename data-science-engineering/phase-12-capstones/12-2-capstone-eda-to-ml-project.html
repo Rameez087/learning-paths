@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.2 Capstone: EDA-to-ML project | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone projects</div>
+  <h1>12.2 Capstone: EDA-to-ML project</h1>
+  <p class="subtitle">Phases 3, 4, 9, and 10 — the full arc from raw numbers to a properly evaluated model.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Take a real dataset through the complete analytical arc: statistics and EDA first (Phases 3-4)
+    to genuinely understand what you're working with, then feature engineering and a properly
+    chosen model (Phase 9), evaluated with the rigor Phase 10 actually demands — a real
+    train/validation/test split, cross-validation, and metrics chosen to fit the problem, not just
+    accuracy by default. The evaluation discipline is the actual point of this capstone, not the
+    model choice.
+  </div>
+
+  <h2>What to build</h2>
+  <ul>
+    <li>A real, messy-enough dataset (not a pre-cleaned toy dataset) — a public Kaggle dataset, an open government dataset, or your own collected data.</li>
+    <li>A genuine EDA pass (4.1): compute descriptive statistics (3.1), check distributions (3.2), and produce at least 3 visualizations that actually inform a modeling decision — not just decorative charts.</li>
+    <li>Deliberate feature engineering (9.3) with at least one derived feature you created from domain reasoning, not just raw columns fed in directly.</li>
+    <li>A model trained with a correct train/validation/test split (10.1) and k-fold cross-validation (10.2) — report the variance across folds, not just the mean.</li>
+    <li>At least 3 evaluation metrics appropriate to your specific problem (10.3) — if your data is imbalanced, this must include precision, recall, and F1, not just accuracy.</li>
+    <li>A bias-variance diagnosis (9.4): is your final model underfitting or overfitting, and what's your evidence?</li>
+  </ul>
+
+  <h2>Track your progress</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <p>
+    A notebook or report with a clear narrative: what the EDA revealed and how it shaped your
+    feature engineering, why you chose your specific model family (9.2), your cross-validation
+    results including per-fold variance, your chosen metrics and why they fit this specific
+    problem, and an honest bias-variance diagnosis with the actual evidence (learning curves,
+    train vs. validation gap) that led you to that conclusion.
+  </p>
+
+  <h2>Common places this goes wrong</h2>
+  <ul>
+    <li><strong>Skipping EDA and jumping straight to modeling.</strong> Recall 4.1's central warning — this is exactly the failure mode that produces models built on data nobody actually understood.</li>
+    <li><strong>Reporting only accuracy on an imbalanced dataset.</strong> This is 10.3's accuracy paradox, made real — a lazy majority-class model would pass this bar without you noticing.</li>
+    <li><strong>A single train/test split with no cross-validation.</strong> One split can get lucky; 10.2 exists specifically to catch this.</li>
+  </ul>
+
+  <p class="sources" style="margin-top:32px">This capstone synthesizes Phases 3 (statistics), 4 (EDA &amp; visualization), 9 (ML fundamentals), and 10 (evaluation) into a single working project.</p>
+
+  <div class="pager">
+    <a href="12-1-capstone-end-to-end-pipeline.html">&larr; 12.1 Capstone: End-to-end data pipeline</a>
+    <a href="12-3-capstone-analytics-dashboard.html">12.3 Capstone: Analytics dashboard &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+const ITEMS = [
+  "Real, messy dataset selected (not pre-cleaned)",
+  "Full EDA pass with statistics and 3+ decision-informing visualizations",
+  "At least one deliberately engineered derived feature",
+  "Correct train/validation/test split with k-fold cross-validation",
+  "3+ metrics appropriate to the problem, including precision/recall/F1 if imbalanced",
+  "Bias-variance diagnosis backed by actual evidence",
+  "Report documenting the full narrative and reasoning",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} milestones checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.4 Streaming with Kafka | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.kf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.kf-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.kf-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.kf-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · Big data &amp; distributed processing</div>
+  <h1>8.4 Streaming with Kafka</h1>
+  <p class="subtitle">The messaging backbone that decouples "something happened" from "something needs to process it," at massive scale.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Kafka is a distributed messaging platform organized around <strong>topics</strong> (named
+    streams of events), which are split into <strong>partitions</strong> for parallelism —
+    Kafka's partition concept mirrors Spark's directly (8.3), and the two are frequently used
+    together, with Spark Structured Streaming consuming directly from Kafka topics. A
+    <strong>consumer group</strong> lets multiple consumers split the work of reading a topic's
+    partitions, each partition read by exactly one consumer within the group at a time, enabling
+    horizontally scaled, parallel consumption of a single stream.
+  </div>
+
+  <h2>Try it: explore the core Kafka concepts</h2>
+  <div class="kf-box">
+    <div class="kf-tabs">
+      <div class="kf-tab active" data-c="topic">Topic</div>
+      <div class="kf-tab" data-c="partition">Partition</div>
+      <div class="kf-tab" data-c="consumer-group">Consumer group</div>
+      <div class="kf-tab" data-c="offset">Offset</div>
+    </div>
+    <div id="kf-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why Kafka partitions and Spark partitions are the same underlying idea</h2>
+  <p>
+    Both use partitioning specifically to enable parallel processing — Kafka partitions a topic so
+    multiple consumers can read it simultaneously; Spark partitions a dataset so multiple executors
+    can process it simultaneously. When Spark Structured Streaming reads from Kafka, this alignment
+    is deliberate: Spark can map Kafka partitions to its own internal partitions, keeping the
+    parallelism consistent end-to-end rather than introducing an unnecessary reshuffling step
+    between the two systems.
+  </p>
+
+  <div class="figure" id="fig-kafka"></div>
+
+  <h2>Exactly-once semantics: genuinely achievable, with the right setup</h2>
+  <p>
+    Recall 5.4's pragmatic "at-least-once + idempotent consumers" default. Kafka's Direct Stream
+    API specifically enables exactly-once semantics when configured correctly — tracking exactly
+    which offsets have been read from each partition, combined with idempotent or transactional
+    writes on the output side. Getting genuine exactly-once end-to-end still requires deliberate
+    configuration across both the read and write sides; it's achievable, not automatic by default.
+  </p>
+
+  <h2>Checkpointing: surviving a restart without reprocessing everything</h2>
+  <p>
+    A streaming job needs to remember where it left off if it crashes or restarts — checkpointing
+    stores the stream's processing state (including consumed offsets) to durable storage like
+    HDFS or S3 periodically. Incremental checkpointing minimizes the write overhead of this
+    process, and storing checkpoints in fast-access storage keeps the added latency small relative
+    to the resilience benefit gained.
+  </p>
+
+  <h2>Micro-batching vs. continuous processing: a real latency trade-off</h2>
+  <p>
+    Structured Streaming's default mode processes data in small micro-batches, which introduces
+    some latency overhead from batch scheduling, job initialization, and task coordination at each
+    micro-batch boundary. A continuous processing mode (available for specific use cases) removes
+    batch boundaries entirely for event-by-event execution, trading some of Structured Streaming's
+    simpler semantics for meaningfully lower latency — a genuine trade-off to make deliberately,
+    not a strictly-better upgrade.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does a Kafka consumer group enable?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Multiple consumers splitting the work of reading a topic's partitions, each partition read by exactly one consumer in the group at a time</button>
+        <button class="q-option" data-correct="false">A single consumer reading every partition of every topic simultaneously</button>
+        <button class="q-option" data-correct="false">Consumer groups eliminate the need for topics to have partitions at all</button>
+      </div>
+      <div class="q-explain">This is the mechanism that enables horizontally scaled, parallel consumption — the group coordinates so partitions are distributed across its member consumers rather than duplicated redundantly.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does checkpointing matter for a streaming job's resilience?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It stores processing state (including consumed offsets) to durable storage, letting the job resume from where it left off after a crash rather than reprocessing everything</button>
+        <button class="q-option" data-correct="false">Checkpointing eliminates the need for exactly-once semantics entirely</button>
+        <button class="q-option" data-correct="false">Checkpointing only matters for batch jobs, never for streaming</button>
+      </div>
+      <div class="q-explain">Without a durable record of processing progress, a restart after a crash would have no way to know what's already been processed — checkpointing is specifically what makes safe resumption possible.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the trade-off between micro-batch and continuous processing modes?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Micro-batching has simpler semantics but adds latency from batch scheduling overhead; continuous processing achieves lower latency by removing batch boundaries entirely</button>
+        <button class="q-option" data-correct="false">Continuous processing is strictly better than micro-batching in every dimension</button>
+        <button class="q-option" data-correct="false">The two modes produce identical latency characteristics</button>
+      </div>
+      <div class="q-explain">This is a genuine, deliberate trade-off — micro-batching's simplicity comes at a real latency cost from per-batch coordination overhead, which continuous processing avoids at the cost of some structural simplicity.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DataCamp "Apache Spark Architecture: A Guide for Data Practitioners" (2026); K-Solves "Key Components Of Apache Spark Streaming" (2026); ResearchGate "Enhancing Spark Streaming for High-Volume, Low-Latency Data Ingestion" (2026).</p>
+
+  <div class="pager">
+    <a href="8-3-partitioning-and-shuffle.html">&larr; 8.3 Partitioning &amp; shuffle</a>
+    <a href="../phase-09-ml-fundamentals/9-1-supervised-vs-unsupervised-learning.html">Phase 9: Machine learning fundamentals &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const KF_INFO = {
+  topic: "A named, durable stream of events — e.g. 'order-events' or 'clickstream'. Producers write to a topic; consumers read from it. Conceptually similar to a table in a database, but append-only and stream-oriented.",
+  partition: "A topic is split into partitions for parallelism — each partition is an ordered, immutable log. Order is guaranteed within a partition, not necessarily across the whole topic.",
+  "consumer-group": "A set of consumers coordinating to read a topic together — Kafka ensures each partition is consumed by exactly one member of the group at a time, enabling scaled-out parallel processing.",
+  offset: "A partition-specific, sequential ID marking each message's position. Tracking which offset has been processed is what lets a consumer resume correctly after a restart, and underlies exactly-once semantics when combined with idempotent writes.",
+};
+function renderKf(key) { document.getElementById('kf-detail').textContent = KF_INFO[key]; }
+document.querySelectorAll('.kf-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.kf-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderKf(tab.dataset.c);
+  });
+});
+renderKf('topic');
+
+document.getElementById('fig-kafka').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: Kafka topic split into three partitions, each read by one consumer in a consumer group">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <text x="130" y="20" text-anchor="middle" font-size="12">Topic: order-events</text>
+  <rect x="20" y="30" width="220" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="130" y="49" text-anchor="middle" fill="#a9c1ff" font-size="9">Partition 0</text>
+  <rect x="20" y="65" width="220" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="130" y="84" text-anchor="middle" fill="#a9c1ff" font-size="9">Partition 1</text>
+  <rect x="20" y="100" width="220" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="130" y="119" text-anchor="middle" fill="#a9c1ff" font-size="9">Partition 2</text>
+  <line x1="240" y1="45" x2="380" y2="45" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a35)"/>
+  <line x1="240" y1="80" x2="380" y2="80" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a35)"/>
+  <line x1="240" y1="115" x2="380" y2="115" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a35)"/>
+  <text x="450" y="20" text-anchor="middle" font-size="11">Consumer group</text>
+  <rect x="380" y="30" width="140" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="450" y="49" text-anchor="middle" fill="#3ecf8e" font-size="9">consumer A</text>
+  <rect x="380" y="65" width="140" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="450" y="84" text-anchor="middle" fill="#3ecf8e" font-size="9">consumer B</text>
+  <rect x="380" y="100" width="140" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="450" y="119" text-anchor="middle" fill="#3ecf8e" font-size="9">consumer C</text>
+  <defs><marker id="a35" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

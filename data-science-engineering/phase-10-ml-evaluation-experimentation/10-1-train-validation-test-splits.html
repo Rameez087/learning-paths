@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.1 Train/validation/test splits | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.tt-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.tt-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.tt-slider-row input[type=range] { flex: 1; }
+.tt-bar { display: flex; height: 40px; border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+.tt-seg { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #0b0e14; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · ML evaluation &amp; experimentation</div>
+  <h1>10.1 Train/validation/test splits</h1>
+  <p class="subtitle">Three datasets, three completely different jobs — and using the wrong one for the wrong job silently inflates how good your model looks.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The <strong>training set</strong> is what the model actually learns from. The
+    <strong>validation set</strong> is used to tune hyperparameters and make model-selection
+    decisions during development — checked repeatedly. The <strong>test set</strong> is touched
+    exactly once, at the very end, to estimate how the final model will perform on genuinely
+    unseen data. The cardinal rule: never "peek" at test data while tuning — use the validation
+    set for every decision made during development, or the test set stops being a fair, unbiased
+    estimate of real-world performance.
+  </div>
+
+  <h2>Try it: adjust the split proportions</h2>
+  <div class="tt-box">
+    <div class="tt-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:70px;">Train %</label>
+      <input type="range" id="tt-train" min="40" max="90" value="70">
+      <span id="tt-train-val" style="font-weight:700; min-width:36px;">70%</span>
+    </div>
+    <div class="tt-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:70px;">Val %</label>
+      <input type="range" id="tt-val" min="5" max="30" value="15">
+      <span id="tt-val-val" style="font-weight:700; min-width:36px;">15%</span>
+    </div>
+    <div class="tt-bar" id="tt-bar"></div>
+    <p id="tt-caption" style="font-size:12px; color:var(--text-muted);"></p>
+  </div>
+
+  <h2>Why "don't peek at the test set" is the whole point</h2>
+  <p>
+    If you repeatedly check test-set performance while adjusting hyperparameters, you're
+    effectively using the test set to make decisions — which means your final "unbiased" test
+    score is no longer unbiased, since you've implicitly tuned toward it. This is exactly why a
+    separate validation set exists: it absorbs all the repeated checking during development,
+    leaving the test set genuinely untouched until the very end, for one honest, final
+    performance estimate.
+  </p>
+
+  <div class="figure" id="fig-splits"></div>
+
+  <h2>Stratified splits: don't let random chance break your split</h2>
+  <p>
+    For classification with imbalanced classes (fraud detection, where positive cases might be
+    0.1% of all data), a plain random split could — purely by bad luck — put most or all of the
+    rare positive cases into one partition, leaving the model with wildly misleading feedback. A
+    <strong>stratified split</strong> preserves the same class proportions across train,
+    validation, and test sets, specifically preventing this failure mode.
+  </p>
+
+  <h2>Time-based splits: when random splitting is actually wrong</h2>
+  <p>
+    For time-series or any data with a temporal structure, a random split can leak future
+    information into training — the model could learn from data that wouldn't have existed yet at
+    prediction time. The correct approach: split by time, training on data up to a cutoff date and
+    testing on data after it, sometimes with a deliberate gap between them to simulate a realistic
+    prediction lead time.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should hyperparameter tuning use the validation set rather than the test set?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Repeatedly checking test-set performance during tuning would implicitly tune toward the test set, making its final score no longer an unbiased estimate</button>
+        <button class="q-option" data-correct="false">The validation set always contains more data than the test set</button>
+        <button class="q-option" data-correct="false">Test sets cannot technically be used for measuring model performance</button>
+      </div>
+      <div class="q-explain">The test set's value comes specifically from being untouched during development — using it for tuning decisions would contaminate the one honest, final performance check it's meant to provide.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a stratified split matter specifically for imbalanced classification problems?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A plain random split could put a disproportionate share of rare positive cases into one partition purely by chance, giving misleading feedback</button>
+        <button class="q-option" data-correct="false">Stratified splits are only relevant for regression problems, never classification</button>
+        <button class="q-option" data-correct="false">Stratification guarantees a model will achieve higher accuracy</button>
+      </div>
+      <div class="q-explain">With severe class imbalance, random chance alone can create very unrepresentative splits — stratification directly prevents this by preserving class proportions across all partitions.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is a random split inappropriate for time-series data?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It can leak future information into training, letting the model learn from data that wouldn't have actually existed yet at real prediction time</button>
+        <button class="q-option" data-correct="false">Random splits always produce more accurate time-series models</button>
+        <button class="q-option" data-correct="false">Time-series data cannot technically be split at all</button>
+      </div>
+      <div class="q-explain">Temporal data has an inherent ordering that a random split ignores — a time-based split respects that ordering, ensuring the model is only ever evaluated on data that genuinely comes after what it trained on.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Zerve "Mastering Model Validation: Effective Train-Test Splits and Cross-Validation Strategies"; TheCodeForge "Train Test Split and Cross Validation" (2026); Medium (Monica Ashok) "Day #8: Train/Test Split &amp; Evaluation Metrics".</p>
+
+  <div class="pager">
+    <a href="../phase-09-ml-fundamentals/9-5-regularization.html">&larr; 9.5 Regularization</a>
+    <a href="10-2-cross-validation.html">10.2 Cross-validation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderTt() {
+  const train = parseInt(document.getElementById('tt-train').value, 10);
+  let val = parseInt(document.getElementById('tt-val').value, 10);
+  if (train + val > 95) { val = 95 - train; document.getElementById('tt-val').value = val; }
+  const test = 100 - train - val;
+  document.getElementById('tt-train-val').textContent = train + '%';
+  document.getElementById('tt-val-val').textContent = val + '%';
+  document.getElementById('tt-bar').innerHTML = `
+    <div class="tt-seg" style="width:${train}%; background:#5b8cff;">Train ${train}%</div>
+    <div class="tt-seg" style="width:${val}%; background:#f2b84b;">Val ${val}%</div>
+    <div class="tt-seg" style="width:${test}%; background:#3ecf8e;">Test ${test}%</div>
+  `;
+  document.getElementById('tt-caption').textContent = `Test set: ${test}%. Common practice reserves 20-30% total for validation+test, prioritizing enough positive cases for reliable estimates in imbalanced settings.`;
+}
+document.getElementById('tt-train').addEventListener('input', renderTt);
+document.getElementById('tt-val').addEventListener('input', renderTt);
+renderTt();
+
+document.getElementById('fig-splits').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: training set feeds the model, validation set checked repeatedly during tuning, test set touched only once at the end">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="50" width="180" height="40" rx="8" fill="#182238" stroke="#5b8cff"/><text x="110" y="74" text-anchor="middle" fill="#a9c1ff">Train (learn)</text>
+  <rect x="240" y="50" width="180" height="40" rx="8" fill="#1a2029" stroke="#f2b84b"/><text x="330" y="74" text-anchor="middle" fill="#f2b84b">Validate (tune, repeatedly)</text>
+  <rect x="460" y="50" width="200" height="40" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="560" y="74" text-anchor="middle" fill="#3ecf8e">Test (once, at the end)</text>
+  <text x="330" y="110" text-anchor="middle" fill="#9aa4b5" font-size="9">↑ every hyperparameter decision happens here, never on test</text>
+</svg>
+`;
+</script>
+</body>
+</html>

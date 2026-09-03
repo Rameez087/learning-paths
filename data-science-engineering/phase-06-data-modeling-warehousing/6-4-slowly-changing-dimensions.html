@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.4 Slowly changing dimensions | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.scd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.scd-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.scd-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.scd-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.scd-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.scd-table th, .scd-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.scd-table th { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+.scd-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Data modeling &amp; warehousing</div>
+  <h1>6.4 Slowly changing dimensions</h1>
+  <p class="subtitle">A customer moves cities. Do you overwrite the old address, or keep both — and does the answer change your entire historical revenue-by-region report?</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A Slowly Changing Dimension (SCD) is a dimension attribute that changes occasionally rather
+    than constantly — a customer's address, a product's category, an employee's department.
+    <strong>Type 1</strong> simply overwrites the old value with the new one — simple, but it
+    destroys history: any report re-run after the change silently reflects the new value even for
+    old transactions. <strong>Type 2</strong> preserves full history by inserting a new row for
+    every change, with effective-date ranges marking which row was "current" at any point in time.
+    Type 2 is described as the most common production pattern specifically because it preserves
+    accurate historical reporting — at the cost of real complexity in partition management.
+  </div>
+
+  <h2>Try it: watch a customer's city change under both SCD types</h2>
+  <div class="scd-box">
+    <div class="scd-toggle">
+      <div class="scd-toggle-btn active" data-t="type1">Type 1 (overwrite)</div>
+      <div class="scd-toggle-btn" data-t="type2">Type 2 (preserve history)</div>
+    </div>
+    <table class="scd-table" id="scd-table"></table>
+    <button class="scd-btn" id="scd-change">Customer moves from Austin to Denver &rarr;</button>
+  </div>
+
+  <h2>Why Type 1's simplicity has a real cost</h2>
+  <p>
+    With Type 1, once the customer's city is overwritten, every historical fact row referencing
+    that customer now shows "Denver" — including transactions that genuinely happened while they
+    lived in Austin. A "revenue by city" report re-run after the change will misattribute all of
+    that customer's historical revenue to Denver, silently rewriting history. Type 1 is the right
+    choice specifically when you don't care about historical accuracy for that attribute — a
+    corrected typo in a name, for instance, where there's no value in remembering the old
+    (wrong) spelling.
+  </p>
+
+  <div class="figure" id="fig-scd2"></div>
+
+  <h2>How Type 2 actually works</h2>
+  <p>
+    Instead of updating the existing row, a Type 2 change inserts a brand-new row for the customer
+    with the new city, marks the old row's <code>end_date</code> as the change date, and sets the
+    new row's <code>start_date</code> accordingly with an open-ended (or far-future)
+    <code>end_date</code> and an <code>is_current</code> flag. Historical fact rows keep pointing
+    at the surrogate key of whichever version of the customer was current when that transaction
+    actually happened — so a "revenue by city" report correctly attributes old revenue to Austin
+    and new revenue to Denver.
+  </p>
+
+  <h2>Late-arriving data adds real complexity</h2>
+  <p>
+    A specifically named complication: if a fact row arrives late — say, a transaction from three
+    weeks ago is only now being loaded — the pipeline has to search Type 2 history to find which
+    version of the dimension was actually effective at that transaction's real date, not just
+    attach it to whatever's currently marked "current." Getting this wrong silently misattributes
+    historical facts to the wrong dimension version.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the fundamental trade-off between SCD Type 1 and Type 2?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Type 1 is simple but destroys history by overwriting; Type 2 preserves full history but adds real complexity in row management</button>
+        <button class="q-option" data-correct="false">Type 1 and Type 2 produce identical query results in every case</button>
+        <button class="q-option" data-correct="false">Type 2 is always the wrong choice for production systems</button>
+      </div>
+      <div class="q-explain">Type 2 is specifically named as the most common production pattern precisely because most analytical use cases need accurate historical attribution, which Type 1's overwrite behavior can't provide.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can Type 1 silently corrupt a "revenue by city" report after a customer moves?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Overwriting the city means every historical transaction now shows the new city, misattributing old revenue that actually happened under the old city</button>
+        <button class="q-option" data-correct="false">Type 1 deletes historical fact rows entirely when a dimension changes</button>
+        <button class="q-option" data-correct="false">Type 1 only affects future transactions, never past ones</button>
+      </div>
+      <div class="q-explain">This is exactly the mechanism — because Type 1 has no historical row for "Austin," every fact row referencing this customer, past or future, now joins to the current "Denver" value.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does late-arriving data specifically complicate Type 2 dimension handling?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The pipeline must search historical dimension versions to find which one was actually effective at the late-arriving fact's real event date, not just use the currently active version</button>
+        <button class="q-option" data-correct="false">Late-arriving data cannot be loaded into a Type 2 dimension under any circumstances</button>
+        <button class="q-option" data-correct="false">Late arrival only affects Type 1 dimensions, never Type 2</button>
+      </div>
+      <div class="q-explain">Simply attaching a late fact to whatever dimension version is "current" today would misattribute it — correct handling means looking up the dimension version that was actually current back when the event genuinely occurred.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: ExpressAnalytics "What Is a Slowly Changing Dimension? Types Explained"; Mayurkumar Surani "Data Warehousing &amp; Modeling: Star Schema, Snowflake &amp; SCDs Explained (2026)"; Dear Techies "On Data Modeling for OLTP vs. OLAP" (late-arriving facts/dimensions section).</p>
+
+  <div class="pager">
+    <a href="6-3-snowflake-schema-and-normalization.html">&larr; 6.3 Snowflake schema &amp; normalization</a>
+    <a href="6-5-modern-warehouse-architecture.html">6.5 Modern warehouse architecture &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let scdMode = 'type1';
+let scdChanged = false;
+function renderScd() {
+  if (scdMode === 'type1') {
+    document.getElementById('scd-table').innerHTML = `
+      <tr><th>customer_id</th><th>name</th><th>city</th></tr>
+      <tr><td>501</td><td>Jamie Lee</td><td>${scdChanged ? 'Denver' : 'Austin'}</td></tr>
+    ` + (scdChanged ? '<tr><td colspan="3" style="color:#ff8b8f;">⚠ Old value overwritten — all historical facts for customer 501 now show Denver, even transactions from when they lived in Austin.</td></tr>' : '');
+  } else {
+    document.getElementById('scd-table').innerHTML = `
+      <tr><th>surrogate_key</th><th>customer_id</th><th>city</th><th>start_date</th><th>end_date</th><th>is_current</th></tr>
+      <tr><td>1001</td><td>501</td><td>Austin</td><td>2024-01-01</td><td>${scdChanged ? '2026-09-01' : '9999-12-31'}</td><td>${scdChanged ? 'false' : 'true'}</td></tr>
+      ${scdChanged ? '<tr><td>1002</td><td>501</td><td>Denver</td><td>2026-09-01</td><td>9999-12-31</td><td>true</td></tr>' : ''}
+      ${scdChanged ? '<tr><td colspan="6" style="color:#3ecf8e;">✓ Both rows preserved — historical facts still correctly join to surrogate key 1001 (Austin), new facts join to 1002 (Denver).</td></tr>' : ''}
+    `;
+  }
+}
+document.querySelectorAll('.scd-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scd-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    scdMode = btn.dataset.t;
+    renderScd();
+  });
+});
+document.getElementById('scd-change').addEventListener('click', () => {
+  scdChanged = true;
+  renderScd();
+});
+renderScd();
+
+document.getElementById('fig-scd2').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: fact table rows joining to the correct historical version of a Type 2 dimension based on transaction date">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="90" y="39" text-anchor="middle" fill="#a9c1ff">fact: sale on 2024-06-01</text>
+  <rect x="20" y="90" width="140" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="90" y="109" text-anchor="middle" fill="#a9c1ff">fact: sale on 2026-10-01</text>
+  <line x1="160" y1="35" x2="280" y2="35" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a28)"/>
+  <line x1="160" y1="105" x2="280" y2="105" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a28)"/>
+  <rect x="280" y="20" width="160" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="360" y="39" text-anchor="middle" fill="#3ecf8e">key 1001: Austin (2024-2026)</text>
+  <rect x="280" y="90" width="160" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="360" y="109" text-anchor="middle" fill="#3ecf8e">key 1002: Denver (2026-now)</text>
+  <defs><marker id="a28" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

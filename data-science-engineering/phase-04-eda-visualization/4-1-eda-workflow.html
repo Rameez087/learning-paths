@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 The EDA workflow | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.wf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.wf-mistake-btn { display: block; width: 100%; text-align: left; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.wf-cause { display: none; padding: 10px 12px; background: var(--code-bg); border-radius: 6px; margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.wf-cause.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · EDA &amp; visualization</div>
+  <h1>4.1 The EDA workflow</h1>
+  <p class="subtitle">"The greatest value of a picture is when it forces us to notice what we never expected." — John Tukey, who invented the discipline.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Exploratory Data Analysis is the bridge between raw data and any model or decision built on
+    it — gather, tidy, visualize, analyze, interpret, in that order. Skipping straight to modeling
+    without it is a specifically named, common failure: it produces models that don't accurately
+    represent the data, because nobody checked what the data actually looked like first. EDA is
+    fundamentally exploratory, not confirmatory — its job is to reduce uncertainty about what's in
+    the data, not to confirm what you already assumed.
+  </div>
+
+  <h2>Try it: spot the real cause behind each EDA mistake</h2>
+  <div class="wf-box">
+    <div id="wf-mistakes"></div>
+  </div>
+
+  <h2>The five-stage loop</h2>
+  <ol>
+    <li><strong>Gather</strong> — assemble the data, understanding where it came from and what it's supposed to represent.</li>
+    <li><strong>Tidy</strong> — remove duplicates, handle missing values, fix obvious errors, before drawing a single chart.</li>
+    <li><strong>Visualize</strong> — plot distributions and relationships to surface patterns a table of numbers hides.</li>
+    <li><strong>Analyze</strong> — apply the statistical measures from Phase 3 (mean, spread, correlation) to what the visuals surfaced.</li>
+    <li><strong>Interpret</strong> — turn patterns into an actionable finding, not just a chart.</li>
+  </ol>
+  <p>
+    This is a loop, not a straight line — a pattern found in step 3 often sends you back to step 2
+    (is this an outlier, or a data-entry error I need to fix?), and this back-and-forth is normal,
+    expected behavior, not a sign you're doing it wrong.
+  </p>
+
+  <h2>Exploratory vs. explanatory: know which mode you're in</h2>
+  <p>
+    This distinction is described as the single most common cause of ineffective visualizations —
+    presenting a raw exploratory dump to an audience that actually needed a refined summary.
+    During <strong>exploratory</strong> analysis, you're the only audience: crack open every chart
+    quickly, keep what's useful, discard the rest, no need for polish. During
+    <strong>explanatory</strong> communication (3.5's capstone-facing dashboards, a report to
+    stakeholders), only the "pearls" — the one or two charts that actually carry the finding —
+    should ever reach an audience, polished and clearly annotated. Publishing a dense, cluttered
+    exploratory plot as a final deliverable is a specifically named, common mistake.
+  </p>
+
+  <div class="figure" id="fig-loop"></div>
+
+  <h2>EDA should reduce uncertainty, not manufacture false confidence</h2>
+  <p>
+    A single compelling chart can be misleading on its own — real practice cross-checks any visual
+    impression against the statistics from Phase 3 and against relevant subgroup comparisons,
+    rather than trusting one plot in isolation. This connects directly to the correlation-vs-
+    confound issue: an apparent relationship in a chart may be driven by a confound, duplicated
+    records, or sampling bias rather than the causal story that seems obvious at first glance.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is skipping EDA before modeling specifically flagged as a common, costly mistake?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Modeling without first understanding the data can produce models that don't accurately represent it, since data quality issues go unnoticed</button>
+        <button class="q-option" data-correct="false">EDA is only useful for very small datasets</button>
+        <button class="q-option" data-correct="false">Skipping EDA has no measurable effect on model quality</button>
+      </div>
+      <div class="q-explain">EDA surfaces data quality issues, outliers, and unexpected patterns before they silently corrupt a downstream model — skipping it means those issues go undetected until much later, if at all.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the key difference between exploratory and explanatory visualization?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Exploratory is for your own discovery process and doesn't need polish; explanatory is a refined, audience-facing summary of the few findings that actually matter</button>
+        <button class="q-option" data-correct="false">They are the same activity performed at different times of day</button>
+        <button class="q-option" data-correct="false">Explanatory visualizations should include every chart generated during exploration</button>
+      </div>
+      <div class="q-explain">Mixing these up — presenting a raw exploratory dump to a stakeholder audience — is specifically named as the single most common cause of ineffective visualizations.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why shouldn't a single compelling chart be trusted on its own?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An apparent pattern could be driven by a confound, duplicated records, or sampling bias rather than a genuine relationship</button>
+        <button class="q-option" data-correct="false">Charts are always less reliable than raw numbers in a table</button>
+        <button class="q-option" data-correct="false">A single chart can never reveal anything useful about a dataset</button>
+      </div>
+      <div class="q-explain">Cross-checking a visual impression against statistics and subgroup comparisons is what prevents EDA from manufacturing false confidence out of what might just be a spurious pattern.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Georgia Tech OMSCS 7641 "Beginner's Guide to Exploratory Data Analysis" (2026); Plotivy "Scientific Data Visualization Guide" (2026); ChartExpo "Exploratory Data Analysis: Get Answers, Not Assumptions".</p>
+
+  <div class="pager">
+    <a href="../phase-03-statistics-probability/3-5-ab-testing-fundamentals.html">&larr; 3.5 A/B testing fundamentals</a>
+    <a href="4-2-choosing-the-right-chart.html">4.2 Choosing the right chart &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const MISTAKES = [
+  { symptom: "A strong correlation between ice cream sales and drowning incidents is presented as ice cream causing drownings.", cause: "Treating correlation as explanation — both are driven by a confound (hot weather), not a causal link between the two variables themselves." },
+  { symptom: "Removing every extreme value before analysis, then finding the 'signal' looks cleaner than expected.", cause: "Over-cleaning outliers — some extreme values are the actual signal (a genuine rare event), not noise, and removing them can delete exactly what you needed to find." },
+  { symptom: "A column with 30% missing values gets filled with the column average without investigation.", cause: "Imputing without checking patterns — missing data often reflects a real mechanism (e.g. a form field that's only shown to certain users), not pure randomness, and blind imputation can distort the analysis." },
+  { symptom: "A predictive feature turns out to include information that wouldn't have existed at prediction time in production.", cause: "Accidentally creating leakage — a specifically named EDA/feature risk where future information contaminates what should be a clean prediction setup." },
+];
+document.getElementById('wf-mistakes').innerHTML = MISTAKES.map((m,i) => `
+  <button class="wf-mistake-btn" data-i="${i}">${m.symptom}</button>
+  <div class="wf-cause" id="wf-cause-${i}">${m.cause}</div>
+`).join('');
+document.querySelectorAll('.wf-mistake-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('wf-cause-' + btn.dataset.i).classList.toggle('show');
+  });
+});
+
+document.getElementById('fig-loop').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: EDA loop of gather, tidy, visualize, analyze, interpret with a feedback arrow back to tidy">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="10" y="55" width="110" height="45" rx="8" fill="#1a2029" stroke="#262d3a"/><text x="65" y="82" text-anchor="middle">Gather</text>
+  <line x1="120" y1="77" x2="150" y2="77" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a21)"/>
+  <rect x="150" y="55" width="110" height="45" rx="8" fill="#1a2029" stroke="#262d3a"/><text x="205" y="82" text-anchor="middle">Tidy</text>
+  <line x1="260" y1="77" x2="290" y2="77" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a21)"/>
+  <rect x="290" y="55" width="110" height="45" rx="8" fill="#182238" stroke="#5b8cff"/><text x="345" y="82" text-anchor="middle" fill="#a9c1ff">Visualize</text>
+  <line x1="400" y1="77" x2="430" y2="77" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a21)"/>
+  <rect x="430" y="55" width="110" height="45" rx="8" fill="#1a2029" stroke="#262d3a"/><text x="485" y="82" text-anchor="middle">Analyze</text>
+  <line x1="540" y1="77" x2="570" y2="77" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a21)"/>
+  <rect x="570" y="55" width="100" height="45" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="620" y="82" text-anchor="middle" fill="#3ecf8e">Interpret</text>
+  <path d="M 345 100 C 345 135, 205 135, 205 102" fill="none" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a21f)"/>
+  <text x="275" y="150" text-anchor="middle" fill="#f2b84b" font-size="10">back to Tidy if something looks off</text>
+  <defs>
+    <marker id="a21" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a21f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

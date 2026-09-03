@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 SQL fundamentals refresher | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sq-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sq-clause-btn { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font-mono); margin-right: 6px; margin-bottom: 8px; }
+.sq-clause-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.sq-order-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.sq-order-item { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-family: var(--font-mono); background: var(--surface-2); border: 1px solid var(--border-strong); }
+.sq-order-item.highlighted { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · SQL &amp; data manipulation</div>
+  <h1>2.1 SQL fundamentals refresher</h1>
+  <p class="subtitle">SQL shows up in 79.4% of data engineer job postings and 30-60% of data scientist ones. It's the one skill nobody gets to skip.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    SQL is a <strong>declarative</strong> language — you describe what data you want, not the
+    steps to fetch it, and the database's query optimizer figures out the actual execution steps
+    (more on this in 2.3). The clauses you write in a query and the order the database actually
+    <em>executes</em> them in are different — this mismatch is the single most common source of
+    confusion for people learning SQL, and understanding it unlocks why certain things (like using
+    a column alias in a WHERE clause) don't work the way you'd expect.
+  </div>
+
+  <h2>Try it: the clause you write vs. the order it runs</h2>
+  <div class="sq-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Click each clause to see when it actually executes, not the order it's written in:</p>
+    <div>
+      <div class="sq-clause-btn" data-c="select">SELECT</div>
+      <div class="sq-clause-btn" data-c="from">FROM</div>
+      <div class="sq-clause-btn" data-c="where">WHERE</div>
+      <div class="sq-clause-btn" data-c="groupby">GROUP BY</div>
+      <div class="sq-clause-btn" data-c="having">HAVING</div>
+      <div class="sq-clause-btn" data-c="orderby">ORDER BY</div>
+    </div>
+    <div class="sq-order-list" id="sq-order"></div>
+  </div>
+
+  <h2>Why this execution order actually matters</h2>
+  <p>
+    Because <code>WHERE</code> executes before <code>SELECT</code>, you can't filter on a column
+    alias defined in your <code>SELECT</code> clause — the database hasn't computed it yet at the
+    point <code>WHERE</code> runs. This is exactly why a query like
+    <code>SELECT price * qty AS total FROM orders WHERE total > 100</code> fails on most
+    databases, while the same filter in a <code>HAVING</code> clause (which runs after
+    aggregation) or wrapped in a CTE works fine.
+  </p>
+  <pre><code>-- Fails: WHERE runs before SELECT computes the alias
+SELECT price * qty AS total FROM orders WHERE total > 100;
+
+-- Works: filter on the raw expression directly
+SELECT price * qty AS total FROM orders WHERE price * qty > 100;
+
+-- Also works: wrap it in a CTE, then filter the CTE's output
+WITH order_totals AS (
+    SELECT *, price * qty AS total FROM orders
+)
+SELECT * FROM order_totals WHERE total > 100;</code></pre>
+
+  <h2>Joins, refreshed</h2>
+  <ul>
+    <li><strong>INNER JOIN</strong> — only rows with a match in both tables.</li>
+    <li><strong>LEFT JOIN</strong> — all rows from the left table, matched data from the right where it exists, <code>NULL</code> where it doesn't.</li>
+    <li><strong>Self-join</strong> — a table joined to itself, used for comparing rows within the same table (e.g. finding employees who earn more than their manager).</li>
+    <li><strong>Anti-join</strong> — rows in one table with <em>no</em> match in another (commonly written as a <code>LEFT JOIN ... WHERE right.id IS NULL</code>), used for "find customers who never ordered" type questions.</li>
+  </ul>
+
+  <h2>Modern SQL features worth knowing exist</h2>
+  <p>
+    A few features that show up increasingly in 2026 SQL dialects and interviews: <code>MERGE</code>
+    (an upsert — insert or update in one statement, minimizing round-trips), <code>LATERAL
+    JOIN</code> (lets a subquery reference a preceding table in the same FROM clause — useful for
+    "top N per group" queries), and <code>MATERIALIZED VIEW</code> (caches a complex query's
+    result and refreshes it asynchronously, trading some staleness for much faster repeated reads).
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't you filter using a column alias defined in the SELECT clause within the same query's WHERE clause?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">WHERE executes before SELECT in the database's actual processing order, so the alias doesn't exist yet</button>
+        <button class="q-option" data-correct="false">SQL databases don't support column aliases at all</button>
+        <button class="q-option" data-correct="false">This works fine in every SQL database without exception</button>
+      </div>
+      <div class="q-explain">The written order (SELECT first) and the execution order (WHERE before SELECT) are different — this mismatch is exactly why the alias isn't available yet when WHERE runs.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does an anti-join typically answer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Which rows in one table have no matching row in another (e.g. "customers who never placed an order")</button>
+        <button class="q-option" data-correct="false">Which rows exist in both tables simultaneously</button>
+        <button class="q-option" data-correct="false">The total count of rows across two joined tables</button>
+      </div>
+      <div class="q-explain">An anti-join specifically surfaces absence — rows with no counterpart in the other table — commonly implemented as a LEFT JOIN filtered to only the unmatched rows.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does a MATERIALIZED VIEW trade for faster repeated reads?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Some data freshness — the cached result refreshes asynchronously rather than reflecting the very latest data instantly</button>
+        <button class="q-option" data-correct="false">Nothing — materialized views have no trade-offs</button>
+        <button class="q-option" data-correct="false">The ability to filter or aggregate the cached data further</button>
+      </div>
+      <div class="q-explain">Caching a complex query's result means that result can lag behind the live underlying data until the next refresh — a deliberate trade of staleness for read speed.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Devinterview.io "SQL Interview Questions" (2026); DataVidhya "80 SQL Interview Questions for Data Engineers" (2026); 365 Data Science job posting skill-frequency analysis (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-01-foundations/1-4-your-first-data-pipeline.html">&larr; 1.4 Your first data pipeline</a>
+    <a href="2-2-window-functions-ctes.html">2.2 Window functions &amp; CTEs &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const EXEC_ORDER = ["from", "where", "groupby", "having", "select", "orderby"];
+const LABELS = { select: "SELECT", from: "FROM", where: "WHERE", groupby: "GROUP BY", having: "HAVING", orderby: "ORDER BY" };
+function renderOrder(active) {
+  document.getElementById('sq-order').innerHTML = EXEC_ORDER.map((c, i) => `
+    <div class="sq-order-item${c === active ? ' highlighted' : ''}">${i+1}. ${LABELS[c]}</div>
+  `).join('');
+}
+document.querySelectorAll('.sq-clause-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sq-clause-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderOrder(btn.dataset.c);
+  });
+});
+renderOrder(null);
+</script>
+</body>
+</html>

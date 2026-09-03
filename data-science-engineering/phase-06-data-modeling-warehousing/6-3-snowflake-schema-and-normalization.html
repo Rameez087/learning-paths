@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.3 Snowflake schema &amp; normalization | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sf-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.sf-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.sf-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Data modeling &amp; warehousing</div>
+  <h1>6.3 Snowflake schema &amp; normalization</h1>
+  <p class="subtitle">The same information, one extra table deeper — and one extra join every time you need it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A snowflake schema takes a star schema's flat dimension tables and normalizes them further —
+    splitting <code>dim_product</code> into separate <code>dim_product</code>,
+    <code>dim_category</code>, and <code>dim_subcategory</code> tables linked together, rather
+    than storing category info redundantly inside every product row. This reduces storage
+    redundancy but adds joins to nearly every analytical query — and since star schemas already
+    win on roughly 90% of query workloads, snowflaking is a deliberate trade you make for specific
+    reasons, not a default upgrade.
+  </div>
+
+  <h2>Try it: watch the join count grow</h2>
+  <div class="sf-box">
+    <div class="sf-toggle">
+      <div class="sf-toggle-btn active" data-t="star">Star schema</div>
+      <div class="sf-toggle-btn" data-t="snowflake">Snowflake schema</div>
+    </div>
+    <div id="sf-fig"></div>
+    <p id="sf-caption" style="font-size:13px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>Why storage redundancy matters less than it used to</h2>
+  <p>
+    Normalization was originally about minimizing redundant storage — genuinely important when
+    storage was expensive. Cloud warehouse storage is now cheap enough that this original
+    motivation carries much less weight; the primary cost that remains is query complexity and
+    speed, which is exactly what star schemas optimize for by keeping dimensions flat even at the
+    cost of some duplicated data (a product's category name repeated across every row that shares
+    that category, for instance).
+  </p>
+
+  <h2>When snowflaking still earns its cost</h2>
+  <ul>
+    <li><strong>Very large, frequently-updated dimensions</strong> — if a dimension table is enormous and its sub-attributes change independently and often, normalizing can reduce update overhead.</li>
+    <li><strong>Strict data governance requirements</strong> — some compliance contexts specifically require normalized structures to avoid any redundant copies of sensitive reference data.</li>
+    <li><strong>Shared reference dimensions across many fact tables</strong> — a normalized, centrally-managed category table can be a genuine win when many different stars need to reference the exact same hierarchy consistently.</li>
+  </ul>
+
+  <h2>The practical default for 2026</h2>
+  <p>
+    Given cheap storage and the strong query-performance case for fewer joins, current guidance
+    treats dimensional modeling with a star schema as the default best approach for most warehouse
+    design in 2026 — snowflaking is the exception you reach for when a specific requirement
+    justifies it, not the other way around.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does a snowflake schema do differently from a star schema?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It normalizes dimension tables further into additional linked tables, rather than keeping each dimension flat and denormalized</button>
+        <button class="q-option" data-correct="false">It removes the fact table entirely</button>
+        <button class="q-option" data-correct="false">It stores all data in a single table with no joins at all</button>
+      </div>
+      <div class="q-explain">The fact table structure is unchanged — the difference is entirely in how much the surrounding dimension tables are broken down into further normalized sub-tables.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does storage redundancy matter less as a design concern in 2026 than it historically did?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Cloud warehouse storage has become cheap enough that the original motivation for minimizing redundant storage carries much less weight than query performance does</button>
+        <button class="q-option" data-correct="false">Modern databases cannot technically store duplicate data anymore</button>
+        <button class="q-option" data-correct="false">Storage costs have increased, making redundancy more expensive than ever</button>
+      </div>
+      <div class="q-explain">The cost trade-off genuinely shifted — cheap storage means the query-speed benefit of fewer joins in a star schema now usually outweighs the storage savings a snowflake schema would provide.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's a legitimate reason to choose a snowflake schema despite the general 2026 default favoring star schemas?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A very large, frequently-updated dimension, or a shared reference dimension that many different fact tables need to reference consistently</button>
+        <button class="q-option" data-correct="false">Snowflake schemas should always be chosen regardless of the situation</button>
+        <button class="q-option" data-correct="false">Star schemas cannot technically support more than one dimension table</button>
+      </div>
+      <div class="q-explain">These are the specific, named cases where normalization's benefits (reduced update overhead, centralized consistency) outweigh the added join cost — genuine exceptions, not a reason to treat snowflaking as the default.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Mayurkumar Surani "Data Warehousing &amp; Modeling: Star Schema, Snowflake &amp; SCDs Explained (2026)"; ANAILYNIS "Star Schema: Complete Guide to Dimensional Modeling" (2026); daily.dev "Data Modeling for Analytics Engineers" (2026).</p>
+
+  <div class="pager">
+    <a href="6-2-dimensional-modeling-star-schema.html">&larr; 6.2 Dimensional modeling &amp; star schema</a>
+    <a href="6-4-slowly-changing-dimensions.html">6.4 Slowly changing dimensions &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SF_FIGS = {
+  star: `<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Star schema: fact table directly joined to a flat product dimension, one join needed">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:11px;font-weight:600;}</style>
+    <rect x="60" y="50" width="120" height="40" rx="8" fill="#182238" stroke="#5b8cff"/><text x="120" y="74" text-anchor="middle" fill="#a9c1ff">fct_sales</text>
+    <line x1="180" y1="70" x2="240" y2="70" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a27)"/>
+    <text x="210" y="60" text-anchor="middle" fill="#3ecf8e" font-size="9">1 join</text>
+    <rect x="240" y="50" width="180" height="40" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="330" y="74" text-anchor="middle" fill="#3ecf8e">dim_product (flat: includes category)</text>
+    <defs><marker id="a27" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+  </svg>`,
+  snowflake: `<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Snowflake schema: fact table joined through product to category to subcategory, three joins needed">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:11px;font-weight:600;}</style>
+    <rect x="20" y="50" width="110" height="40" rx="8" fill="#182238" stroke="#5b8cff"/><text x="75" y="74" text-anchor="middle" fill="#a9c1ff">fct_sales</text>
+    <line x1="130" y1="70" x2="180" y2="70" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a27f)"/>
+    <rect x="180" y="50" width="110" height="40" rx="8" fill="#1a2029" stroke="#f2b84b"/><text x="235" y="74" text-anchor="middle" fill="#f2b84b">dim_product</text>
+    <line x1="290" y1="70" x2="340" y2="70" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a27f)"/>
+    <rect x="340" y="50" width="110" height="40" rx="8" fill="#1a2029" stroke="#f2b84b"/><text x="395" y="74" text-anchor="middle" fill="#f2b84b">dim_category</text>
+    <line x1="450" y1="70" x2="500" y2="70" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a27f)"/>
+    <rect x="500" y="50" width="130" height="40" rx="8" fill="#1a2029" stroke="#f2b84b"/><text x="565" y="74" text-anchor="middle" fill="#f2b84b">dim_subcategory</text>
+    <text x="330" y="115" text-anchor="middle" fill="#f2b84b" font-size="10">3 joins to get the same category info</text>
+    <defs><marker id="a27f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker></defs>
+  </svg>`
+};
+const SF_CAPTIONS = {
+  star: "One join reaches the product's full information, including its category — this is why star schemas are faster for typical analytical queries.",
+  snowflake: "Reaching a product's full category hierarchy requires three joins instead of one — more normalized, but slower for this common type of query.",
+};
+function renderSf(key) {
+  document.getElementById('sf-fig').innerHTML = SF_FIGS[key];
+  document.getElementById('sf-caption').textContent = SF_CAPTIONS[key];
+}
+document.querySelectorAll('.sf-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sf-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderSf(btn.dataset.t);
+  });
+});
+renderSf('star');
+</script>
+</body>
+</html>

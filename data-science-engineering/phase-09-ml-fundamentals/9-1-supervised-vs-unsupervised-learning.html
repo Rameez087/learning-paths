@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.1 Supervised vs. unsupervised learning | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sv-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sv-item-btn { display: block; width: 100%; text-align: left; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.sv-item-btn.answered-correct { border-color: var(--success); }
+.sv-item-btn.answered-wrong { border-color: #e5484d; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Machine learning fundamentals</div>
+  <h1>9.1 Supervised vs. unsupervised learning</h1>
+  <p class="subtitle">The question that decides everything else: does your data come with the "right answers" already attached?</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    In <strong>supervised learning</strong>, the training data includes labels — the correct
+    answer for each example — and the model learns to map inputs to those known outputs (predict
+    house price from features, classify an email as spam or not). In <strong>unsupervised
+    learning</strong>, no labels exist; the model finds structure in the data on its own —
+    grouping similar customers (clustering), reducing many features to a few meaningful ones
+    (dimensionality reduction), or flagging unusual data points (anomaly detection). Unsupervised
+    learning shows up constantly in production — recommendation engines, fraud detection, log
+    analysis — and is genuinely worth taking as seriously as supervised learning, not treating as
+    a footnote.
+  </div>
+
+  <h2>Try it: classify each task</h2>
+  <div class="sv-box">
+    <div id="sv-items"></div>
+  </div>
+
+  <h2>Why the distinction changes everything downstream</h2>
+  <p>
+    Supervised learning gives you a clear, measurable target — you can directly check "did the
+    model predict close to the correct answer?" against held-out labeled data (Phase 10 covers
+    this rigorously). Unsupervised learning has no such ground truth to check against — evaluating
+    whether a clustering result is "good" is a genuinely harder, more subjective problem, often
+    requiring domain expertise to judge whether the discovered groups actually make business sense
+    rather than a clean numeric accuracy score.
+  </p>
+
+  <div class="figure" id="fig-sv"></div>
+
+  <h2>Where each type shows up in real production systems</h2>
+  <ul>
+    <li><strong>Supervised — classification</strong>: fraud/not-fraud, spam/not-spam, churn/no-churn.</li>
+    <li><strong>Supervised — regression</strong>: predicting a continuous number — house price, demand forecast, delivery time.</li>
+    <li><strong>Unsupervised — clustering</strong>: customer segmentation, grouping similar support tickets.</li>
+    <li><strong>Unsupervised — dimensionality reduction</strong>: compressing hundreds of correlated features into a handful that capture most of the signal, often as a preprocessing step before a supervised model.</li>
+    <li><strong>Unsupervised — anomaly detection</strong>: flagging a transaction, log entry, or sensor reading that looks nothing like the rest of the data.</li>
+  </ul>
+
+  <h2>A third category worth naming: reinforcement learning</h2>
+  <p>
+    Reinforcement learning is the third major paradigm — an agent learns by taking actions in an
+    environment and receiving rewards or penalties, gradually learning a policy that maximizes
+    cumulative reward. It's less commonly the first tool reached for in typical business data
+    science work, but it's the foundation behind game-playing AI and increasingly some
+    recommendation and resource-allocation systems.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the defining difference between supervised and unsupervised learning?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Supervised learning trains on data with known correct labels; unsupervised learning finds structure in data with no labels at all</button>
+        <button class="q-option" data-correct="false">Supervised learning only works with numeric data, unsupervised only with text</button>
+        <button class="q-option" data-correct="false">Unsupervised learning always requires more data than supervised learning</button>
+      </div>
+      <div class="q-explain">The presence or absence of labeled "correct answers" in the training data is the fundamental distinction driving everything else — the type of model, the training objective, and how you'd evaluate results.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is evaluating an unsupervised model's output generally harder than evaluating a supervised one?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">There's no ground-truth label to directly compare predictions against, so judging quality often requires domain expertise rather than a clean accuracy score</button>
+        <button class="q-option" data-correct="false">Unsupervised models never produce any measurable output</button>
+        <button class="q-option" data-correct="false">Supervised models cannot be evaluated at all without unsupervised techniques first</button>
+      </div>
+      <div class="q-explain">Supervised learning's labels provide a direct, objective comparison target; unsupervised learning's lack of labels means "is this clustering good?" is a much more subjective, context-dependent question.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What distinguishes reinforcement learning from both supervised and unsupervised learning?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An agent learns by taking actions in an environment and receiving rewards or penalties, rather than learning from a fixed labeled or unlabeled dataset</button>
+        <button class="q-option" data-correct="false">Reinforcement learning is simply another name for supervised learning</button>
+        <button class="q-option" data-correct="false">Reinforcement learning requires no training process at all</button>
+      </div>
+      <div class="q-explain">Reinforcement learning's interactive, reward-driven structure is genuinely distinct from learning a fixed mapping (supervised) or discovering structure (unsupervised) in a static dataset.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: course.careers "Machine Learning Engineer Roadmap 2026"; Analytics Vidhya "Top 10 Machine Learning Algorithms in 2026"; Cornell ECE 5200 course description (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-08-big-data-distributed/8-4-streaming-with-kafka.html">&larr; 8.4 Streaming with Kafka</a>
+    <a href="9-2-classical-ml-algorithms.html">9.2 Classical ML algorithms &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SV_ITEMS = [
+  { text: "Predicting whether a transaction is fraudulent, using historical transactions labeled fraud/not-fraud", type: "supervised" },
+  { text: "Grouping customers into segments based on purchasing behavior, with no predefined segment labels", type: "unsupervised" },
+  { text: "Forecasting next month's revenue based on historical revenue and marketing spend", type: "supervised" },
+  { text: "Flagging unusual sensor readings in a factory with no prior examples of what 'unusual' looks like", type: "unsupervised" },
+];
+document.getElementById('sv-items').innerHTML = SV_ITEMS.map((it,i) => `
+  <div style="margin-bottom:14px;">
+    <div style="font-size:13px; margin-bottom:6px;">${it.text}</div>
+    <div style="display:flex; gap:8px;">
+      <button class="sv-item-btn" style="flex:1;" data-i="${i}" data-guess="supervised">Supervised</button>
+      <button class="sv-item-btn" style="flex:1;" data-i="${i}" data-guess="unsupervised">Unsupervised</button>
+    </div>
+  </div>
+`).join('');
+document.querySelectorAll('.sv-item-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const i = btn.dataset.i;
+    const group = document.querySelectorAll(`[data-i="${i}"]`);
+    if (group[0].dataset.answered) return;
+    group.forEach(b => b.dataset.answered = "true");
+    const correct = SV_ITEMS[i].type;
+    group.forEach(b => {
+      if (b.dataset.guess === correct) b.classList.add('answered-correct');
+      else if (b === btn) b.classList.add('answered-wrong');
+    });
+  });
+});
+
+document.getElementById('fig-sv').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: supervised learning maps labeled inputs to outputs, unsupervised learning finds structure in unlabeled data">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } .s{font-size:9px; fill:#9aa4b5; font-weight:400;} </style>
+  <text x="170" y="20" text-anchor="middle" font-size="13">Supervised</text>
+  <rect x="20" y="40" width="120" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="80" y="62" text-anchor="middle" font-size="9">Input + label</text>
+  <line x1="140" y1="57" x2="180" y2="57" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a36)"/>
+  <rect x="180" y="40" width="120" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="240" y="62" text-anchor="middle" font-size="9" fill="#a9c1ff">Learned mapping</text>
+  <text x="170" y="95" class="s" text-anchor="middle">predicts labels on new, unseen inputs</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="13">Unsupervised</text>
+  <rect x="400" y="40" width="120" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="460" y="62" text-anchor="middle" font-size="9">Input only</text>
+  <line x1="520" y1="57" x2="560" y2="57" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a36)"/>
+  <rect x="560" y="40" width="100" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="610" y="62" text-anchor="middle" font-size="9" fill="#3ecf8e">Discovered structure</text>
+  <text x="500" y="95" class="s" text-anchor="middle">clusters, reduced dimensions, anomalies</text>
+  <defs><marker id="a36" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

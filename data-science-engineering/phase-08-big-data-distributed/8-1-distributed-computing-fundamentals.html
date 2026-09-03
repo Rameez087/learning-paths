@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.1 Distributed computing fundamentals | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dc-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.dc-slider-row input[type=range] { flex: 1; }
+.dc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px,1fr)); gap: 4px; margin-bottom: 12px; }
+.dc-chunk { height: 24px; border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border-strong); }
+.dc-chunk.active { background: var(--accent-bg); border-color: var(--accent); }
+.dc-metrics { display: flex; gap: 16px; }
+.dc-metric { background: var(--surface-2); border-radius: 8px; padding: 10px 16px; text-align: center; }
+.dc-metric .n { font-size: 18px; font-weight: 700; }
+.dc-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · Big data &amp; distributed processing</div>
+  <h1>8.1 Distributed computing fundamentals</h1>
+  <p class="subtitle">One machine, no matter how powerful, eventually can't hold your data or finish the job in time. Distributed computing is what happens next.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Distributed computing splits both data and computation across many machines working in
+    parallel, rather than relying on one increasingly powerful single machine. The core idea:
+    partition the data into chunks, send the same computation to each chunk simultaneously on a
+    different worker, then combine the partial results. This is what makes processing terabytes
+    or petabytes of data in a reasonable time possible — and it's the foundational concept
+    underneath Spark (8.2), Kafka (8.4), and every genuinely "big data" tool in this phase.
+  </div>
+
+  <h2>Try it: watch parallelism cut processing time</h2>
+  <div class="dc-box">
+    <div class="dc-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">Worker machines</label>
+      <input type="range" id="dc-slider" min="1" max="12" value="1">
+      <span id="dc-readout" style="font-weight:700; min-width:20px;">1</span>
+    </div>
+    <div class="dc-grid" id="dc-grid"></div>
+    <div class="dc-metrics" id="dc-metrics"></div>
+  </div>
+
+  <h2>Why this isn't just "buy a bigger computer"</h2>
+  <p>
+    Vertical scaling (a more powerful single machine) hits real physical and economic limits —
+    there's a ceiling on how much RAM and CPU a single machine can practically hold, and the cost
+    curve gets steep well before that ceiling. Horizontal scaling (more machines working together)
+    has a much higher practical ceiling and, critically, degrades more gracefully — losing one
+    worker out of a hundred is a minor event; losing your only machine is total failure.
+  </p>
+
+  <div class="figure" id="fig-scaling"></div>
+
+  <h2>The trade-off distributed systems introduce</h2>
+  <p>
+    Splitting work across machines introduces real coordination costs that a single machine never
+    has to deal with: network communication between workers, the need to combine partial results
+    correctly, and handling a worker failing mid-job without losing the whole computation. This is
+    exactly why distributed frameworks like Spark exist — they handle this coordination complexity
+    so you can write code that looks similar to single-machine code while it actually runs across
+    a cluster.
+  </p>
+
+  <h2>Data locality: moving computation, not data</h2>
+  <p>
+    A key principle distributed systems exploit: moving a small piece of code to where a large
+    chunk of data already sits is far cheaper than moving that large chunk of data across the
+    network to a central place to be processed. This "bring compute to the data" philosophy is
+    baked into how Spark schedules tasks — it tries to run each task's computation on the worker
+    node that already holds the relevant data partition, minimizing network transfer.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the core mechanism that makes distributed computing faster for large datasets?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Data and computation are split across many machines working simultaneously, then partial results are combined</button>
+        <button class="q-option" data-correct="false">Distributed computing works by making a single machine's processor run faster</button>
+        <button class="q-option" data-correct="false">Distributed systems eliminate the need for any actual computation</button>
+      </div>
+      <div class="q-explain">Parallelism across many workers, each handling a portion of the data simultaneously, is the fundamental speedup mechanism — not any change to individual machine speed.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does horizontal scaling degrade more gracefully than vertical scaling when a failure occurs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Losing one worker out of many is a minor, recoverable event, while losing your only (vertically-scaled) machine is total failure</button>
+        <button class="q-option" data-correct="false">Horizontal scaling makes hardware failures technically impossible</button>
+        <button class="q-option" data-correct="false">Vertical scaling always has more redundancy than horizontal scaling</button>
+      </div>
+      <div class="q-explain">A distributed system with many workers can typically continue functioning (perhaps more slowly) when one node fails, while a single powerful machine represents a single point of total failure.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does "moving computation to the data" (data locality) avoid?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The cost of transferring large amounts of data across the network to a central processing location</button>
+        <button class="q-option" data-correct="false">The need for any workers to communicate with each other at all</button>
+        <button class="q-option" data-correct="false">The need to partition data across multiple machines in the first place</button>
+      </div>
+      <div class="q-explain">Since code is typically much smaller than the data it processes, sending the (small) computation to the (large) data's location minimizes network transfer far more than the reverse would.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Flexera "Apache Spark architecture 101: How Spark works (2026)"; GeeksforGeeks "Apache Spark" (2026); Instaclustr "Apache Spark architecture: Concepts, components, and best practices" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-07-orchestration-workflow/7-5-containerizing-data-pipelines.html">&larr; 7.5 Containerizing data pipelines</a>
+    <a href="8-2-spark-architecture.html">8.2 Spark architecture &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TOTAL_CHUNKS = 24;
+function renderDc() {
+  const workers = parseInt(document.getElementById('dc-slider').value, 10);
+  document.getElementById('dc-readout').textContent = workers;
+  document.getElementById('dc-grid').innerHTML = Array.from({length: TOTAL_CHUNKS}, (_, i) =>
+    `<div class="dc-chunk${i < workers ? ' active' : ''}"></div>`
+  ).join('');
+  const baselineTime = 240; // seconds for 1 worker doing everything sequentially
+  const time = Math.ceil(baselineTime / workers);
+  document.getElementById('dc-metrics').innerHTML = `
+    <div class="dc-metric"><div class="n">${time}s</div><div class="l">Time to process 24 chunks</div></div>
+    <div class="dc-metric"><div class="n">${Math.ceil(TOTAL_CHUNKS/workers)}</div><div class="l">Chunks per worker</div></div>
+  `;
+}
+document.getElementById('dc-slider').addEventListener('input', renderDc);
+renderDc();
+
+document.getElementById('fig-scaling').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: vertical scaling with one increasingly large machine versus horizontal scaling with many smaller machines working together">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <text x="140" y="20" text-anchor="middle" font-size="13">Vertical scaling</text>
+  <rect x="90" y="40" width="100" height="90" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="140" y="90" text-anchor="middle" fill="#f2b84b">One bigger machine</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="13">Horizontal scaling</text>
+  <rect x="400" y="40" width="60" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="430" y="64" text-anchor="middle" fill="#a9c1ff" font-size="9">worker</text>
+  <rect x="470" y="40" width="60" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="500" y="64" text-anchor="middle" fill="#a9c1ff" font-size="9">worker</text>
+  <rect x="540" y="40" width="60" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="570" y="64" text-anchor="middle" fill="#a9c1ff" font-size="9">worker</text>
+  <rect x="400" y="90" width="60" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="430" y="114" text-anchor="middle" fill="#a9c1ff" font-size="9">worker</text>
+  <rect x="470" y="90" width="60" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="500" y="114" text-anchor="middle" fill="#a9c1ff" font-size="9">worker</text>
+  <rect x="540" y="90" width="60" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="570" y="114" text-anchor="middle" fill="#a9c1ff" font-size="9">worker</text>
+</svg>
+`;
+</script>
+</body>
+</html>

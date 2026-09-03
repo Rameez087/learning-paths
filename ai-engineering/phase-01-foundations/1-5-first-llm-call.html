@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1.5 Your first LLM call | AI Architect</title>
 <link rel="stylesheet" href="../assets/style.css">
+<style>
+.cc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cc-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.cc-row label { font-size: 13px; color: var(--text-secondary); min-width: 130px; }
+.cc-row input[type=range] { flex: 1; }
+.cc-metrics { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+.cc-metric { background: var(--surface-2); border-radius: 8px; padding: 12px 18px; text-align: center; }
+.cc-metric .n { font-size: 18px; font-weight: 700; }
+.cc-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+</style>
 </head>
 <body>
 
@@ -97,6 +107,26 @@ print(message.content[0].text)</code></pre>
   </p>
   <pre><code>print(message.usage.input_tokens, message.usage.output_tokens)</code></pre>
 
+  <div class="cc-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Try it: estimate your actual monthly cost from these two numbers</p>
+    <div class="cc-row">
+      <label>Input tokens/call</label>
+      <input type="range" id="cc-input" min="50" max="5000" step="50" value="300">
+      <span id="cc-input-val" style="font-weight:600; min-width:60px; text-align:right;">300</span>
+    </div>
+    <div class="cc-row">
+      <label>Output tokens/call</label>
+      <input type="range" id="cc-output" min="50" max="2000" step="50" value="150">
+      <span id="cc-output-val" style="font-weight:600; min-width:60px; text-align:right;">150</span>
+    </div>
+    <div class="cc-row">
+      <label>Calls per day</label>
+      <input type="range" id="cc-calls" min="10" max="10000" step="10" value="500">
+      <span id="cc-calls-val" style="font-weight:600; min-width:60px; text-align:right;">500</span>
+    </div>
+    <div class="cc-metrics" id="cc-metrics"></div>
+  </div>
+
   <div class="figure" id="fig-anatomy"></div>
 
   <h2>What you should be able to do now</h2>
@@ -170,6 +200,27 @@ document.querySelectorAll('.q-block').forEach(block => {
     });
   });
 });
+
+// --- Interactive token cost calculator (illustrative rates, $3/$15 per million input/output) ---
+function renderCc() {
+  const inTok = parseInt(document.getElementById('cc-input').value, 10);
+  const outTok = parseInt(document.getElementById('cc-output').value, 10);
+  const calls = parseInt(document.getElementById('cc-calls').value, 10);
+  document.getElementById('cc-input-val').textContent = inTok.toLocaleString();
+  document.getElementById('cc-output-val').textContent = outTok.toLocaleString();
+  document.getElementById('cc-calls-val').textContent = calls.toLocaleString();
+
+  const dailyCost = (inTok * calls / 1e6) * 3 + (outTok * calls / 1e6) * 15;
+  const monthlyCost = dailyCost * 30;
+
+  document.getElementById('cc-metrics').innerHTML = `
+    <div class="cc-metric"><div class="n">$${dailyCost.toFixed(2)}</div><div class="l">Per day</div></div>
+    <div class="cc-metric"><div class="n">$${monthlyCost.toFixed(0)}</div><div class="l">Per month</div></div>
+    <div class="cc-metric"><div class="n">${(inTok+outTok).toLocaleString()}</div><div class="l">Tokens/call</div></div>
+  `;
+}
+['cc-input','cc-output','cc-calls'].forEach(id => document.getElementById(id).addEventListener('input', renderCc));
+renderCc();
 
 document.getElementById('fig-anatomy').innerHTML = `
 <svg viewBox="0 0 680 220" width="100%" role="img" aria-label="Diagram: anatomy of an API call showing system, messages, max_tokens, and response usage">

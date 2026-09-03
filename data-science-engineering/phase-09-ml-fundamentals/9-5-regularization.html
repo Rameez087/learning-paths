@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.5 Regularization | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.rg-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.rg-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.rg-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.rg-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.rg-slider-row { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+.rg-slider-row input[type=range] { flex: 1; }
+.rg-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rg-bar-label { width: 70px; font-size: 12px; text-align: right; }
+.rg-bar-track { flex: 1; height: 18px; background: var(--surface-2); border-radius: 4px; overflow: hidden; position: relative; }
+.rg-bar-fill { height: 100%; background: #5b8cff; border-radius: 4px; transition: width 0.3s ease; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Machine learning fundamentals</div>
+  <h1>9.5 Regularization</h1>
+  <p class="subtitle">A deliberate penalty for complexity — sometimes the best way to make a model perform better is to stop it from trying so hard.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Regularization adds a penalty term to a model's loss function based on the size of its
+    coefficients, directly countering the high-variance/overfitting side of 9.4's tradeoff. The
+    two dominant forms: <strong>L2 (Ridge)</strong> penalizes the sum of squared coefficients,
+    shrinking all of them toward zero without fully eliminating any; <strong>L1 (Lasso)</strong>
+    penalizes the sum of absolute coefficient values, which can shrink some coefficients all the
+    way to exactly zero — effectively performing feature selection (9.3) as a side effect of
+    regularization.
+  </div>
+
+  <h2>Try it: watch L1 zero out features, L2 just shrink them</h2>
+  <div class="rg-box">
+    <div class="rg-toggle">
+      <div class="rg-toggle-btn active" data-r="l1">L1 (Lasso)</div>
+      <div class="rg-toggle-btn" data-r="l2">L2 (Ridge)</div>
+    </div>
+    <div class="rg-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:90px;">Penalty (λ)</label>
+      <input type="range" id="rg-slider" min="0" max="100" value="0">
+      <span id="rg-readout" style="font-weight:700; min-width:36px; text-align:right;">0</span>
+    </div>
+    <div id="rg-bars"></div>
+  </div>
+
+  <h2>Why more regularization means "more balanced, not perfect fit"</h2>
+  <p>
+    Regularization deliberately introduces some bias in exchange for reduced variance — a
+    regularized model typically won't fit the training data as precisely as an unregularized one
+    would, but it tends to perform better on new, unseen data. This is 9.4's tradeoff, made
+    directly controllable via a single tunable parameter (commonly called λ or alpha) rather than
+    something you only influence indirectly through model architecture choices.
+  </p>
+
+  <div class="figure" id="fig-l1-l2"></div>
+
+  <h2>Choosing between L1 and L2 (or both)</h2>
+  <ul>
+    <li><strong>Use L1 (Lasso)</strong> when you suspect many features are irrelevant and want automatic feature selection built into training — the zeroed-out coefficients directly tell you which features the model decided not to use.</li>
+    <li><strong>Use L2 (Ridge)</strong> when you believe most features carry at least some signal and want to shrink their influence without eliminating any entirely — often more stable when features are correlated with each other.</li>
+    <li><strong>Elastic Net</strong> combines both penalties, useful when you want some feature selection along with Ridge's stability, particularly with correlated features.</li>
+  </ul>
+
+  <h2>Regularization isn't the only tool — and often isn't even the first one</h2>
+  <p>
+    Recall from 9.4: more data is described as the most effective regularizer of all — genuinely
+    more diverse training examples often reduce overfitting more reliably than any penalty term.
+    Regularization, cross-validation, feature selection, and gathering more data all attack the
+    same underlying variance problem from different angles, and production practice usually
+    combines several of them rather than relying on just one.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the key practical difference between L1 and L2 regularization?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">L1 can shrink some coefficients all the way to zero (feature selection); L2 shrinks all coefficients toward zero without eliminating any</button>
+        <button class="q-option" data-correct="false">L1 and L2 produce mathematically identical results in every case</button>
+        <button class="q-option" data-correct="false">L2 always produces a sparser model than L1</button>
+      </div>
+      <div class="q-explain">This is the defining practical distinction — L1's absolute-value penalty geometry allows exact zeros, while L2's squared penalty geometry only shrinks coefficients asymptotically toward (but not to) zero.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does increasing regularization strength typically increase a model's training-data bias?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Regularization deliberately trades a worse fit to the training data for reduced variance and better generalization to unseen data</button>
+        <button class="q-option" data-correct="false">Regularization has no effect on how well a model fits its training data</button>
+        <button class="q-option" data-correct="false">Regularization only affects unsupervised learning models</button>
+      </div>
+      <div class="q-explain">This is the bias-variance tradeoff (9.4) made directly tunable — regularization intentionally accepts some bias increase in exchange for a variance decrease, when that trade improves overall generalization.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. According to the material, what's described as the most effective regularizer of all?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">More data — genuinely more diverse training examples, when available</button>
+        <button class="q-option" data-correct="false">Elastic Net, in every situation without exception</button>
+        <button class="q-option" data-correct="false">Removing regularization entirely</button>
+      </div>
+      <div class="q-explain">This reinforces 9.4's point directly — while L1/L2 penalties are useful and tunable, more genuine training data often reduces overfitting more fundamentally than any penalty term can.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Coursera "Understanding Regularization in Machine Learning" (2026); GeeksforGeeks "Bias-Variance Trade Off - Machine Learning" (2026); opodab.com "Machine Learning Fundamentals &amp; Algorithms" (2026).</p>
+
+  <div class="pager">
+    <a href="9-4-bias-variance-tradeoff.html">&larr; 9.4 Bias-variance tradeoff</a>
+    <a href="../phase-10-ml-evaluation-experimentation/10-1-train-validation-test-splits.html">Phase 10: ML evaluation &amp; experimentation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const BASE_COEFS = [0.9, 0.7, -0.5, 0.3, 0.15, -0.08];
+const LABELS = ["feat_1","feat_2","feat_3","feat_4","feat_5","feat_6"];
+let rgMode = 'l1';
+
+function computeCoefs(mode, lambda) {
+  const l = lambda / 100;
+  if (mode === 'l1') {
+    // L1: soft-thresholding, can hit exactly zero
+    return BASE_COEFS.map(c => {
+      const shrunk = Math.sign(c) * Math.max(0, Math.abs(c) - l * 0.9);
+      return shrunk;
+    });
+  } else {
+    // L2: proportional shrinkage, never exactly zero
+    return BASE_COEFS.map(c => c * (1 - l * 0.85));
+  }
+}
+
+function renderRg() {
+  const lambda = parseInt(document.getElementById('rg-slider').value, 10);
+  document.getElementById('rg-readout').textContent = lambda;
+  const coefs = computeCoefs(rgMode, lambda);
+  const maxAbs = Math.max(...BASE_COEFS.map(Math.abs));
+  document.getElementById('rg-bars').innerHTML = LABELS.map((label, i) => {
+    const val = coefs[i];
+    const pct = (Math.abs(val) / maxAbs) * 100;
+    const isZero = Math.abs(val) < 0.01;
+    return `<div class="rg-bar-row">
+      <div class="rg-bar-label">${label}</div>
+      <div class="rg-bar-track"><div class="rg-bar-fill" style="width:${pct}%; background:${isZero ? '#e5484d' : '#5b8cff'};"></div></div>
+      <div style="width:50px; font-size:12px; text-align:right;">${isZero ? 'ZERO' : val.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+}
+document.querySelectorAll('.rg-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.rg-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rgMode = btn.dataset.r;
+    renderRg();
+  });
+});
+document.getElementById('rg-slider').addEventListener('input', renderRg);
+renderRg();
+
+document.getElementById('fig-l1-l2').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: L1 penalty region is a diamond shape that intersects loss contours at sparse corners, L2 penalty region is a circle that shrinks smoothly">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <text x="170" y="20" text-anchor="middle" font-size="12">L1: diamond constraint</text>
+  <polygon points="170,40 220,90 170,140 120,90" fill="none" stroke="#f2b84b" stroke-width="2"/>
+  <circle cx="170" cy="90" r="3" fill="#f2b84b"/>
+  <text x="170" y="155" text-anchor="middle" fill="#f2b84b" font-size="9">corners → exact zeros possible</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="12">L2: circular constraint</text>
+  <circle cx="500" cy="90" r="50" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <circle cx="500" cy="90" r="3" fill="#5b8cff"/>
+  <text x="500" y="155" text-anchor="middle" fill="#a9c1ff" font-size="9">smooth boundary → shrinks, never zero</text>
+</svg>
+`;
+</script>
+</body>
+</html>

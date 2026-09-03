@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.4 Confidence intervals | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ci-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ci-interval { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 11px; }
+.ci-bar-track { flex: 1; height: 12px; position: relative; background: var(--surface-2); border-radius: 3px; }
+.ci-bar-fill { position: absolute; height: 100%; border-radius: 3px; background: rgba(91,140,255,0.5); }
+.ci-bar-fill.miss { background: rgba(229,72,77,0.6); }
+.ci-true-line { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #3ecf8e; }
+.ci-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.ci-summary { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Statistics &amp; probability</div>
+  <h1>3.4 Confidence intervals</h1>
+  <p class="subtitle">"95% confident" doesn't mean what almost everyone assumes it means the first time they hear it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A confidence interval gives a range of plausible values for an unknown population parameter,
+    built from a single sample. The correct interpretation of "95% confidence": if you repeated
+    the sampling process many times and built a new interval each time, about 95% of those
+    intervals would contain the true population value. It does <strong>not</strong> mean "there's
+    a 95% chance the true value is in this specific interval" — the true value either is or isn't
+    in any given interval; the 95% describes the reliability of the <em>method</em> across
+    repeated sampling, not a probability about this one result.
+  </div>
+
+  <h2>Try it: run the repeated-sampling experiment yourself</h2>
+  <div class="ci-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">The green line is the true (usually unknown) population mean. Each bar is a 95% CI from one random sample. Run it and watch roughly 1 in 20 miss.</p>
+    <div id="ci-bars"></div>
+    <button class="ci-btn" id="ci-run">Draw 20 samples &rarr;</button>
+    <div class="ci-summary" id="ci-summary"></div>
+  </div>
+
+  <h2>The direct link between confidence intervals and hypothesis tests</h2>
+  <p>
+    These two tools always agree, because they're built from the same underlying logic: if a
+    95% confidence interval for a difference excludes 0, the corresponding hypothesis test at
+    α = 0.05 will reject the null hypothesis of "no difference" — and vice versa. This is exactly
+    why good practice recommends reporting both a p-value and a confidence interval together: the
+    p-value tells you whether an effect is statistically detectable, and the interval tells you
+    the plausible range of how large that effect actually is — information the p-value alone
+    doesn't carry.
+  </p>
+
+  <h2>Width matters as much as whether it excludes zero</h2>
+  <p>
+    A confidence interval of [0.5, 1.5] and one of [0.01, 40] can both "exclude zero" and thus
+    both count as statistically significant — but they tell very different practical stories. A
+    narrow interval suggests a precisely estimated effect; a wide one suggests genuine uncertainty
+    about the effect's actual size, even if you're confident it's not exactly zero. Interval
+    width shrinks with larger sample sizes, which is the direct, practical reason "collect more
+    data" is often the right answer when an interval is too wide to be useful.
+  </p>
+
+  <h2>Confidence level is a choice, with a real trade-off</h2>
+  <p>
+    A 99% confidence interval is wider than a 95% one for the same data — demanding more
+    confidence means the interval has to cover a larger range of plausible values to maintain that
+    higher reliability across repeated sampling. There's no universally "correct" confidence
+    level; 95% is a convention, not a law of nature, and some fields default to different levels
+    depending on the cost of being wrong.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does "95% confidence" actually describe?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If the sampling process were repeated many times, about 95% of the resulting intervals would contain the true population value</button>
+        <button class="q-option" data-correct="false">There's a 95% probability the true value falls within this one specific interval</button>
+        <button class="q-option" data-correct="false">The sample mean is correct 95% of the time</button>
+      </div>
+      <div class="q-explain">This is the precise, correct interpretation — it's a statement about the long-run reliability of the method across repeated sampling, not a probability statement about any single interval you've already computed.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. If a 95% confidence interval for a difference between two groups excludes 0, what does this imply about the corresponding hypothesis test?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A hypothesis test at α = 0.05 would reject the null hypothesis of "no difference" — the two methods always agree</button>
+        <button class="q-option" data-correct="false">The hypothesis test result is unrelated to the confidence interval</button>
+        <button class="q-option" data-correct="false">The hypothesis test would necessarily fail to reject the null hypothesis</button>
+      </div>
+      <div class="q-explain">Confidence intervals and hypothesis tests are built from the same statistical logic — an interval excluding the null value and a significant p-value at the matching confidence/significance level are two views of the same result.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why might a wide confidence interval be less practically useful even if it excludes zero?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A wide interval indicates genuine uncertainty about the effect's actual size, even while being confident the effect isn't exactly zero</button>
+        <button class="q-option" data-correct="false">A wide interval always means the null hypothesis is definitely true</button>
+        <button class="q-option" data-correct="false">Interval width has no relationship to sample size or precision</button>
+      </div>
+      <div class="q-explain">Statistical significance (excluding zero) and estimation precision (interval width) are separate properties — a very wide interval can technically be "significant" while still leaving you with little idea of the effect's true magnitude.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Statistics By Jim "Hypothesis Testing and Confidence Intervals"; AnalystPrep "Hypothesis Testing and Confidence Intervals" (FRM study notes, 2026); StatPearls (2026).</p>
+
+  <div class="pager">
+    <a href="3-3-hypothesis-testing.html">&larr; 3.3 Hypothesis testing</a>
+    <a href="3-5-ab-testing-fundamentals.html">3.5 A/B testing fundamentals &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TRUE_MEAN = 50;
+function gaussianRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function drawSampleCI() {
+  const n = 30, sd = 10;
+  const sample = Array.from({length:n}, () => TRUE_MEAN + gaussianRandom()*sd);
+  const mean = sample.reduce((a,b)=>a+b,0)/n;
+  const sampleSd = Math.sqrt(sample.reduce((a,b)=>a+(b-mean)**2,0)/(n-1));
+  const margin = 1.96 * (sampleSd/Math.sqrt(n));
+  return { low: mean-margin, high: mean+margin, mean };
+}
+document.getElementById('ci-run').addEventListener('click', () => {
+  const results = Array.from({length:20}, drawSampleCI);
+  const allLows = results.map(r=>r.low), allHighs = results.map(r=>r.high);
+  const min = Math.min(...allLows, TRUE_MEAN-5), max = Math.max(...allHighs, TRUE_MEAN+5);
+  const truePos = ((TRUE_MEAN-min)/(max-min))*100;
+  let misses = 0;
+  document.getElementById('ci-bars').innerHTML = results.map(r => {
+    const hit = r.low <= TRUE_MEAN && TRUE_MEAN <= r.high;
+    if (!hit) misses++;
+    const left = ((r.low-min)/(max-min))*100;
+    const width = ((r.high-r.low)/(max-min))*100;
+    return `<div class="ci-interval"><div class="ci-bar-track">
+      <div class="ci-true-line" style="left:${truePos}%"></div>
+      <div class="ci-bar-fill${hit?'':' miss'}" style="left:${left}%; width:${width}%;"></div>
+    </div></div>`;
+  }).join('');
+  document.getElementById('ci-summary').textContent = `${20-misses} of 20 intervals (${((20-misses)/20*100).toFixed(0)}%) contained the true mean — close to the expected 95%, though any single run of 20 will vary somewhat by chance.`;
+});
+document.getElementById('ci-run').click();
+</script>
+</body>
+</html>

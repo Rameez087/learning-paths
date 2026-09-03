@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.2 Airflow concepts | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.af-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.af-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.af-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.af-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Orchestration &amp; workflow management</div>
+  <h1>7.2 Airflow concepts</h1>
+  <p class="subtitle">Airflow is the de facto orchestration framework for data engineering — here are the four concepts that actually matter.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Airflow lets you define DAGs (7.1) entirely in Python — version-controllable, testable code,
+    not a drag-and-drop UI. <strong>Operators</strong> encapsulate a unit of work (run a bash
+    command, call Python, trigger a dbt model). <strong>Sensors</strong> are a special kind of
+    operator that pause and wait for a condition — a file arriving, an API returning a status —
+    before letting the DAG proceed. The <strong>Scheduler</strong> continuously evaluates every
+    DAG's dependencies and trigger rules against a metadata database to decide what's actually
+    ready to run right now.
+  </div>
+
+  <h2>Try it: explore the core building blocks</h2>
+  <div class="af-box">
+    <div class="af-tabs">
+      <div class="af-tab active" data-c="operator">Operator</div>
+      <div class="af-tab" data-c="sensor">Sensor</div>
+      <div class="af-tab" data-c="scheduler">Scheduler</div>
+      <div class="af-tab" data-c="xcom">XCom</div>
+    </div>
+    <div id="af-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Sensors: the patient gatekeepers</h2>
+  <p>
+    A sensor pauses workflow execution until a specific condition is met — waiting for a file to
+    appear in cloud storage, a message to arrive on a queue, or an HTTP endpoint to return a
+    ready status — rather than blindly running a task on a fixed schedule regardless of whether
+    the data it needs has actually shown up yet. This lets pipelines react to real-world events
+    rather than assuming a schedule always lines up with reality.
+  </p>
+
+  <h2>A minimal real DAG</h2>
+  <pre><code>from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
+
+default_args = {
+    "owner": "data-team",
+    "retries": 2,
+    "retry_delay": 300,  # seconds
+}
+
+with DAG(
+    "daily_orders_pipeline",
+    schedule_interval="@daily",
+    start_date=datetime(2026, 1, 1),
+    catchup=False,
+    default_args=default_args,
+) as dag:
+
+    extract = PythonOperator(task_id="extract_orders", python_callable=extract_fn)
+    transform = PythonOperator(task_id="transform_orders", python_callable=transform_fn)
+    load = PythonOperator(task_id="load_orders", python_callable=load_fn)
+
+    extract >> transform >> load  # explicit dependency chain</code></pre>
+  <p>
+    Trace this back to 7.1: <code>retries</code> and <code>retry_delay</code> are exactly the
+    reliability mechanics from 5.5, now expressed as scheduler-level configuration.
+    <code>catchup=False</code> tells Airflow not to backfill every missed historical run since
+    <code>start_date</code> — without it, deploying a new daily DAG with a start date a year ago
+    would trigger 365 backfill runs immediately.
+  </p>
+
+  <div class="figure" id="fig-scheduler"></div>
+
+  <h2>Why "Airflow is the de facto standard" comes with real caveats</h2>
+  <p>
+    Airflow's maturity and ecosystem size are real advantages, but current practitioner sources
+    are candid about genuine friction: setting up an enterprise-grade deployment (custom DSLs,
+    metadata monitoring, dbt integration, a usable UI) can take real time to get right, the
+    learning curve is steep, and debugging a failing DAG is frequently cited as a specifically
+    painful part of the experience. This is exactly why lighter-weight or more opinionated
+    alternatives (Dagster, Prefect, or managed orchestration platforms) have real adoption —
+    Airflow being the default doesn't mean it's frictionless.
+  </p>
+
+  <h2>What a green DAG run does NOT prove</h2>
+  <p>
+    A specifically important limitation: a DAG run finishing successfully proves the tasks
+    executed without an error — it does not prove the resulting data is fresh, complete, valid, or
+    useful. Airflow (and orchestration generally) stays in its lane: scheduling and running tasks
+    in the right order. Actually checking whether the data is <em>correct</em> is a separate
+    concern, covered fully in Phase 11's data quality and observability material.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does the <code>catchup=False</code> setting prevent?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Airflow automatically backfilling every missed historical run since the DAG's start date when it's first deployed</button>
+        <button class="q-option" data-correct="false">The DAG from ever running on a schedule at all</button>
+        <button class="q-option" data-correct="false">Tasks within the DAG from retrying after a failure</button>
+      </div>
+      <div class="q-explain">Without this setting, a DAG with a start date a year in the past would trigger a full year of backfill runs the moment it's deployed — catchup=False disables that automatic backfilling behavior.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What is a sensor specifically designed to do that a regular operator doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Pause execution and wait for an external condition (a file, a message, an API status) before letting the DAG proceed</button>
+        <button class="q-option" data-correct="false">Execute a task faster than a regular operator</button>
+        <button class="q-option" data-correct="false">Replace the need for a scheduler entirely</button>
+      </div>
+      <div class="q-explain">Sensors are a specialized operator subtype built for event-driven waiting — reacting to real-world conditions rather than assuming a fixed schedule always aligns with when data is actually ready.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why doesn't a successfully completed ("green") DAG run guarantee the underlying data is correct?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Orchestration only confirms tasks executed without error — it doesn't check data freshness, completeness, or validity, which is a separate concern</button>
+        <button class="q-option" data-correct="false">Green DAG runs are only cosmetic and don't reflect whether tasks actually ran</button>
+        <button class="q-option" data-correct="false">Airflow automatically validates all data quality as part of every task</button>
+      </div>
+      <div class="q-explain">This is a specifically important scope boundary — Airflow's job is scheduling and execution, not data validation, which is exactly why dedicated data quality tooling (Phase 11) exists as a separate layer.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Multisoft Systems "Top 30 Apache Airflow Interview Questions Answers 2026"; Orchestra "Airflow concepts: Airflow sensors explained" (2026); DataTalks.Club Podcast Wiki "Apache Airflow" (2026).</p>
+
+  <div class="pager">
+    <a href="7-1-dags-and-dependency-management.html">&larr; 7.1 DAGs &amp; dependency management</a>
+    <a href="7-3-scheduling-and-retries.html">7.3 Scheduling &amp; retries &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const AF_INFO = {
+  operator: "A single unit of work in a DAG — BashOperator runs a shell command, PythonOperator calls a Python function, and provider packages add operators for dbt, Spark, cloud services, and more.",
+  sensor: "A specialized operator that waits for a condition before proceeding — file arrival, API status, a partition landing in a warehouse. Built for event-driven, not just time-driven, pipelines.",
+  scheduler: "Continuously scans DAG definitions, evaluates each task's dependencies and trigger rules against the metadata database, and queues tasks that are actually ready to run — this is the process actually deciding what happens when.",
+  xcom: "Short for 'cross-communication' — a mechanism for small pieces of data to pass between tasks (e.g. a file path extract produced that transform needs). Not meant for large data payloads, just lightweight metadata handoff.",
+};
+function renderAf(key) { document.getElementById('af-detail').textContent = AF_INFO[key]; }
+document.querySelectorAll('.af-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.af-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderAf(tab.dataset.c);
+  });
+});
+renderAf('operator');
+
+document.getElementById('fig-scheduler').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: scheduler continuously evaluating DAG definitions and metadata database to queue ready tasks to workers">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="20" y="50" width="140" height="40" rx="8" fill="#1a2029" stroke="#262d3a"/><text x="90" y="74" text-anchor="middle">DAG definitions</text>
+  <line x1="160" y1="70" x2="220" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a31)"/>
+  <rect x="220" y="50" width="150" height="40" rx="8" fill="#182238" stroke="#5b8cff"/><text x="295" y="74" text-anchor="middle" fill="#a9c1ff">Scheduler</text>
+  <line x1="220" y1="60" x2="180" y2="20" stroke="#6b7386" stroke-width="1"/>
+  <rect x="60" y="0" width="140" height="30" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="130" y="20" text-anchor="middle" font-size="9">Metadata DB (state)</text>
+  <line x1="370" y1="70" x2="430" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a31)"/>
+  <rect x="430" y="50" width="120" height="40" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="490" y="74" text-anchor="middle" fill="#3ecf8e">Workers</text>
+  <defs><marker id="a31" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

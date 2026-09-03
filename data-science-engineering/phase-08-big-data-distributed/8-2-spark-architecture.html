@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.2 Spark architecture | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sp-node { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.sp-node.active { background: var(--accent-bg); border-color: var(--accent); }
+.sp-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · Big data &amp; distributed processing</div>
+  <h1>8.2 Spark architecture</h1>
+  <p class="subtitle">The dominant engine for distributed data processing — one driver, many executors, and a query optimizer doing more work than you'd expect.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Spark's architecture has a <strong>driver</strong> (coordinates the whole application, builds
+    the execution plan) and <strong>executors</strong> (worker processes that actually run tasks
+    and report results back). Your code — usually written against the <strong>DataFrame</strong>
+    API rather than the lower-level RDD API — gets translated into a logical plan, optimized by
+    Spark's Catalyst optimizer, and compiled into a physical execution plan structured as a DAG
+    (8.1's concept, now inside a single Spark job) of stages separated by shuffle boundaries.
+  </div>
+
+  <h2>Try it: explore each component</h2>
+  <div class="sp-box">
+    <div id="sp-nodes"></div>
+    <div class="sp-detail" id="sp-detail">Click a component above.</div>
+  </div>
+
+  <h2>DataFrames over RDDs: why the higher-level API won</h2>
+  <p>
+    RDDs (Resilient Distributed Datasets) are Spark's original, low-level data structure —
+    immutable, partitioned collections with lineage tracking for fault recovery. DataFrames sit on
+    top, adding schema awareness that lets Spark's Catalyst optimizer reason about the actual
+    structure of your data and apply optimizations automatically. Current guidance is direct:
+    prefer DataFrames over RDDs for better performance in nearly all cases — RDDs remain
+    foundational under the hood but are rarely the right level to write application code against
+    anymore.
+  </p>
+
+  <div class="figure" id="fig-spark-flow"></div>
+
+  <h2>Adaptive Query Execution: optimizing mid-flight</h2>
+  <p>
+    A significant Spark 3+ feature: Adaptive Query Execution (AQE) can adjust a query's execution
+    plan <em>during</em> a run, based on actual runtime statistics rather than only the estimates
+    made before execution started. Two concrete capabilities this enables: coalescing shuffle
+    partitions that turned out smaller than expected (reducing overhead), and splitting skewed
+    partitions that turned out much larger than others (balancing load across executors). This
+    replaces a lot of manual trial-and-error tuning that earlier Spark versions required.
+  </p>
+
+  <h2>Structured Streaming: one API for batch and streaming</h2>
+  <p>
+    Spark's modern streaming API lets you use the same DataFrame operations for both batch and
+    streaming data, processing streams internally as a sequence of small micro-batches — this
+    means learning Spark once covers both processing modes, rather than needing an entirely
+    separate mental model and API for streaming versus batch work.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the driver's role in a Spark application?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Coordinating the whole application — translating code into an execution plan and communicating with the cluster manager for resources</button>
+        <button class="q-option" data-correct="false">Executing the actual data processing tasks on worker nodes</button>
+        <button class="q-option" data-correct="false">Storing the final output data permanently</button>
+      </div>
+      <div class="q-explain">The driver is the central coordinator — it plans and orchestrates, while executors (running on worker nodes) are what actually carry out the assigned tasks.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is the DataFrame API generally preferred over the lower-level RDD API?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">DataFrames carry schema information that lets the Catalyst optimizer automatically apply performance optimizations RDDs can't benefit from</button>
+        <button class="q-option" data-correct="false">RDDs are deprecated and cannot technically be used in any modern Spark version</button>
+        <button class="q-option" data-correct="false">DataFrames and RDDs have identical performance characteristics in every case</button>
+      </div>
+      <div class="q-explain">The optimizer needs to understand the structure of the data to make good decisions — DataFrames' schema awareness is exactly what unlocks this, which is why they're recommended over the schema-less RDD API for most work.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What specific problem does Adaptive Query Execution's partition-splitting capability solve?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Skewed partitions that turn out much larger than others during actual execution, which AQE can split to balance load across executors</button>
+        <button class="q-option" data-correct="false">AQE eliminates the need for a driver program entirely</button>
+        <button class="q-option" data-correct="false">AQE only functions during the planning phase, before any execution begins</button>
+      </div>
+      <div class="q-explain">AQE's defining feature is adjusting based on real runtime statistics — skew that wasn't apparent before execution started can be detected and corrected mid-flight, which pre-execution planning alone couldn't do.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Flexera "Apache Spark architecture 101: How Spark works (2026)"; DataCamp "Apache Spark Architecture: A Guide for Data Practitioners" (2026); GeeksforGeeks "Apache Spark" (2026).</p>
+
+  <div class="pager">
+    <a href="8-1-distributed-computing-fundamentals.html">&larr; 8.1 Distributed computing fundamentals</a>
+    <a href="8-3-partitioning-and-shuffle.html">8.3 Partitioning &amp; shuffle &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SP_NODES = [
+  { name: "Driver", detail: "Launched when you submit a Spark application. Translates your code into a logical plan, optimizes it, and coordinates task distribution to executors via the cluster manager." },
+  { name: "Cluster manager", detail: "Allocates resources (CPU, memory) across the cluster for the application — can be YARN, Kubernetes, or Spark's own Standalone manager." },
+  { name: "Executors", detail: "Worker processes that actually run assigned tasks, cache data in memory or on disk, and handle shuffle operations, reporting results back to the driver." },
+  { name: "Catalyst optimizer", detail: "Analyzes your DataFrame operations and rewrites them into a more efficient physical execution plan — this is what makes writing high-level code perform close to hand-tuned low-level code." },
+];
+document.getElementById('sp-nodes').innerHTML = SP_NODES.map((n,i) =>
+  `<div class="sp-node" data-i="${i}">${n.name}</div>`
+).join('');
+document.querySelectorAll('.sp-node').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.sp-node').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('sp-detail').textContent = SP_NODES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-spark-flow').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: user code flows through driver to logical plan to Catalyst optimizer to physical plan executed across executors">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="10" y="50" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="65" y="74" text-anchor="middle">Your code</text>
+  <line x1="120" y1="70" x2="160" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a34)"/>
+  <rect x="160" y="50" width="110" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="215" y="74" text-anchor="middle" fill="#a9c1ff">Logical plan</text>
+  <line x1="270" y1="70" x2="310" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a34)"/>
+  <rect x="310" y="50" width="110" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="365" y="74" text-anchor="middle" fill="#f2b84b">Catalyst</text>
+  <line x1="420" y1="70" x2="460" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a34)"/>
+  <rect x="460" y="50" width="110" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="515" y="74" text-anchor="middle" fill="#3ecf8e">Physical plan</text>
+  <line x1="570" y1="70" x2="610" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a34)"/>
+  <text x="640" y="74" text-anchor="middle" fill="#9aa4b5" font-size="9">executors</text>
+  <defs><marker id="a34" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

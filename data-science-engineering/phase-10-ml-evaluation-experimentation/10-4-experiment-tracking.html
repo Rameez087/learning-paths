@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.4 Experiment tracking | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.et-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.et-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.et-table th, .et-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.et-table th { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+.et-table tr.best { background: rgba(62,207,142,0.08); }
+.et-row-btn { padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer; font-size: 11px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · ML evaluation &amp; experimentation</div>
+  <h1>10.4 Experiment tracking</h1>
+  <p class="subtitle">"Which of the forty models I trained last month actually performed best, and what exact settings produced it?" — a question you should never have to answer from memory.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Experiment tracking tools (MLflow, Neptune, Weights &amp; Biases) automatically log every
+    training run's hyperparameters, metrics, and artifacts — so comparing model versions,
+    reproducing a specific result, and auditing what actually happened are all queries against a
+    structured record, not archaeology through scattered notebooks and half-remembered
+    configurations. This connects directly to 5.5's reproducibility principle: given the logged
+    configuration and data version, you should be able to reconstruct exactly how any past model
+    was produced.
+  </div>
+
+  <h2>Try it: compare tracked experiment runs</h2>
+  <div class="et-box">
+    <table class="et-table">
+      <thead><tr><th>Run</th><th>Model</th><th>Learning rate</th><th>Regularization (λ)</th><th>Val F1</th><th>Val AUC</th></tr></thead>
+      <tbody id="et-rows"></tbody>
+    </table>
+  </div>
+
+  <h2>What gets logged, and why each piece matters</h2>
+  <ul>
+    <li><strong>Hyperparameters</strong> — every setting used for that specific run, so a strong result can be traced back to exactly what produced it.</li>
+    <li><strong>Metrics</strong> — accuracy, precision, recall, F1, ROC-AUC (10.3) computed automatically and logged per run, enabling direct side-by-side comparison across dozens of experiments.</li>
+    <li><strong>Artifacts</strong> — the actual trained model file, confusion matrices, ROC curves, and other visualizations generated during evaluation, saved alongside the run's metadata.</li>
+    <li><strong>Data version</strong> — which exact version of the training data was used, since 5.5's idempotency/reproducibility principle applies to ML pipelines too: the same code plus a different data snapshot can produce meaningfully different results.</li>
+  </ul>
+
+  <div class="figure" id="fig-tracking"></div>
+
+  <h2>Why this matters more as experimentation scales</h2>
+  <p>
+    Manually tracking a handful of experiments in a spreadsheet is tedious but survivable. Once a
+    team is running dozens of hyperparameter combinations, comparing multiple model architectures,
+    or iterating over weeks, manual tracking becomes both impractical and unreliable — details get
+    lost, someone forgets which exact preprocessing steps a particular strong result actually
+    used, and reproducing a result from three weeks ago becomes genuinely difficult. Automated
+    tracking tools scale to this naturally because logging happens as a side effect of running the
+    training code, not as a separate manual step someone has to remember to do.
+  </p>
+
+  <h2>Model registry: the step after tracking</h2>
+  <p>
+    Beyond tracking individual experiment runs, a model registry manages the lifecycle of models
+    that get promoted toward production — versioning, stage transitions (staging, production,
+    archived), and a clear audit trail of which specific tracked run became the model actually
+    serving predictions. This is the connective tissue between the experimentation covered in this
+    phase and the production concerns any deployed model eventually needs.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What specific problem does experiment tracking solve as the number of training runs grows?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It replaces manual, error-prone record-keeping with automatic, structured logging of every run's settings, metrics, and artifacts</button>
+        <button class="q-option" data-correct="false">It eliminates the need to ever retrain a model once tracked</button>
+        <button class="q-option" data-correct="false">Experiment tracking only matters for a single training run, not multiple</button>
+      </div>
+      <div class="q-explain">Manual tracking becomes unreliable at scale — automated tools solve this by making logging a side effect of running the code, not a separate step that can be forgotten or done inconsistently.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does logging the data version matter alongside hyperparameters?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The same code and hyperparameters run against a different data snapshot can produce meaningfully different results, so reproducibility requires knowing both</button>
+        <button class="q-option" data-correct="false">Data versioning is only relevant for unsupervised learning tasks</button>
+        <button class="q-option" data-correct="false">Hyperparameters alone are always sufficient to reproduce any past result</button>
+      </div>
+      <div class="q-explain">This extends 5.5's reproducibility principle into ML experimentation specifically — code and configuration alone don't fully determine a result if the underlying data can also change between runs.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does a model registry add on top of basic experiment tracking?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Lifecycle management for models being promoted toward production — versioning, stage transitions, and an audit trail connecting a serving model back to its tracked training run</button>
+        <button class="q-option" data-correct="false">A model registry is simply another name for experiment tracking with no functional difference</button>
+        <button class="q-option" data-correct="false">Model registries eliminate the need to track individual experiment runs</button>
+      </div>
+      <div class="q-explain">Experiment tracking covers the development/comparison phase; a model registry covers what happens after a model is chosen — managing its path toward and through production deployment.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: MLflow official documentation (evaluation and tracking); Zerve "Mastering Model Validation" (2026), experiment orchestration section.</p>
+
+  <div class="pager">
+    <a href="10-3-evaluation-metrics.html">&larr; 10.3 Evaluation metrics</a>
+    <a href="../phase-11-data-quality-governance/11-1-data-contracts.html">Phase 11: Data quality, governance &amp; observability &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ET_RUNS = [
+  { run: "run_014", model: "XGBoost", lr: "0.1", reg: "1.0", f1: "0.847", auc: "0.912", best: false },
+  { run: "run_027", model: "XGBoost", lr: "0.05", reg: "0.5", f1: "0.881", auc: "0.934", best: true },
+  { run: "run_031", model: "Logistic Reg.", lr: "—", reg: "2.0", f1: "0.762", auc: "0.845", best: false },
+  { run: "run_038", model: "Random Forest", lr: "—", reg: "—", f1: "0.859", auc: "0.921", best: false },
+];
+document.getElementById('et-rows').innerHTML = ET_RUNS.map(r => `
+  <tr class="${r.best ? 'best' : ''}">
+    <td>${r.run}${r.best ? ' ✓' : ''}</td><td>${r.model}</td><td>${r.lr}</td><td>${r.reg}</td><td>${r.f1}</td><td>${r.auc}</td>
+  </tr>
+`).join('');
+
+document.getElementById('fig-tracking').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: training code logs hyperparameters, metrics, and artifacts automatically to a tracking server, feeding a model registry">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="50" width="140" height="40" rx="8" fill="#1a2029" stroke="#262d3a"/><text x="90" y="74" text-anchor="middle">Training run</text>
+  <line x1="160" y1="70" x2="220" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a37)"/>
+  <rect x="220" y="50" width="180" height="40" rx="8" fill="#182238" stroke="#5b8cff"/><text x="310" y="74" text-anchor="middle" fill="#a9c1ff">Tracking server (logs everything)</text>
+  <line x1="400" y1="70" x2="460" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a37)"/>
+  <rect x="460" y="50" width="200" height="40" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="560" y="74" text-anchor="middle" fill="#3ecf8e">Model registry (production)</text>
+  <defs><marker id="a37" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

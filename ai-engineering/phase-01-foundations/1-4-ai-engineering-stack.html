@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1.4 The AI engineering stack | AI Architect</title>
 <link rel="stylesheet" href="../assets/style.css">
+<style>
+.lg-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.lg-item { display: inline-block; padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 10px; }
+.lg-item.placed { display: none; }
+.lg-targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 10px; margin-top: 14px; }
+.lg-target { border: 1px dashed var(--border-strong); border-radius: 8px; padding: 12px; min-height: 60px; font-size: 12px; }
+.lg-target .name { font-weight: 700; margin-bottom: 6px; display: block; }
+.lg-placed-tag { display: inline-block; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 6px; padding: 3px 8px; font-size: 11px; margin: 2px; }
+.lg-feedback { font-size: 12px; color: var(--warning); margin-top: 8px; min-height: 18px; }
+</style>
 </head>
 <body>
 
@@ -84,6 +94,13 @@
     bolted on at the end.
   </p>
 
+  <h2>Try it: sort each tool into its layer</h2>
+  <div class="lg-box">
+    <div id="lg-items"></div>
+    <div class="lg-targets" id="lg-targets"></div>
+    <div class="lg-feedback" id="lg-feedback"></div>
+  </div>
+
   <div class="quiz" id="quiz">
     <h3>Check your understanding</h3>
 
@@ -143,6 +160,59 @@ document.querySelectorAll('.q-block').forEach(block => {
     });
   });
 });
+
+// --- Interactive layer classification game ---
+const LG_LAYERS = [
+  { key: "prompt", name: "Prompt & API" },
+  { key: "retrieval", name: "Retrieval & agents" },
+  { key: "eval", name: "Evaluation & ops" },
+];
+const LG_ITEMS = [
+  { label: "Streaming a response token-by-token", layer: "prompt" },
+  { label: "A vector database storing document chunks", layer: "retrieval" },
+  { label: "A golden dataset of graded test cases", layer: "eval" },
+  { label: "An agent looping: reason, call tool, observe", layer: "retrieval" },
+  { label: "A system prompt with few-shot examples", layer: "prompt" },
+  { label: "Monitoring for model drift in production", layer: "eval" },
+];
+let lgPlaced = {};
+function renderLg() {
+  document.getElementById('lg-items').innerHTML = LG_ITEMS.map((it,i) =>
+    `<span class="lg-item${lgPlaced[i]!==undefined?' placed':''}" data-i="${i}" draggable="true">${it.label}</span>`
+  ).join('');
+  document.getElementById('lg-targets').innerHTML = LG_LAYERS.map(l => {
+    const placedHere = Object.entries(lgPlaced).filter(([i,layer]) => layer === l.key).map(([i]) => LG_ITEMS[i].label);
+    return `<div class="lg-target" data-layer="${l.key}"><span class="name">${l.name}</span>${placedHere.map(p => `<span class="lg-placed-tag">${p}</span>`).join('')}</div>`;
+  }).join('');
+
+  document.querySelectorAll('.lg-item').forEach(el => {
+    el.addEventListener('click', () => {
+      // simple click-to-assign flow: clicking an item highlights it, then click a target to place it
+      document.querySelectorAll('.lg-item').forEach(o => o.style.borderColor = '');
+      el.style.borderColor = 'var(--accent)';
+      selectedItem = parseInt(el.dataset.i, 10);
+    });
+  });
+  document.querySelectorAll('.lg-target').forEach(el => {
+    el.addEventListener('click', () => {
+      if (selectedItem === null) return;
+      const correct = LG_ITEMS[selectedItem].layer === el.dataset.layer;
+      const feedback = document.getElementById('lg-feedback');
+      if (correct) {
+        lgPlaced[selectedItem] = el.dataset.layer;
+        feedback.style.color = 'var(--success)';
+        feedback.textContent = 'Correct!';
+        selectedItem = null;
+        renderLg();
+      } else {
+        feedback.style.color = '#ff8b8f';
+        feedback.textContent = 'Not quite — try a different layer.';
+      }
+    });
+  });
+}
+let selectedItem = null;
+renderLg();
 
 document.getElementById('fig-stack').innerHTML = `
 <svg viewBox="0 0 680 340" width="100%" role="img" aria-label="Diagram: four layer AI engineering stack from foundation model to evaluation and ops">

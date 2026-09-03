@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.5 Data manipulation patterns | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.gp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.gp-dates { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.gp-date { padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: var(--font-mono); background: var(--surface-2); border: 1px solid var(--border-strong); }
+.gp-date.island-0 { border-color: #5b8cff; background: rgba(91,140,255,0.15); }
+.gp-date.island-1 { border-color: #3ecf8e; background: rgba(62,207,142,0.15); }
+.gp-date.island-2 { border-color: #f2b84b; background: rgba(242,184,75,0.15); }
+.gp-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · SQL &amp; data manipulation</div>
+  <h1>2.5 Data manipulation patterns</h1>
+  <p class="subtitle">"Gaps and islands," sessionization, and pivoting — the patterns that separate a SQL user from someone who can actually solve a novel problem with it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    These three patterns recur across real analytics work and technical interviews alike, and all
+    three build directly on 2.2's window functions: <strong>gaps and islands</strong> (find
+    consecutive runs in a sequence — active-user streaks, uptime periods), <strong>sessionization</strong>
+    (group individual events into sessions based on a time-gap threshold), and <strong>pivoting</strong>
+    (turning row values into columns, or vice versa). None of these require exotic SQL features —
+    just window functions applied with the right trick.
+  </div>
+
+  <h2>Try it: find the "islands" of consecutive dates</h2>
+  <div class="gp-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">A user's login dates. Click to group them into consecutive-day streaks ("islands"):</p>
+    <div class="gp-dates" id="gp-dates"></div>
+    <button class="gp-btn" id="gp-solve">Find the islands &rarr;</button>
+  </div>
+
+  <h2>The gaps-and-islands trick</h2>
+  <pre><code>WITH numbered AS (
+    SELECT
+        login_date,
+        ROW_NUMBER() OVER (ORDER BY login_date) AS rn
+    FROM logins
+),
+grouped AS (
+    SELECT
+        login_date,
+        login_date - (rn * INTERVAL '1 day') AS island_key
+    FROM numbered
+)
+SELECT island_key, MIN(login_date) AS streak_start, MAX(login_date) AS streak_end
+FROM grouped
+GROUP BY island_key;</code></pre>
+  <p>
+    The insight: for dates in a consecutive run, subtracting an ever-increasing row number
+    (assigned in date order) from each date produces the <em>same</em> resulting value for every
+    date in that run — because the row number and the date both increase by exactly 1 each day
+    within an unbroken streak. That constant value becomes a grouping key for the whole island,
+    with no gap-detection logic needed beyond that one subtraction.
+  </p>
+
+  <h2>Sessionization: grouping events by a time gap</h2>
+  <pre><code>WITH events_with_prev AS (
+    SELECT
+        user_id,
+        event_time,
+        LAG(event_time) OVER (PARTITION BY user_id ORDER BY event_time) AS prev_time
+    FROM page_views
+),
+flagged AS (
+    SELECT *,
+        CASE WHEN event_time - prev_time > INTERVAL '30 minutes' OR prev_time IS NULL
+             THEN 1 ELSE 0 END AS is_new_session
+    FROM events_with_prev
+)
+SELECT *,
+    SUM(is_new_session) OVER (PARTITION BY user_id ORDER BY event_time) AS session_id
+FROM flagged;</code></pre>
+  <p>
+    This uses 2.2's <code>LAG()</code> to compare each event to the one before it for the same
+    user. Whenever the gap exceeds a threshold (30 minutes here), that row is flagged as starting
+    a new session; a running <code>SUM()</code> of those flags becomes a unique, increasing
+    session ID for each user.
+  </p>
+
+  <h2>Pivoting: rows to columns</h2>
+  <p>
+    Turning distinct row values into their own columns — e.g. transforming a long
+    <code>(month, category, amount)</code> table into one row per month with a column per
+    category — is usually done with conditional aggregation when a dedicated
+    <code>PIVOT</code> keyword isn't available or convenient:
+  </p>
+  <pre><code>SELECT
+    month,
+    SUM(CASE WHEN category = 'Electronics' THEN amount ELSE 0 END) AS electronics,
+    SUM(CASE WHEN category = 'Groceries' THEN amount ELSE 0 END) AS groceries
+FROM sales
+GROUP BY month;</code></pre>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. In the gaps-and-islands technique, why does subtracting the row number from the date produce a constant value within a consecutive streak?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Both the date and the row number increase by exactly 1 per row within an unbroken run, so their difference stays constant across that run</button>
+        <button class="q-option" data-correct="false">The subtraction always produces zero for every row regardless of the data</button>
+        <button class="q-option" data-correct="false">Row numbers reset to zero at the start of every date</button>
+      </div>
+      <div class="q-explain">This is the entire trick — the two values move in lockstep during a consecutive run, so their difference is invariant only within that run, changing as soon as a gap breaks the sequence.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What determines when a new session starts in the sessionization pattern?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The time gap between an event and the immediately preceding event (for the same user) exceeding a defined threshold</button>
+        <button class="q-option" data-correct="false">A fixed number of events, regardless of timing</button>
+        <button class="q-option" data-correct="false">The calendar date changing, regardless of actual time elapsed</button>
+      </div>
+      <div class="q-explain">Sessionization is specifically time-gap-based, using LAG() to compare consecutive events per user and flagging a new session whenever too much time has passed since the last one.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What technique does the conditional-aggregation pivot example rely on?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A CASE expression inside an aggregate function, summing only the rows matching each target category</button>
+        <button class="q-option" data-correct="false">A recursive CTE traversing a hierarchy</button>
+        <button class="q-option" data-correct="false">A window function partitioned by category</button>
+      </div>
+      <div class="q-explain">Each output column effectively asks "sum the amount, but only count it if the category matches this one, otherwise count zero" — a straightforward CASE-inside-aggregate pattern, not a window function or recursion.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: SQL Crash Course "SQL Interview Questions Guide" (2026); InterviewKickstart "40+ Advanced SQL Interview Questions" (2026).</p>
+
+  <div class="pager">
+    <a href="2-4-pandas-vs-polars-vs-sql.html">&larr; 2.4 Pandas vs. Polars vs. SQL</a>
+    <a href="../phase-03-statistics-probability/3-1-descriptive-statistics.html">Phase 3: Statistics &amp; probability &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DATES = ["Aug 1","Aug 2","Aug 3","Aug 5","Aug 6","Aug 9","Aug 10","Aug 11","Aug 12"];
+const ISLAND_MAP = [0,0,0,1,1,2,2,2,2]; // which island each date belongs to
+document.getElementById('gp-dates').innerHTML = DATES.map(d => `<div class="gp-date">${d}</div>`).join('');
+document.getElementById('gp-solve').addEventListener('click', () => {
+  document.querySelectorAll('.gp-date').forEach((el, i) => {
+    el.classList.add('island-' + ISLAND_MAP[i]);
+  });
+  document.getElementById('gp-solve').textContent = '3 islands found: Aug 1-3, Aug 5-6, Aug 9-12';
+  document.getElementById('gp-solve').disabled = true;
+});
+</script>
+</body>
+</html>

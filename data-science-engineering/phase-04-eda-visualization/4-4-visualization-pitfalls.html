@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.4 Visualization pitfalls | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.vp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.vp-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.vp-slider-row input[type=range] { flex: 1; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · EDA &amp; visualization</div>
+  <h1>4.4 Visualization pitfalls</h1>
+  <p class="subtitle">The exact same numbers can look like a crisis or a non-event, depending entirely on where the y-axis starts.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The most common chart manipulations don't require faking any numbers — they exploit how the
+    human visual system perceives scale and proportion. A <strong>truncated y-axis</strong> (not
+    starting at zero) can turn a 2% difference into something that visually looks like a 200%
+    difference. This isn't always malicious — sometimes it's a genuine judgment call for showing
+    small but real variation — but it demands a label and an explicit reason, not silent default
+    behavior.
+  </div>
+
+  <h2>Try it: watch the same 3% difference lie or tell the truth</h2>
+  <div class="vp-box">
+    <div class="vp-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">Y-axis starts at</label>
+      <input type="range" id="vp-slider" min="0" max="95" step="5" value="0">
+      <span id="vp-readout" style="font-weight:700; min-width:36px; text-align:right;">0</span>
+    </div>
+    <div id="vp-fig"></div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">Both bars represent the exact same two numbers: 97% and 100%.</p>
+  </div>
+
+  <h2>The catalog of common pitfalls</h2>
+  <ul>
+    <li><strong>Truncated axis</strong> — as shown above. Always ask whether starting at zero would tell a meaningfully different story.</li>
+    <li><strong>Dual y-axes with different scales</strong> — plotting two unrelated series on separate y-axes on the same chart can create a visual correlation that doesn't exist in the underlying numbers, purely from how the two scales happen to line up.</li>
+    <li><strong>Cherry-picked time windows</strong> — a metric can look like it's trending up or down depending entirely on where the window starts and ends; the same underlying data can support opposite-looking stories.</li>
+    <li><strong>3D charts</strong> — perspective distortion in 3D bar or pie charts makes elements in the back visually appear smaller than equal-sized elements in front, misrepresenting the actual values.</li>
+    <li><strong>Inconsistent bin sizes in histograms</strong> — uneven bins can make a distribution look smoother or spikier than the data actually is.</li>
+  </ul>
+
+  <h2>When truncation is legitimate — and how to handle it responsibly</h2>
+  <p>
+    Sometimes a genuinely important signal (a small but real change in a tightly-clustered
+    metric, like a fever chart tracking small temperature changes) would be invisible on a
+    zero-based axis. The responsible approach in this case: truncate the axis if it's genuinely
+    warranted, but label it clearly and explicitly — a visible break mark on the axis, or a caption
+    stating the axis doesn't start at zero — so the viewer isn't misled about the true scale of
+    difference being shown.
+  </p>
+
+  <h2>Simpson's paradox: when the aggregate lies</h2>
+  <p>
+    A famous, real pattern: a trend can appear in several different groups of data but reverse or
+    disappear when the groups are combined — or vice versa. This happens when a hidden variable
+    (like relative group sizes) is unevenly distributed across the subgroups. This is exactly why
+    the EDA principle from 4.1 — cross-check any aggregate visual against subgroup comparisons —
+    matters as more than just good practice; skipping it can mean drawing precisely the wrong
+    conclusion from technically accurate data.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can a truncated y-axis make a small real difference look dramatic?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Starting the axis above zero shrinks the visible range, so the same absolute difference occupies a much larger proportion of the chart's visual space</button>
+        <button class="q-option" data-correct="false">Truncating the axis changes the underlying numbers being plotted</button>
+        <button class="q-option" data-correct="false">Truncated axes are illegal in professional data visualization</button>
+      </div>
+      <div class="q-explain">The numbers stay identical — only the visual proportion changes, which is exactly why axis truncation is a perceptual manipulation rather than a data manipulation.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What should accompany a genuinely justified truncated axis?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A clear, explicit label — a visible break mark or caption — so the viewer isn't misled about the true scale being shown</button>
+        <button class="q-option" data-correct="false">Nothing — truncation never needs to be disclosed if the underlying data is accurate</button>
+        <button class="q-option" data-correct="false">A second chart with a zero-based axis is always legally required alongside it</button>
+      </div>
+      <div class="q-explain">The distinction between legitimate and misleading truncation isn't whether you truncate — it's whether you disclose it clearly enough that the viewer can correctly interpret what they're seeing.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What causes Simpson's paradox?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A hidden variable (often relative subgroup sizes) that's unevenly distributed across groups, causing a trend to reverse when the groups are aggregated</button>
+        <button class="q-option" data-correct="false">A calculation error in how the aggregate statistic was computed</button>
+        <button class="q-option" data-correct="false">Simpson's paradox only occurs in datasets with fewer than 10 data points</button>
+      </div>
+      <div class="q-explain">This is a real statistical phenomenon, not an error — an uneven hidden variable across subgroups can make the combined trend point in a different direction than every individual subgroup, which is exactly why subgroup cross-checking matters.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Veridical Data Science (Yu, Kenett &amp; Unwin, 2026 edition), EDA visualization chapter; Plotivy "Scientific Data Visualization Guide" (2026), "Spot the Error" section.</p>
+
+  <div class="pager">
+    <a href="4-3-storytelling-with-data.html">&larr; 4.3 Storytelling with data</a>
+    <a href="../index.html">Phase 5: Data engineering fundamentals &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderVp() {
+  const start = parseInt(document.getElementById('vp-slider').value, 10);
+  document.getElementById('vp-readout').textContent = start;
+  const chartHeight = 120;
+  const range = 100 - start;
+  const bar1Height = ((97 - start) / range) * chartHeight;
+  const bar2Height = ((100 - start) / range) * chartHeight;
+  document.getElementById('vp-fig').innerHTML = `
+    <svg viewBox="0 0 300 160" width="100%" style="max-width:300px; display:block; margin:0 auto;" role="img" aria-label="Bar chart comparing 97 and 100 with adjustable y-axis start">
+      <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:12px;font-weight:600;}</style>
+      <rect x="50" y="${140-bar1Height}" width="70" height="${bar1Height}" fill="#5b8cff"/>
+      <text x="85" y="155" text-anchor="middle">97%</text>
+      <rect x="170" y="${140-bar2Height}" width="70" height="${bar2Height}" fill="#3ecf8e"/>
+      <text x="205" y="155" text-anchor="middle">100%</text>
+    </svg>
+  `;
+}
+document.getElementById('vp-slider').addEventListener('input', renderVp);
+renderVp();
+</script>
+</body>
+</html>

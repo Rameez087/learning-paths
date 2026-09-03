@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.3 Data lineage | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ln-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ln-node { padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); font-size: 13px; }
+.ln-node.affected { background: rgba(229,72,77,0.15); border-color: #e5484d; color: #ff8b8f; }
+.ln-node.source { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.ln-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Data quality, governance &amp; observability</div>
+  <h1>11.3 Data lineage</h1>
+  <p class="subtitle">"If I change this table, who will it break?" — the single most common question in any production data platform, and lineage is the only reliable way to answer it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Data lineage maps the dependency graph between datasets — which raw sources feed which
+    transformations, which transformations feed which downstream tables, dashboards, and models.
+    This turns "what will break if I change this?" from a guess into a direct graph traversal.
+    Lineage is built one of two ways: <strong>query log parsing</strong> (inferring dependencies by
+    analyzing the SQL queries actually run against the warehouse — the more common approach) or
+    <strong>manifest-based lineage</strong> (declared explicitly, as dbt does through its model
+    references).
+  </div>
+
+  <h2>Try it: trace the blast radius of a change</h2>
+  <div class="ln-box">
+    <div id="ln-nodes"></div>
+    <button class="ln-btn" id="ln-trace">Trace impact of changing raw_orders &rarr;</button>
+  </div>
+
+  <h2>The four practical uses lineage actually serves</h2>
+  <ul>
+    <li><strong>Impact analysis</strong> — before changing a table's schema, see exactly what downstream assets depend on it, avoiding the "surprise breakage" problem from 11.1.</li>
+    <li><strong>Root cause analysis</strong> — when a dashboard shows wrong numbers, trace backward through lineage to find which upstream table or transformation actually introduced the error.</li>
+    <li><strong>Finding unused data</strong> — identifying tables with no downstream consumers at all, candidates for deprecation and cleanup.</li>
+    <li><strong>Migration planning</strong> — understanding the full dependency graph before moving a dataset to a new platform or restructuring a pipeline.</li>
+  </ul>
+
+  <div class="figure" id="fig-lineage-methods"></div>
+
+  <h2>Column-level vs. table-level lineage</h2>
+  <p>
+    Table-level lineage shows "table B depends on table A" — useful, but coarse. Column-level
+    lineage goes further, tracking exactly which specific columns in table A feed which specific
+    columns in table B. This finer granularity matters specifically when a change only affects one
+    column: table-level lineage would flag every downstream consumer of the whole table as
+    potentially at risk, while column-level lineage can correctly identify that only consumers of
+    that one specific column actually need attention.
+  </p>
+
+  <h2>Lineage increasingly extends beyond human consumers</h2>
+  <p>
+    A notable 2026 development: lineage and metadata systems are increasingly framed as serving AI
+    agents directly, not just human data engineers — giving an agent (a coding assistant, an
+    analytics copilot) the same governed context about data dependencies that a human analyst
+    would need before trusting or modifying a dataset. This is a natural extension of lineage's
+    core purpose: whoever (or whatever) is about to depend on or change a dataset benefits from
+    knowing its dependency graph first.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What question does data lineage most directly answer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">"If I change this table, what downstream assets will break?" — by making the dependency graph explicit rather than a guess</button>
+        <button class="q-option" data-correct="false">"How much does this dataset cost to store?"</button>
+        <button class="q-option" data-correct="false">"What is the average value in this column?"</button>
+      </div>
+      <div class="q-explain">This is lineage's defining practical use — turning impact analysis from institutional knowledge or guesswork into a direct, queryable graph traversal.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the key advantage of column-level lineage over table-level lineage?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It can correctly identify that only consumers of one specific changed column need attention, rather than flagging every consumer of the whole table</button>
+        <button class="q-option" data-correct="false">Column-level lineage is always faster to compute than table-level lineage</button>
+        <button class="q-option" data-correct="false">Table-level lineage cannot technically be implemented in any modern warehouse</button>
+      </div>
+      <div class="q-explain">The finer granularity avoids false-positive impact warnings — table-level lineage would over-flag consumers who only use unaffected columns, creating unnecessary alarm and investigation work.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How do query log parsing and manifest-based lineage differ in how they build the dependency graph?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Query log parsing infers dependencies by analyzing actually-executed SQL, while manifest-based lineage relies on explicitly declared references (like dbt's model refs)</button>
+        <button class="q-option" data-correct="false">They produce identical dependency graphs through identical mechanisms</button>
+        <button class="q-option" data-correct="false">Manifest-based lineage requires no configuration or declaration at all</button>
+      </div>
+      <div class="q-explain">One approach observes actual usage after the fact (query logs); the other relies on dependencies being declared upfront as part of the transformation code itself (dbt's ref() function) — different mechanisms for building the same kind of graph.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Mayurkumar Surani "Data Quality &amp; Observability: Testing, Monitoring, Lineage &amp; Data Contracts" (2026); Tools for Data "My Data Quality Tool Market Guide 2026"; OvalEdge "Data Contracts in Data Governance: The Missing Link" (2026); Atlan "Top open source data quality tools to know in 2026" (AI agent context section).</p>
+
+  <div class="pager">
+    <a href="11-2-data-testing-great-expectations.html">&larr; 11.2 Data testing &amp; Great Expectations</a>
+    <a href="11-4-data-governance-basics.html">11.4 Data governance basics &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const LN_NODES = [
+  { name: "raw_orders", isSource: true },
+  { name: "stg_orders (cleaned)", dependsOn: "raw_orders" },
+  { name: "fct_orders (modeled)", dependsOn: "stg_orders (cleaned)" },
+  { name: "Revenue dashboard", dependsOn: "fct_orders (modeled)" },
+  { name: "Churn prediction model", dependsOn: "fct_orders (modeled)" },
+  { name: "customer_notes (unrelated)", dependsOn: null },
+];
+document.getElementById('ln-nodes').innerHTML = LN_NODES.map((n,i) =>
+  `<div class="ln-node${n.isSource?' source':''}" data-i="${i}">${n.name}</div>`
+).join('');
+document.getElementById('ln-trace').addEventListener('click', () => {
+  // Walk the dependency chain marking affected nodes
+  let affected = new Set(["raw_orders"]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    LN_NODES.forEach(n => {
+      if (n.dependsOn && affected.has(n.dependsOn) && !affected.has(n.name)) {
+        affected.add(n.name);
+        changed = true;
+      }
+    });
+  }
+  document.querySelectorAll('.ln-node').forEach((el, i) => {
+    if (affected.has(LN_NODES[i].name) && !LN_NODES[i].isSource) el.classList.add('affected');
+  });
+  document.getElementById('ln-trace').textContent = '4 downstream assets affected — customer_notes is untouched';
+  document.getElementById('ln-trace').disabled = true;
+});
+
+document.getElementById('fig-lineage-methods').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: query log parsing infers lineage from executed SQL, manifest-based lineage reads explicit dbt ref declarations">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="30" y="30" width="220" height="70" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="140" y="58" text-anchor="middle" fill="#a9c1ff">Query log parsing</text>
+  <text x="140" y="78" text-anchor="middle" fill="#7891c9" font-size="9">infers deps from executed SQL</text>
+  <rect x="430" y="30" width="220" height="70" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="540" y="58" text-anchor="middle" fill="#3ecf8e">Manifest-based (dbt ref)</text>
+  <text x="540" y="78" text-anchor="middle" fill="#5fb98a" font-size="9">explicit, declared dependencies</text>
+</svg>
+`;
+</script>
+</body>
+</html>

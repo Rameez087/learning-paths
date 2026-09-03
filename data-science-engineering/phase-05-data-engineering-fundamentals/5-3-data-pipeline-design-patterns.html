@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.3 Data pipeline design patterns | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dp-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.dp-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.dp-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Data engineering fundamentals</div>
+  <h1>5.3 Data pipeline design patterns</h1>
+  <p class="subtitle">A pipeline that works once is easy to build. One that survives 3am failures, schema changes, and years of maintenance needs an actual architecture.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Beyond the batch/streaming choice (5.2), production pipeline architecture has a handful of
+    named patterns worth knowing by name: <strong>Lambda architecture</strong> (parallel batch and
+    speed layers for both accuracy and low latency), <strong>Kappa architecture</strong> (a single
+    unified streaming-first pipeline, simpler but less mature for pure historical reprocessing),
+    and <strong>event-driven/microservices patterns</strong> for complex, decoupled systems. The
+    right pattern depends on data volume, latency needs, accuracy requirements, and how much
+    operational complexity your team can actually sustain — not on which pattern sounds most
+    sophisticated.
+  </div>
+
+  <h2>Try it: explore each architecture pattern</h2>
+  <div class="dp-box">
+    <div class="dp-tabs">
+      <div class="dp-tab active" data-p="lambda">Lambda</div>
+      <div class="dp-tab" data-p="kappa">Kappa</div>
+      <div class="dp-tab" data-p="event">Event-driven / microservices</div>
+    </div>
+    <div id="dp-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Lambda: accuracy and speed, at the cost of running two systems</h2>
+  <p>
+    Lambda architecture runs a <strong>batch layer</strong> (accurate, complete, but slower) and a
+    <strong>speed layer</strong> (fast, approximate, low-latency) in parallel against the same
+    incoming data, then merges their outputs — the batch layer's periodic accurate recomputation
+    eventually corrects anything the speed layer got approximately right in the moment. The
+    trade-off is explicit: you're maintaining two separate processing paths with two separate
+    codebases, which is real, ongoing operational overhead.
+  </p>
+
+  <h2>Kappa: one pipeline, streaming-first</h2>
+  <p>
+    Kappa architecture's core simplification: treat everything as a stream, including
+    reprocessing historical data (by replaying the stream from an earlier point) rather than
+    maintaining a completely separate batch system. This removes Lambda's dual-codebase problem,
+    but depends on your streaming infrastructure being mature enough to handle full historical
+    reprocessing efficiently — not every streaming platform is built for that at scale.
+  </p>
+
+  <div class="figure" id="fig-lambda-kappa"></div>
+
+  <h2>Change Data Capture: a pattern specifically worth knowing by name</h2>
+  <p>
+    Change Data Capture (CDC) tools like Debezium track row-level changes (inserts, updates,
+    deletes) directly from a source database's transaction log, streaming just the changes rather
+    than periodically re-extracting the entire dataset. This is described as a more sustainable
+    approach than periodic full extracts specifically because source systems are optimized for
+    operational workloads (small, frequent queries), not the large analytical scans a full
+    re-extract requires — CDC avoids putting that analytical load on a production database at all.
+  </p>
+
+  <h2>Dead letter queues: what happens to the record that fails</h2>
+  <p>
+    In any real pipeline, some records will fail to process — malformed data, an unexpected schema
+    variant, a transient downstream error. A <strong>dead letter queue</strong> is a dedicated
+    holding area for these failed records, so a single bad record doesn't halt the entire
+    pipeline or get silently dropped. This is a deliberate design choice: fail loudly and
+    recoverably for the bad record, keep processing everything else.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the core trade-off of Lambda architecture?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It provides both speed and eventual accuracy, at the cost of maintaining two separate processing codebases in parallel</button>
+        <button class="q-option" data-correct="false">Lambda architecture is strictly simpler than any single-pipeline approach</button>
+        <button class="q-option" data-correct="false">Lambda architecture only works for datasets smaller than 1GB</button>
+      </div>
+      <div class="q-explain">Running a batch layer and a speed layer in parallel genuinely doubles the operational surface area — this real, ongoing cost is the direct trade for getting both low latency and eventual accuracy.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does Kappa architecture simplify compared to Lambda?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It replaces the dual batch/speed layer setup with a single streaming-first pipeline, reprocessing history by replaying the stream</button>
+        <button class="q-option" data-correct="false">Kappa architecture eliminates the need for any data storage at all</button>
+        <button class="q-option" data-correct="false">Kappa architecture only works for data smaller than what Lambda can handle</button>
+      </div>
+      <div class="q-explain">The core simplification is treating reprocessing as "replay the stream" rather than maintaining an entirely separate batch codebase — this depends on the streaming infrastructure being mature enough for that role.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is CDC generally preferred over periodic full extracts from a production database?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Production databases are optimized for small operational queries, not large analytical scans, so CDC avoids putting that heavy analytical load on them at all</button>
+        <button class="q-option" data-correct="false">CDC is always faster than any other ingestion method regardless of context</button>
+        <button class="q-option" data-correct="false">Full extracts are technically impossible on modern databases</button>
+      </div>
+      <div class="q-explain">CDC reads from the transaction log incrementally rather than scanning the whole table, which is specifically gentler on a production system built for small frequent queries rather than bulk analytical reads.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: dataskew.io "Data Pipeline Design Patterns: Idempotency, DLQ, CDC and 5 More" (2026); Data Engineer Academy "Data Pipeline Design Patterns" (2026); ml4devs.com "Data Pipeline: Batch, Streaming, and Idempotent Patterns".</p>
+
+  <div class="pager">
+    <a href="5-2-batch-vs-streaming.html">&larr; 5.2 Batch vs. streaming</a>
+    <a href="5-4-data-ingestion-strategies.html">5.4 Data ingestion strategies &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DP_INFO = {
+  lambda: "Two parallel layers: a batch layer (slow, complete, accurate) and a speed layer (fast, approximate). Outputs are merged, with the batch layer's periodic recomputation correcting the speed layer over time. Cost: two codebases to maintain.",
+  kappa: "A single streaming-first pipeline. Historical reprocessing means replaying the stream from an earlier offset rather than running a separate batch system. Simpler, but depends on mature streaming infrastructure that can handle full replays efficiently.",
+  event: "Decoupled services communicate via events rather than direct calls or shared batch jobs. Fits complex, scalable systems well, but requires stronger coordination, tooling (schema registries, event buses), and operational maturity than a simpler pipeline.",
+};
+function renderDp(key) { document.getElementById('dp-detail').textContent = DP_INFO[key]; }
+document.querySelectorAll('.dp-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dp-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderDp(tab.dataset.p);
+  });
+});
+renderDp('lambda');
+
+document.getElementById('fig-lambda-kappa').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: Lambda architecture with parallel batch and speed layers merging, versus Kappa architecture with a single streaming pipeline">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } .s{font-size:9px; fill:#9aa4b5; font-weight:400;} </style>
+  <text x="160" y="20" text-anchor="middle" font-size="13">Lambda</text>
+  <rect x="40" y="35" width="100" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="57" text-anchor="middle" font-size="10">Batch layer</text>
+  <rect x="40" y="80" width="100" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="90" y="102" text-anchor="middle" font-size="10" fill="#f2b84b">Speed layer</text>
+  <line x1="140" y1="52" x2="180" y2="70" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="140" y1="97" x2="180" y2="80" stroke="#6b7386" stroke-width="1.5"/>
+  <rect x="180" y="60" width="90" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="225" y="82" text-anchor="middle" font-size="10" fill="#a9c1ff">Merged view</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="13">Kappa</text>
+  <rect x="400" y="60" width="120" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="460" y="82" text-anchor="middle" font-size="10" fill="#a9c1ff">Single stream pipeline</text>
+  <path d="M 400 60 C 380 40, 380 20, 400 15" fill="none" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a23)"/>
+  <text x="500" y="120" class="s" text-anchor="middle">reprocess = replay the stream from an earlier point</text>
+  <defs><marker id="a23" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

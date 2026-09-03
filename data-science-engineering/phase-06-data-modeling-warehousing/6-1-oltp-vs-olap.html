@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.1 OLTP vs. OLAP | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ol-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ol-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.ol-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ol-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.ol-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; }
+.ol-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.ol-metric .n { font-size: 14px; font-weight: 700; }
+.ol-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Data modeling &amp; warehousing</div>
+  <h1>6.1 OLTP vs. OLAP</h1>
+  <p class="subtitle">The database powering your checkout button and the database powering your revenue dashboard should never be designed the same way.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>OLTP</strong> (Online Transaction Processing) systems handle huge numbers of small,
+    fast writes — inserts, updates, deletes — normalized (typically to 3NF) to keep data
+    consistent and avoid duplication. <strong>OLAP</strong> (Online Analytical Processing) systems
+    are built for reading and aggregating large historical datasets, deliberately
+    <strong>denormalized</strong> into a dimensional model for fast, complex queries. Moving data
+    from an OLTP application database into an OLAP warehouse means intentionally breaking
+    normalization rules — this isn't sloppiness, it's a deliberate trade-off optimizing for a
+    completely different access pattern.
+  </div>
+
+  <h2>Try it: compare the two system types</h2>
+  <div class="ol-box">
+    <div class="ol-toggle">
+      <div class="ol-toggle-btn active" data-s="oltp">OLTP</div>
+      <div class="ol-toggle-btn" data-s="olap">OLAP</div>
+    </div>
+    <div class="ol-metrics" id="ol-metrics"></div>
+  </div>
+
+  <h2>Why denormalizing for OLAP is the right call, not a shortcut</h2>
+  <p>
+    A normalized OLTP schema minimizes redundancy by splitting data across many small, linked
+    tables — great for fast, safe writes, but it means an analytical question ("total revenue by
+    region last quarter") requires joining many tables together, which gets slow at the scale a
+    warehouse operates at. A denormalized OLAP schema deliberately duplicates some data across
+    fewer, wider tables specifically to minimize the number of joins a typical analytical query
+    needs — trading storage efficiency and write-safety (which OLAP doesn't need much of) for
+    read speed (which is the entire point of OLAP).
+  </p>
+
+  <div class="figure" id="fig-oltp-olap"></div>
+
+  <h2>Same business, two different models</h2>
+  <p>
+    Take a ride-share app. The <strong>OLTP</strong> model, triggered every time a rider requests
+    a ride, needs normalized tables for riders, drivers, and rides that support fast, safe
+    concurrent writes as rides are created and updated in real time. The <strong>OLAP</strong>
+    model of the exact same business process, built later for analytics, reorganizes this into a
+    fact table of ride events (the measurable numbers: fare, distance, duration) surrounded by
+    dimension tables (rider, driver, location, time) — optimized entirely for "how many rides,
+    grouped by which attributes, over what time period" style questions.
+  </p>
+
+  <h2>This is exactly what ELT's "T" does</h2>
+  <p>
+    This connects directly back to 5.1: the transformation step in an ELT pipeline is very often
+    precisely this OLTP-to-OLAP reshaping — taking normalized, transaction-shaped raw data and
+    remodeling it into the denormalized, analysis-shaped tables covered in the rest of this phase.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why are OLTP systems typically normalized while OLAP systems are typically denormalized?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">OLTP prioritizes fast, safe writes and data integrity; OLAP prioritizes fast reads across large aggregations, which fewer joins support better</button>
+        <button class="q-option" data-correct="false">Normalization and denormalization produce mathematically identical query performance in every case</button>
+        <button class="q-option" data-correct="false">OLAP systems cannot technically support normalized data</button>
+      </div>
+      <div class="q-explain">Each design choice matches its system's actual access pattern — OLTP's frequent small writes benefit from normalization's consistency guarantees, while OLAP's large aggregate reads benefit from denormalization's reduced join burden.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. In the ride-share example, what does the OLAP fact table actually store?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The measurable numbers from each ride event — fare, distance, duration</button>
+        <button class="q-option" data-correct="false">Detailed biographical information about each rider and driver</button>
+        <button class="q-option" data-correct="false">The exact same schema as the OLTP rides table, unchanged</button>
+      </div>
+      <div class="q-explain">Fact tables hold the quantitative measurements; the contextual details (who, where, when) live in the surrounding dimension tables — this split is the foundation of dimensional modeling, covered fully in 6.2.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does the OLTP-to-OLAP transformation relate to the ELT pipeline covered in 5.1?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">This reshaping is very often exactly what the "T" (transform) step in ELT is doing — remodeling normalized raw data into denormalized analytical tables</button>
+        <button class="q-option" data-correct="false">OLTP-to-OLAP transformation and ELT are entirely unrelated concepts</button>
+        <button class="q-option" data-correct="false">ELT pipelines only work with OLAP source systems, never OLTP</button>
+      </div>
+      <div class="q-explain">This ties two phases together directly — the dimensional modeling techniques in this phase are frequently the concrete content of the transformation logic an ELT pipeline runs.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Mayurkumar Surani "Data Warehousing &amp; Modeling: Star Schema, Snowflake &amp; SCDs Explained (2026)"; daily.dev "Data Modeling for Analytics Engineers: The Complete Primer" (2026); Dear Techies "On Data Modeling for OLTP vs. OLAP".</p>
+
+  <div class="pager">
+    <a href="../phase-05-data-engineering-fundamentals/5-5-idempotency-and-reliability.html">&larr; 5.5 Idempotency &amp; reliability</a>
+    <a href="6-2-dimensional-modeling-star-schema.html">6.2 Dimensional modeling &amp; star schema &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const OL_DATA = {
+  oltp: { workload: "Many small writes", schema: "Normalized (3NF)", speed: "Fast INSERT/UPDATE", example: "Checkout, order creation" },
+  olap: { workload: "Large aggregate reads", schema: "Denormalized (star)", speed: "Fast complex SELECT", example: "Revenue dashboard" },
+};
+function renderOl(key) {
+  const d = OL_DATA[key];
+  document.getElementById('ol-metrics').innerHTML = `
+    <div class="ol-metric"><div class="n">${d.workload}</div><div class="l">Typical workload</div></div>
+    <div class="ol-metric"><div class="n">${d.schema}</div><div class="l">Schema style</div></div>
+    <div class="ol-metric"><div class="n">${d.speed}</div><div class="l">Optimized for</div></div>
+    <div class="ol-metric"><div class="n">${d.example}</div><div class="l">Example</div></div>
+  `;
+}
+document.querySelectorAll('.ol-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ol-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderOl(btn.dataset.s);
+  });
+});
+renderOl('oltp');
+
+document.getElementById('fig-oltp-olap').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: OLTP normalized tables on the left transformed via ETL/ELT into a denormalized OLAP star schema on the right">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <text x="120" y="20" text-anchor="middle" font-size="13">OLTP (normalized)</text>
+  <rect x="20" y="35" width="70" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="55" y="54" text-anchor="middle">riders</text>
+  <rect x="100" y="35" width="70" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="135" y="54" text-anchor="middle">drivers</text>
+  <rect x="60" y="80" width="70" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="95" y="99" text-anchor="middle">rides</text>
+  <rect x="140" y="80" width="70" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="175" y="99" text-anchor="middle">locations</text>
+
+  <line x1="230" y1="90" x2="290" y2="90" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a26)"/>
+  <text x="260" y="80" fill="#f2b84b" font-size="9" text-anchor="middle">ELT transform</text>
+
+  <text x="500" y="20" text-anchor="middle" font-size="13">OLAP (star schema)</text>
+  <rect x="450" y="70" width="100" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="500" y="94" text-anchor="middle" fill="#a9c1ff">fct_rides</text>
+  <rect x="330" y="30" width="80" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="370" y="49" text-anchor="middle" fill="#3ecf8e">dim_rider</text>
+  <rect x="590" y="30" width="80" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="630" y="49" text-anchor="middle" fill="#3ecf8e">dim_driver</text>
+  <rect x="330" y="120" width="80" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="370" y="139" text-anchor="middle" fill="#3ecf8e">dim_location</text>
+  <rect x="590" y="120" width="80" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="630" y="139" text-anchor="middle" fill="#3ecf8e">dim_time</text>
+  <line x1="450" y1="80" x2="410" y2="55" stroke="#6b7386" stroke-width="1"/>
+  <line x1="550" y1="80" x2="590" y2="55" stroke="#6b7386" stroke-width="1"/>
+  <line x1="450" y1="100" x2="410" y2="130" stroke="#6b7386" stroke-width="1"/>
+  <line x1="550" y1="100" x2="590" y2="130" stroke="#6b7386" stroke-width="1"/>
+  <defs><marker id="a26" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.6 Cloud data platforms | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cp-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.cp-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.cp-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.cp-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; }
+.cp-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; }
+.cp-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+.cp-metric .v { font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.6</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Data modeling &amp; warehousing</div>
+  <h1>6.6 Cloud data platforms</h1>
+  <p class="subtitle">Snowflake, BigQuery, and Azure Synapse/Fabric cover roughly 85% of new warehouse decisions in 2026 — and mentions of them appear in a large majority of data engineer job postings.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    All major cloud warehouses now share the same core innovation — <strong>separating compute
+    from storage</strong>, so you scale (and pay for) each independently — but differ meaningfully
+    in pricing model and ecosystem fit. <strong>Snowflake</strong> is multi-cloud and known for
+    simplicity and predictable, if sometimes surprising, billing. <strong>BigQuery</strong> is
+    serverless with no cluster to size, often dramatically cheaper for small, well-pruned queries.
+    <strong>Azure Synapse</strong> (increasingly folded into <strong>Microsoft Fabric</strong>)
+    wins specifically for teams already standardized on Power BI and the Azure ecosystem. No
+    independent, vendor-neutral benchmark compares them head-to-head as of 2026 — vendor
+    performance claims should be treated as marketing, not independent measurement.
+  </div>
+
+  <h2>Try it: compare the platforms</h2>
+  <div class="cp-box">
+    <div class="cp-tabs">
+      <div class="cp-tab active" data-p="snowflake">Snowflake</div>
+      <div class="cp-tab" data-p="bigquery">BigQuery</div>
+      <div class="cp-tab" data-p="synapse">Azure Synapse / Fabric</div>
+    </div>
+    <div class="cp-metrics" id="cp-metrics"></div>
+  </div>
+
+  <h2>Why "which cloud are you on" often matters more than any feature</h2>
+  <p>
+    A specifically flagged 2026 insight: egress fees, identity stacks, and BI-tool alignment often
+    outweigh any individual feature checkbox when choosing a platform. BigQuery's control plane
+    lives only inside Google Cloud (even though its Omni feature can query AWS/Azure data),
+    making it a natural fit for Google-centric organizations and a harder sell otherwise. Synapse's
+    deep native integration with Power BI and Azure Data Factory removes real integration overhead
+    for teams already in that ecosystem — exactly the kind of context relevant to anyone already
+    working with Azure and Power BI daily.
+  </p>
+
+  <div class="figure" id="fig-clouds"></div>
+
+  <h2>The Fabric transition worth knowing about</h2>
+  <p>
+    Microsoft is actively steering new Azure customers toward <strong>Microsoft Fabric</strong> —
+    a SaaS umbrella subsuming Synapse, Power BI, Data Factory, and Purview into one workspace with
+    unified capacity-unit billing. Synapse Analytics remains available standalone, but for a
+    greenfield Azure project in 2026, Fabric is increasingly the practical starting point:
+    unified billing, built-in Power BI integration, and OneLake (Fabric's file layer) handling
+    Delta format natively.
+  </p>
+
+  <h2>The lakehouse convergence: the file layer is becoming portable</h2>
+  <p>
+    A significant 2026 shift: all four major platforms now read and write open table formats
+    (Iceberg and/or Delta) on the same underlying object stores. This means the raw file layer is
+    increasingly portable across platforms, even as the platforms themselves continue to compete
+    hard on compute engines, tooling, and ecosystem integration built on top of that shared
+    foundation.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What core architectural feature do all major 2026 cloud warehouses share?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Separation of compute and storage, allowing each to scale (and be billed) independently</button>
+        <button class="q-option" data-correct="false">They all use exactly the same pricing model with no differences</button>
+        <button class="q-option" data-correct="false">They all run exclusively on-premises with no cloud component</button>
+      </div>
+      <div class="q-explain">This decoupling is the shared foundational innovation across Snowflake, BigQuery, and Synapse — the platforms differ mainly in how that architecture is priced and packaged, not in the underlying principle.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should vendor-published performance benchmarks be treated skeptically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">No independent, vendor-neutral benchmark compares these platforms head-to-head, and vendor configurations/tuning differ in ways that make results incomparable</button>
+        <button class="q-option" data-correct="false">Vendor benchmarks are illegal to publish and therefore automatically unreliable</button>
+        <button class="q-option" data-correct="false">All vendors use identical test configurations, making comparison trivial</button>
+      </div>
+      <div class="q-explain">Each vendor's published benchmark uses their own dataset sizes and tuning levels, making cross-vendor comparison unreliable — this is a specific, documented gap as of 2026, not a generic caution.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why might "which cloud are you already on" matter more than a feature comparison when choosing a platform?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Egress fees, identity stack integration, and existing BI-tool alignment create real switching costs that often outweigh individual feature differences</button>
+        <button class="q-option" data-correct="false">All cloud platforms are functionally and technically identical regardless of provider</button>
+        <button class="q-option" data-correct="false">Cloud choice has no bearing on integration complexity or cost</button>
+      </div>
+      <div class="q-explain">These are concrete, often underestimated costs — an organization already deep in one cloud ecosystem faces real friction switching, independent of which platform has the "better" feature on paper.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: PipeCode "Snowflake vs Databricks vs BigQuery vs Synapse" (2026); DoiT "Snowflake competitors compared" (May 2026); Tech Insider "Snowflake vs Databricks vs BigQuery 2026" pricing analysis; Alphabyte "Azure SQL vs Snowflake vs BigQuery" (2026).</p>
+
+  <div class="pager">
+    <a href="6-5-modern-warehouse-architecture.html">&larr; 6.5 Modern warehouse architecture</a>
+    <a href="../phase-07-orchestration-workflow/7-1-dags-and-dependency-management.html">Phase 7: Orchestration &amp; workflow management &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CP_DATA = {
+  snowflake: { arch: "Multi-cluster, storage/compute decoupled", pricing: "Per-second compute + separate storage; ~$2-4/credit", cloud: "Multi-cloud (AWS, Azure, GCP)", fit: "Cross-cloud flexibility, predictable billing" },
+  bigquery: { arch: "Serverless — Dremel engine allocates slots on demand", pricing: "$5/TB scanned (on-demand) or slot-based Editions", cloud: "Google Cloud only (control plane)", fit: "Spiky, well-pruned queries; Google-centric orgs" },
+  synapse: { arch: "MPP-based, increasingly folded into Microsoft Fabric", pricing: "Capacity-unit billing (Fabric) or dedicated pools", cloud: "Azure", fit: "Power BI / Azure Data Factory shops" },
+};
+function renderCp(key) {
+  const d = CP_DATA[key];
+  document.getElementById('cp-metrics').innerHTML = `
+    <div class="cp-metric"><div class="l">Architecture</div><div class="v">${d.arch}</div></div>
+    <div class="cp-metric"><div class="l">Pricing model</div><div class="v">${d.pricing}</div></div>
+    <div class="cp-metric"><div class="l">Cloud availability</div><div class="v">${d.cloud}</div></div>
+    <div class="cp-metric"><div class="l">Best fit</div><div class="v">${d.fit}</div></div>
+  `;
+}
+document.querySelectorAll('.cp-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.cp-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderCp(tab.dataset.p);
+  });
+});
+renderCp('snowflake');
+
+document.getElementById('fig-clouds').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: three cloud platforms converging on shared open table formats Iceberg and Delta over object storage">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="30" y="20" width="160" height="40" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="110" y="45" text-anchor="middle" fill="#a9c1ff">Snowflake</text>
+  <rect x="260" y="20" width="160" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="45" text-anchor="middle" fill="#3ecf8e">BigQuery</text>
+  <rect x="490" y="20" width="160" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="570" y="45" text-anchor="middle" fill="#f2b84b">Synapse/Fabric</text>
+  <line x1="110" y1="60" x2="340" y2="95" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="60" x2="340" y2="95" stroke="#6b7386" stroke-width="1"/>
+  <line x1="570" y1="60" x2="340" y2="95" stroke="#6b7386" stroke-width="1"/>
+  <rect x="230" y="95" width="220" height="35" rx="6" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="117" text-anchor="middle" fill="#a9c1ff">Shared: Iceberg / Delta on object storage</text>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.4 Pandas vs. Polars vs. SQL | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.pp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.pp-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pp-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.pp-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · SQL &amp; data manipulation</div>
+  <h1>2.4 Pandas vs. Polars vs. SQL</h1>
+  <p class="subtitle">Three tools that can all answer the same question. The right one depends on where your data already lives and how much of it there is.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>SQL</strong> operates directly where data already lives (a database or warehouse) —
+    no data movement needed, and the query optimizer (2.3) handles performance. <strong>Pandas</strong>
+    is Python's original DataFrame library — flexible and ubiquitous, but single-threaded by
+    default and can struggle past a few million rows. <strong>Polars</strong> is a newer,
+    Rust-based DataFrame library built for multi-core parallelism and lazy evaluation from the
+    ground up — commonly benchmarked at large multiples faster than pandas on the same hardware
+    for comparable operations, particularly with its streaming engine enabled for datasets larger
+    than memory.
+  </div>
+
+  <h2>Try it: which tool fits which situation</h2>
+  <div class="pp-box">
+    <div class="pp-toggle">
+      <div class="pp-toggle-btn active" data-s="in-db">Data already in a warehouse</div>
+      <div class="pp-toggle-btn" data-s="small-local">Small local file, quick analysis</div>
+      <div class="pp-toggle-btn" data-s="large-local">Large local file, performance matters</div>
+      <div class="pp-toggle-btn" data-s="ml-prep">Feeding a machine learning pipeline</div>
+    </div>
+    <div id="pp-recommendation" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why Polars is fast: lazy evaluation</h2>
+  <p>
+    Pandas executes each operation immediately, one line at a time — "eager" evaluation. Polars
+    supports <strong>lazy evaluation</strong>: you build up a chain of operations (filter, group,
+    aggregate) without running any of them yet, and Polars' query optimizer looks at the entire
+    chain at once before executing — similar in spirit to how a SQL database's optimizer plans a
+    whole query rather than running each clause independently. This lets Polars skip unnecessary
+    work (like reading columns that get filtered out later) that pandas' eager, line-by-line
+    execution can't see coming.
+  </p>
+  <pre><code>import polars as pl
+
+# Lazy: nothing executes yet, Polars just builds a plan
+result = (
+    pl.scan_csv("orders.csv")
+    .filter(pl.col("amount") > 100)
+    .group_by("customer_id")
+    .agg(pl.col("amount").sum())
+)
+
+# .collect() triggers actual execution, using the optimized plan
+df = result.collect()</code></pre>
+
+  <h2>Migrating from pandas: the syntax is close, not identical</h2>
+  <p>
+    Polars deliberately mirrors pandas' general shape (DataFrames, method chaining, similar
+    verbs), which shortens the learning curve — but the API isn't a drop-in replacement. Common
+    differences: Polars expressions (<code>pl.col("x")</code>) are more explicit than pandas'
+    implicit column references, and Polars doesn't have a traditional index the way pandas does.
+    Migration is usually described as a real but manageable effort, not a rewrite from scratch.
+  </p>
+
+  <h2>Why "just use SQL" is often the right default</h2>
+  <p>
+    If your data already lives in a warehouse, pulling it into Python (pandas or Polars) just to
+    filter and aggregate it means moving potentially large amounts of data across the network for
+    no reason — the warehouse's query engine can do the same work where the data already sits,
+    typically faster, and the result you pull back can be a small, already-aggregated table
+    instead of the full raw dataset. This is exactly ELT's underlying logic from Phase 1: do the
+    transformation work as close to the data as possible.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does "lazy evaluation" mean in the context of Polars?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Operations are chained into a plan without executing immediately, letting the optimizer see the whole chain before running anything</button>
+        <button class="q-option" data-correct="false">Polars runs slower than pandas by design</button>
+        <button class="q-option" data-correct="false">Lazy evaluation means the code doesn't need to be syntactically correct</button>
+      </div>
+      <div class="q-explain">This is the core mechanism behind Polars' performance advantage — seeing the full chain of operations upfront lets the optimizer skip unnecessary work that a step-by-step (eager) execution model can't anticipate.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might querying data directly in a warehouse with SQL be preferable to pulling it into pandas first?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It avoids moving potentially large amounts of data across the network, letting the warehouse's query engine do the work where the data already lives</button>
+        <button class="q-option" data-correct="false">Pandas cannot connect to databases under any circumstances</button>
+        <button class="q-option" data-correct="false">SQL is always faster than pandas on every possible operation</button>
+      </div>
+      <div class="q-explain">This is a data-movement argument, not a blanket performance claim — the specific inefficiency is transferring a large raw dataset when the aggregation could happen where the data already sits.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Is migrating pandas code to Polars typically a drop-in replacement?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">No — the general shape is similar, shortening the learning curve, but real syntax differences (explicit expressions, no traditional index) mean genuine migration effort is needed</button>
+        <button class="q-option" data-correct="false">Yes — Polars code is 100% syntactically identical to pandas</button>
+        <button class="q-option" data-correct="false">No — Polars and pandas share no conceptual similarities at all</button>
+      </div>
+      <div class="q-explain">Polars deliberately echoes pandas' general structure to ease the transition, but the actual API has real, specific differences that require adaptation, not just a search-and-replace.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: "Polars vs SQL: The Fair Comparison Everyone Demanded" (Medium, 2026); Polars official documentation on lazy evaluation.</p>
+
+  <div class="pager">
+    <a href="2-3-query-optimization-execution-plans.html">&larr; 2.3 Query optimization &amp; execution plans</a>
+    <a href="2-5-data-manipulation-patterns.html">2.5 Data manipulation patterns &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const RECS = {
+  "in-db": "→ Use SQL directly. The warehouse's optimizer (2.3) handles the work where the data already lives — pulling it into Python first just adds network transfer for no benefit.",
+  "small-local": "→ Pandas is genuinely fine here. For a file that comfortably fits in memory and a one-off analysis, pandas' ubiquity and huge ecosystem of examples outweighs any performance gap.",
+  "large-local": "→ Reach for Polars. Its multi-core execution and lazy evaluation are built specifically for this case — datasets large enough that single-threaded, eager pandas execution becomes the bottleneck.",
+  "ml-prep": "→ Depends on scale: pandas if the pipeline is small and the ecosystem integration (many ML libraries expect pandas DataFrames) matters most; Polars if preprocessing itself is the bottleneck on large training sets.",
+};
+document.querySelectorAll('.pp-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pp-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pp-recommendation').textContent = RECS[btn.dataset.s];
+  });
+});
+document.getElementById('pp-recommendation').textContent = RECS['in-db'];
+</script>
+</body>
+</html>

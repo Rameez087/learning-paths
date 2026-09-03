@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.4 Your first data pipeline | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fp-step-btn { padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-bottom: 8px; }
+.fp-step-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.4 Your first data pipeline</h1>
+  <p class="subtitle">Everything from 1.1&ndash;1.3, made real in about twenty lines of Python.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A minimal but genuine ELT pipeline: <strong>extract</strong> raw data from a source (a CSV
+    here — an API or database in a real system), <strong>load</strong> it untransformed into a
+    queryable store, then <strong>transform</strong> it with SQL once it's already loaded — the
+    ELT order from 1.2, not ETL. This example uses DuckDB, a fast, zero-setup embedded database
+    that's become a popular choice specifically for local development and small-to-medium
+    analytical workloads, precisely because it needs no server to run.
+  </div>
+
+  <h2>Try it: step through each stage</h2>
+  <div class="fp-box">
+    <div class="fp-step-btn active" data-s="extract">1. Extract</div>
+    <div class="fp-step-btn" data-s="load">2. Load</div>
+    <div class="fp-step-btn" data-s="transform">3. Transform</div>
+    <pre id="fp-code" style="margin-bottom:0; margin-top:14px;"></pre>
+  </div>
+
+  <h2>Why this small example already demonstrates the real pattern</h2>
+  <p>
+    Production pipelines add scale, scheduling, and failure handling on top of this — but the
+    fundamental shape doesn't change. Extract stays "get raw data from somewhere." Load stays "put
+    it somewhere queryable, untransformed." Transform stays "write SQL (or dbt models, in a real
+    stack) that turns raw rows into clean, business-meaningful tables." A production version of
+    this exact pipeline would swap the CSV for an API or a source database (Phase 5), DuckDB for
+    Snowflake or BigQuery (Phase 6), and add Airflow or Dagster to run it on a schedule with
+    retries (Phase 7) — but you'd recognize every stage.
+  </p>
+
+  <h2>What "raw" data staying raw actually buys you</h2>
+  <p>
+    Notice the transform step doesn't modify the original <code>raw_orders</code> table — it
+    creates a new <code>clean_orders</code> view or table derived from it. If a bug is later found
+    in the transformation logic (say, the discount calculation was wrong), you can just re-run a
+    fixed transform against the still-intact raw data — no need to re-extract from the original
+    source. This is the concrete, practical payoff of ELT's "keep raw data around" principle from
+    1.2, not just an abstract preference.
+  </p>
+
+  <div class="figure" id="fig-pipeline"></div>
+
+  <h2>What you should be able to do now</h2>
+  <ul>
+    <li>Explain the difference between data science, data engineering, and analytics engineering, and place yourself or a hire correctly (1.1)</li>
+    <li>Name the five stages of the data lifecycle and place any new tool you encounter into one of them (1.2)</li>
+    <li>Name the default 2026 tool stack per layer, and explain the recommended learning order (1.3)</li>
+    <li>Write and run a minimal, real extract-load-transform pipeline (1.4)</li>
+  </ul>
+  <p>
+    That's Phase 1 complete. Phase 2 goes deep on SQL — the single most load-bearing skill across
+    every layer of this stack.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. In the ELT pipeline above, what does the "load" step do to the data?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Stores it as-is, untransformed, in a queryable table</button>
+        <button class="q-option" data-correct="false">Cleans and reformats it before storing</button>
+        <button class="q-option" data-correct="false">Deletes the original source data</button>
+      </div>
+      <div class="q-explain">This is the defining feature of ELT — load happens before transform, so the raw data lands intact and untouched, ready to be transformed (possibly more than once, in different ways) afterward.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does keeping the raw table intact after transformation matter practically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If a bug is found in the transformation logic, you can re-run a corrected transform against the still-intact raw data without re-extracting from the source</button>
+        <button class="q-option" data-correct="false">Raw tables take up no storage space, so there's no cost to keeping them</button>
+        <button class="q-option" data-correct="false">Keeping raw data has no practical benefit — it's purely a convention</button>
+      </div>
+      <div class="q-explain">This is the concrete payoff of ELT's core principle — the raw table becomes a safety net and a flexible source for any future transformation, not just the current one.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What would change if this example were scaled into a production pipeline?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The source, storage, and scheduling tools would be swapped for production-grade equivalents, but the extract/load/transform shape would stay the same</button>
+        <button class="q-option" data-correct="false">The entire extract-load-transform pattern would need to be replaced with something unrelated</button>
+        <button class="q-option" data-correct="false">Production pipelines don't use SQL for transformation</button>
+      </div>
+      <div class="q-explain">The underlying pattern is genuinely the same at any scale — what changes is the specific tools filling each role (API instead of CSV, warehouse instead of DuckDB, orchestrator instead of manual execution).</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: DuckDB official documentation; Precision AI Academy "Data Pipeline Guide 2026" (ETL vs ELT section).</p>
+
+  <div class="pager">
+    <a href="1-3-tools-landscape-2026.html">&larr; 1.3 The 2026 tools landscape</a>
+    <a href="../phase-02-sql-data-manipulation/2-1-sql-fundamentals-refresher.html">Phase 2: SQL &amp; data manipulation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CODE = {
+  extract: `import pandas as pd
+
+# EXTRACT: pull raw data from a source.
+# In production this would be an API call or a source database query —
+# here, a CSV export stands in for "wherever the data originates."
+raw = pd.read_csv("orders_export.csv")
+print(raw.head())
+#   order_id  customer_id  amount  discount_pct  order_date
+# 0      1001         501   120.00          10   2026-08-01
+# 1      1002         502    45.50           0   2026-08-01`,
+  load: `import duckdb
+
+# LOAD: land the raw data untransformed into a queryable store.
+# DuckDB needs no server — it runs embedded, which makes it a fast
+# way to prototype an ELT pipeline locally before pointing the same
+# SQL at a real warehouse (Phase 6).
+con = duckdb.connect("pipeline.duckdb")
+con.execute("CREATE OR REPLACE TABLE raw_orders AS SELECT * FROM raw")
+
+# The raw table is now stored, unmodified — this is the "L" in ELT,
+# happening BEFORE any transformation.`,
+  transform: `# TRANSFORM: now that it's loaded, clean and model it with SQL.
+con.execute("""
+    CREATE OR REPLACE TABLE clean_orders AS
+    SELECT
+        order_id,
+        customer_id,
+        amount,
+        amount * (1 - discount_pct / 100.0) AS net_amount,
+        CAST(order_date AS DATE) AS order_date
+    FROM raw_orders
+    WHERE amount > 0  -- drop bad/negative test rows
+""")
+
+result = con.execute("SELECT * FROM clean_orders LIMIT 5").df()
+print(result)
+# raw_orders is untouched — clean_orders is a new, derived table.
+# If the discount logic above turns out to be wrong, just fix this
+# query and re-run it. No need to re-extract anything.`
+};
+function renderCode(key) {
+  document.getElementById('fp-code').innerHTML = `<code>${CODE[key]}</code>`;
+}
+document.querySelectorAll('.fp-step-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fp-step-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCode(btn.dataset.s);
+  });
+});
+renderCode('extract');
+
+document.getElementById('fig-pipeline').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: CSV extracted into raw_orders table, then transformed via SQL into clean_orders table, raw table remains untouched">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <rect x="10" y="45" width="120" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="70" y="75" text-anchor="middle">orders.csv</text>
+  <line x1="130" y1="70" x2="180" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a19)"/>
+  <rect x="180" y="45" width="150" height="50" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="255" y="70" text-anchor="middle" fill="#a9c1ff">raw_orders (loaded)</text>
+  <text x="255" y="110" text-anchor="middle" class="s">stays untouched forever</text>
+  <line x1="330" y1="70" x2="380" y2="70" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a19f)"/>
+  <text x="355" y="60" fill="#f2b84b" font-size="10">SQL</text>
+  <rect x="380" y="45" width="150" height="50" rx="8" fill="#1a2029" stroke="#3ecf8e"/>
+  <text x="455" y="70" text-anchor="middle" fill="#3ecf8e">clean_orders (transformed)</text>
+  <defs>
+    <marker id="a19" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a19f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

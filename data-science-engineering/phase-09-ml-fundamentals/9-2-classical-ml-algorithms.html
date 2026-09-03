@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2 Classical ML algorithms | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.al-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.al-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.al-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.al-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Machine learning fundamentals</div>
+  <h1>9.2 Classical ML algorithms</h1>
+  <p class="subtitle">Before reaching for a neural network, these algorithms solve most real business problems — faster to train, easier to explain, often just as accurate on tabular data.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Current 2026 guidance for learning machine learning is explicit about sequencing: start with
+    supervised learning — regression, classification, decision trees, ensemble methods — using
+    plain tools (scikit-learn, NumPy, pandas). None of the fundamentals require a GPU. These
+    "classical" algorithms remain the right default for most tabular business data, and
+    understanding them deeply (including working through gradient descent by hand at least once)
+    is what makes the rest of the field legible, including deep learning later.
+  </div>
+
+  <h2>Try it: explore the core algorithm families</h2>
+  <div class="al-box">
+    <div class="al-tabs">
+      <div class="al-tab active" data-a="linear">Linear/Logistic Regression</div>
+      <div class="al-tab" data-a="tree">Decision Trees</div>
+      <div class="al-tab" data-a="ensemble">Ensemble Methods</div>
+      <div class="al-tab" data-a="knn">k-Nearest Neighbors</div>
+      <div class="al-tab" data-a="clustering">Clustering (k-means)</div>
+    </div>
+    <div id="al-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Regression vs. classification: same algorithms, different targets</h2>
+  <p>
+    Linear regression predicts a continuous number (a price, a duration). Logistic regression,
+    despite the name, is actually for classification — it predicts a probability between 0 and 1
+    (email is spam) by applying a sigmoid function to what would otherwise be a linear regression's
+    output. Understanding this connection is genuinely useful: the two aren't unrelated algorithms
+    that happen to share a name, one is a direct extension of the other for a different type of
+    target variable.
+  </p>
+
+  <div class="figure" id="fig-algo-map"></div>
+
+  <h2>Why gradient descent is worth doing by hand once</h2>
+  <p>
+    Nobody manually computes gradient descent on the job — libraries handle this. The value of
+    working through the math by hand at least once is that it makes the rest of the field
+    legible: hyperparameters like learning rate, the reason training can diverge or get stuck, and
+    why deep learning training dynamics behave the way they do all trace back to this same
+    underlying optimization process, just at much larger scale.
+  </p>
+
+  <h2>Ensemble methods: why combining weak models often beats one strong one</h2>
+  <p>
+    Ensemble methods (Random Forests, Gradient Boosting, XGBoost) combine predictions from
+    multiple individual models to produce more stable, accurate results than any single model
+    alone. This works because different models tend to make different errors — averaging or
+    combining them cancels out some of each individual model's mistakes. XGBoost specifically
+    integrates with distributed systems like Spark (8.2) and Flink, with built-in cross-validation
+    at each boosting iteration.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Despite its name, what does logistic regression actually do?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Classification — it predicts a probability between 0 and 1 by applying a sigmoid function to a linear combination of inputs</button>
+        <button class="q-option" data-correct="false">It predicts a continuous numeric value exactly like linear regression</button>
+        <button class="q-option" data-correct="false">It only works for clustering unlabeled data</button>
+      </div>
+      <div class="q-explain">Logistic regression is a classification algorithm built as a direct extension of linear regression — the name reflects its mathematical lineage, not its actual output type.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do ensemble methods often outperform a single model?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Different individual models tend to make different errors, and combining their predictions cancels out some of each one's mistakes</button>
+        <button class="q-option" data-correct="false">Ensemble methods always use exactly one algorithm trained multiple times identically</button>
+        <button class="q-option" data-correct="false">Ensembles work by selecting only the single best-performing model from a set</button>
+      </div>
+      <div class="q-explain">The core insight behind ensembling is diversity of errors — models that fail in different ways, when combined, tend to be more robust than any one model alone.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why do current 2026 learning roadmaps recommend starting with classical algorithms before deep learning?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Classical algorithms don't require a GPU, remain the right default for most tabular business data, and understanding them makes the rest of the field legible</button>
+        <button class="q-option" data-correct="false">Classical algorithms are strictly more accurate than deep learning in every possible scenario</button>
+        <button class="q-option" data-correct="false">Deep learning cannot be applied to any type of business data</button>
+      </div>
+      <div class="q-explain">This is a pedagogical and practical sequencing choice, not a claim of universal superiority — classical methods build foundational understanding and remain genuinely useful for the tabular data that dominates most business use cases.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: course.careers "Machine Learning Engineer Roadmap 2026"; Analytics Vidhya "Top 10 Machine Learning Algorithms in 2026"; Springer "Introduction to Machine Learning" chapter (2026).</p>
+
+  <div class="pager">
+    <a href="9-1-supervised-vs-unsupervised-learning.html">&larr; 9.1 Supervised vs. unsupervised learning</a>
+    <a href="9-3-feature-engineering.html">9.3 Feature engineering &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const AL_INFO = {
+  linear: "Linear regression fits a straight-line relationship to predict a continuous number. Logistic regression extends this with a sigmoid function to predict class probabilities instead — same foundation, different target type.",
+  tree: "Splits data repeatedly on feature thresholds to reach a prediction — easy to visualize and explain, but prone to overfitting on their own if grown too deep without pruning or ensembling.",
+  ensemble: "Random Forests average many decision trees trained on different data subsets. Gradient Boosting (and XGBoost) builds trees sequentially, each correcting the previous ones' errors. Both usually outperform a single tree.",
+  knn: "Classifies a new point based on the majority class among its 'k' closest neighbors in the training data. Simple, no real training phase, but can be slow to predict on large datasets since it compares against all stored points.",
+  clustering: "k-means groups data into k clusters by iteratively assigning points to the nearest cluster center and updating centers based on the assigned points. A foundational unsupervised technique for customer segmentation and more.",
+};
+function renderAl(key) { document.getElementById('al-detail').textContent = AL_INFO[key]; }
+document.querySelectorAll('.al-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.al-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderAl(tab.dataset.a);
+  });
+});
+renderAl('linear');
+
+document.getElementById('fig-algo-map').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: algorithm families split by supervised regression, supervised classification, and unsupervised">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="20" width="200" height="90" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="120" y="40" text-anchor="middle" fill="#a9c1ff">Regression (supervised)</text>
+  <text x="120" y="60" text-anchor="middle" font-size="9">Linear Regression</text>
+  <text x="120" y="75" text-anchor="middle" font-size="9">Gradient Boosting</text>
+  <text x="120" y="90" text-anchor="middle" font-size="9">KNN (regression mode)</text>
+
+  <rect x="240" y="20" width="200" height="90" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="340" y="40" text-anchor="middle" fill="#f2b84b">Classification (supervised)</text>
+  <text x="340" y="60" text-anchor="middle" font-size="9">Logistic Regression</text>
+  <text x="340" y="75" text-anchor="middle" font-size="9">Decision Trees / Random Forest</text>
+  <text x="340" y="90" text-anchor="middle" font-size="9">KNN (classification mode)</text>
+
+  <rect x="460" y="20" width="200" height="90" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="560" y="40" text-anchor="middle" fill="#3ecf8e">Unsupervised</text>
+  <text x="560" y="60" text-anchor="middle" font-size="9">k-means clustering</text>
+  <text x="560" y="75" text-anchor="middle" font-size="9">Dimensionality reduction</text>
+  <text x="560" y="90" text-anchor="middle" font-size="9">Anomaly detection</text>
+</svg>
+`;
+</script>
+</body>
+</html>

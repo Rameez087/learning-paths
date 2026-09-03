@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.5 Modern warehouse architecture | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.mw-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.mw-layer { padding: 14px 16px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.mw-layer.active { border-width: 2px; }
+.mw-layer.bronze { border-color: #c9a05f; }
+.mw-layer.silver { border-color: #9aa4b5; }
+.mw-layer.gold { border-color: #f2c94c; }
+.mw-detail { margin-top: 14px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Data modeling &amp; warehousing</div>
+  <h1>6.5 Modern warehouse architecture</h1>
+  <p class="subtitle">The layer-cake pattern that took 5.1's "keep raw data around" principle and turned it into a full architecture.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The <strong>medallion architecture</strong> (bronze / silver / gold) is the dominant 2026
+    pattern for organizing data inside a modern warehouse or lakehouse. <strong>Bronze</strong>
+    holds raw, untransformed data exactly as ingested. <strong>Silver</strong> holds cleaned,
+    validated, deduplicated data — still fairly granular. <strong>Gold</strong> holds
+    business-ready, dimensionally-modeled tables (the star schemas from 6.2) that analysts and
+    dashboards actually query. This is ELT's "T" step (5.1), made explicit and staged rather than
+    happening in one opaque jump from raw to final.
+  </div>
+
+  <h2>Try it: explore each layer</h2>
+  <div class="mw-box">
+    <div id="mw-layers"></div>
+    <div class="mw-detail" id="mw-detail">Click a layer above.</div>
+  </div>
+
+  <h2>Why staging the transformation matters</h2>
+  <p>
+    Going straight from raw to fully-modeled in one step means any bug in that single large
+    transformation is hard to isolate — was it a data quality issue, or a modeling error? Splitting
+    the work into bronze &rarr; silver &rarr; gold means each stage has a narrower, more testable
+    job: silver's job is purely "is this data clean and valid," gold's job is purely "is this
+    correctly modeled for the business question." This mirrors 3.5's prompt-chaining principle
+    from the AI track directly — narrow, inspectable stages beat one large opaque transformation.
+  </p>
+
+  <div class="figure" id="fig-medallion"></div>
+
+  <h2>Lakehouse: warehouse features on top of lake-cheap storage</h2>
+  <p>
+    A <strong>data lakehouse</strong> combines a data lake's cheap, flexible object storage
+    (holding any file format, structured or not) with a warehouse's reliability features —
+    transactions, schema enforcement, time travel — layered on top via open table formats like
+    Delta Lake or Apache Iceberg. All major 2026 cloud platforms have converged on reading and
+    writing these open formats, meaning the underlying file layer is increasingly portable across
+    Snowflake, Databricks, BigQuery, and Microsoft Fabric, even as the platforms themselves compete
+    on the compute and tooling layered on top.
+  </p>
+
+  <h2>Governance is a layer, not an afterthought</h2>
+  <p>
+    Modern warehouse platforms increasingly bundle governance directly into the architecture —
+    lineage tracking, access controls, and cataloging tools (like Microsoft Purview on Azure)
+    integrated at the platform level rather than bolted on separately. This connects forward to
+    Phase 11's data governance topic, but it's worth flagging here: governance decisions (who can
+    see what, how changes are tracked) are increasingly architectural decisions made when the
+    warehouse itself is designed, not just policy documents written afterward.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the job of the silver layer in medallion architecture?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Cleaning, validating, and deduplicating data — still fairly granular, not yet the final business-ready model</button>
+        <button class="q-option" data-correct="false">Storing the final star-schema tables that dashboards query directly</button>
+        <button class="q-option" data-correct="false">Holding completely raw, untouched data exactly as ingested</button>
+      </div>
+      <div class="q-explain">Silver sits between raw (bronze) and business-ready (gold) — its narrow job is data quality, not final business modeling, which is exactly what makes each layer independently testable.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does staging the bronze-silver-gold transformation help with debugging?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each stage has a narrower, more testable responsibility, so a bug can be isolated to a specific stage rather than hidden inside one large opaque transformation</button>
+        <button class="q-option" data-correct="false">Staging eliminates the possibility of any bugs occurring</button>
+        <button class="q-option" data-correct="false">Bronze, silver, and gold layers are functionally identical, so staging has no debugging benefit</button>
+      </div>
+      <div class="q-explain">This mirrors the prompt-chaining principle from the AI track — decomposing one large opaque step into narrow, inspectable stages makes it much easier to locate exactly where something went wrong.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does a data lakehouse combine that makes it distinct from a traditional lake or warehouse alone?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A lake's cheap, flexible storage with a warehouse's reliability features (transactions, schema enforcement) via open table formats like Delta Lake or Iceberg</button>
+        <button class="q-option" data-correct="false">A lakehouse eliminates the need for any cloud storage at all</button>
+        <button class="q-option" data-correct="false">Lakehouses only support unstructured data, never structured tables</button>
+      </div>
+      <div class="q-explain">The lakehouse concept specifically bridges the gap between a lake's storage flexibility and a warehouse's data-management guarantees, using open formats that multiple platforms can now read and write interchangeably.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: PipeCode "Snowflake vs Databricks vs BigQuery vs Synapse: Choosing a Data Warehouse" (2026); Tech Insider "Snowflake vs Databricks vs BigQuery 2026" pricing analysis.</p>
+
+  <div class="pager">
+    <a href="6-4-slowly-changing-dimensions.html">&larr; 6.4 Slowly changing dimensions</a>
+    <a href="6-6-cloud-data-platforms.html">6.6 Cloud data platforms &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const MW_LAYERS = [
+  { key: "bronze", name: "Bronze — raw", detail: "Exactly what was ingested, untouched. Every source field preserved, even messy or duplicated data. This is the safety net from 5.1 — if anything downstream breaks, this layer lets you re-derive it." },
+  { key: "silver", name: "Silver — cleaned", detail: "Deduplicated, validated, type-corrected, but still close to source granularity — not yet reshaped into the business's specific reporting structure." },
+  { key: "gold", name: "Gold — business-ready", detail: "Dimensionally modeled (6.2's star schemas), aggregated where useful, and directly queried by dashboards and analysts. This is the layer a business user actually touches." },
+];
+document.getElementById('mw-layers').innerHTML = MW_LAYERS.map(l =>
+  `<div class="mw-layer ${l.key}" data-k="${l.key}">${l.name}</div>`
+).join('');
+document.querySelectorAll('.mw-layer').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.mw-layer').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('mw-detail').textContent = MW_LAYERS.find(l => l.key === el.dataset.k).detail;
+  });
+});
+
+document.getElementById('fig-medallion').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: medallion architecture bronze to silver to gold layers, each progressively more refined">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="20" y="45" width="180" height="50" rx="8" fill="#1a2029" stroke="#c9a05f" stroke-width="1.5"/><text x="110" y="75" text-anchor="middle" fill="#c9a05f">Bronze (raw)</text>
+  <line x1="200" y1="70" x2="250" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a29)"/>
+  <rect x="250" y="45" width="180" height="50" rx="8" fill="#1a2029" stroke="#9aa4b5" stroke-width="1.5"/><text x="340" y="75" text-anchor="middle" fill="#9aa4b5">Silver (cleaned)</text>
+  <line x1="430" y1="70" x2="480" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a29)"/>
+  <rect x="480" y="45" width="180" height="50" rx="8" fill="#182238" stroke="#f2c94c" stroke-width="1.5"/><text x="570" y="75" text-anchor="middle" fill="#f2c94c">Gold (business-ready)</text>
+  <defs><marker id="a29" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

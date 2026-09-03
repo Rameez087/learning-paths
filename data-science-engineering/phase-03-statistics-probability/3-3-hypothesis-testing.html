@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.3 Hypothesis testing | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ht-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ht-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--border); border-radius: 8px; overflow: hidden; margin-top: 16px; }
+.ht-cell { background: var(--surface-2); padding: 16px; text-align: center; }
+.ht-cell.correct { background: rgba(62,207,142,0.12); }
+.ht-cell.error { background: rgba(229,72,77,0.12); }
+.ht-cell .t { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.ht-cell .d { font-size: 12px; color: var(--text-secondary); }
+.ht-header { background: var(--surface); padding: 10px; text-align: center; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Statistics &amp; probability</div>
+  <h1>3.3 Hypothesis testing</h1>
+  <p class="subtitle">A structured way to ask "is this difference real, or could it just be random noise?"</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Hypothesis testing starts by assuming the <strong>null hypothesis</strong> (H&#8320;) — usually
+    "no effect, no difference" — is true, then asks how surprising the observed data would be
+    under that assumption. The <strong>p-value</strong> is that surprise, quantified: the
+    probability of seeing a result at least this extreme if H&#8320; really were true. A small
+    p-value (conventionally below a significance level α, often 0.05) means the data would be
+    quite surprising under H&#8320;, leading you to reject it. Critically: a p-value does NOT tell
+    you the probability that H&#8320; is true — that's one of the most common misinterpretations
+    in the field.
+  </div>
+
+  <h2>Try it: explore the four possible outcomes</h2>
+  <div class="ht-box">
+    <div class="ht-grid">
+      <div class="ht-header">&nbsp;</div>
+      <div class="ht-header">H&#8320; is actually true</div>
+      <div class="ht-header">H&#8320; is actually false</div>
+      <div class="ht-cell"><div class="t">You fail to reject H&#8320;</div></div>
+      <div class="ht-cell correct"><div class="t">✓ Correct</div><div class="d">Correctly kept a true null hypothesis</div></div>
+      <div class="ht-cell error"><div class="t">Type II Error (β)</div><div class="d">Missed a real effect — a false negative</div></div>
+      <div class="ht-cell"><div class="t">You reject H&#8320;</div></div>
+      <div class="ht-cell error"><div class="t">Type I Error (α)</div><div class="d">Falsely found an effect that isn't there — a false positive</div></div>
+      <div class="ht-cell correct"><div class="t">✓ Correct</div><div class="d">Correctly detected a real effect</div></div>
+    </div>
+  </div>
+
+  <h2>What the p-value actually measures — and doesn't</h2>
+  <p>
+    A p-value of 0.03 means: "if there truly were no effect, there'd be a 3% chance of seeing a
+    result this extreme or more, purely from random sampling variation." It does <strong>not</strong>
+    mean "there's a 3% chance the null hypothesis is true," and it does not measure how large or
+    practically important an effect is — a tiny, meaningless effect can still produce a very small
+    p-value if the sample size is large enough. This is exactly why statistical significance and
+    practical significance are different questions, and confusing the two is flagged as a common,
+    consequential mistake even among experienced researchers.
+  </p>
+
+  <h2>The trade-off between the two error types</h2>
+  <p>
+    Lowering your significance level α (say, from 0.05 to 0.01) makes Type I errors less likely —
+    but for the same sample size, it makes Type II errors <em>more</em> likely, because you're
+    demanding stronger evidence before rejecting H&#8320;. <strong>Power</strong> (1 &minus; β) is
+    the probability of correctly detecting a real effect when one exists — an underpowered study
+    (too small a sample) may simply lack the ability to detect an effect even if it's genuinely
+    there, which is a different failure than "there's no effect to find."
+  </p>
+
+  <h2>One-tailed vs. two-tailed tests</h2>
+  <p>
+    A <strong>two-tailed test</strong> checks for a difference in either direction ("is the new
+    version different from the old, better or worse?"). A <strong>one-tailed test</strong> checks
+    for a difference in only one specific direction ("is the new version <em>better</em>?"). A
+    one-tailed test has more power to detect an effect in the direction you specified — but
+    committing to a direction ahead of time is a real methodological choice, not something to pick
+    after seeing which direction the data happened to go.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does a p-value of 0.03 actually mean?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If the null hypothesis were true, there'd be a 3% chance of observing a result this extreme or more, purely from random variation</button>
+        <button class="q-option" data-correct="false">There's a 3% chance the null hypothesis is true</button>
+        <button class="q-option" data-correct="false">The effect size is 3%</button>
+      </div>
+      <div class="q-explain">This is the single most common misinterpretation to avoid — a p-value is a statement about how surprising the data is under H₀, not a probability statement about H₀ itself.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What happens to Type II error risk when you lower your significance level α (e.g. from 0.05 to 0.01), holding sample size fixed?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Type II error risk increases, because you're now demanding stronger evidence before rejecting the null hypothesis</button>
+        <button class="q-option" data-correct="false">Type II error risk decreases along with Type I error risk</button>
+        <button class="q-option" data-correct="false">Lowering α has no effect on Type II error risk</button>
+      </div>
+      <div class="q-explain">The two error types trade off against each other for a fixed sample size — making it harder to reject H₀ (lower α) reduces false positives but increases the chance of missing a real effect (false negatives).</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is choosing a one-tailed test after seeing which direction your data went considered problematic?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Committing to a direction should be a decision made before seeing the results — choosing it afterward inflates the effective false-positive rate</button>
+        <button class="q-option" data-correct="false">One-tailed tests are always statistically invalid regardless of when the direction is chosen</button>
+        <button class="q-option" data-correct="false">Two-tailed tests cannot be converted into one-tailed tests under any circumstances</button>
+      </div>
+      <div class="q-explain">Picking the direction retroactively after seeing the data gives you an unfair advantage in finding "significance" — the test's validity depends on the direction being specified as part of the original hypothesis, before the data is examined.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: StatPearls "Hypothesis Testing, P Values, Confidence Intervals, and Significance" (2026); Scribbr "Type I &amp; Type II Errors"; UT Austin "Type I and II Errors and Significance Levels".</p>
+
+  <div class="pager">
+    <a href="3-2-probability-distributions.html">&larr; 3.2 Probability distributions</a>
+    <a href="3-4-confidence-intervals.html">3.4 Confidence intervals &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+</script>
+</body>
+</html>

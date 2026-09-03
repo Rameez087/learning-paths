@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 Probability distributions | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.pd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.pd-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.pd-slider-row input[type=range] { flex: 1; }
+.pd-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pd-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.pd-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Statistics &amp; probability</div>
+  <h1>3.2 Probability distributions</h1>
+  <p class="subtitle">A distribution is a shape that tells you which outcomes are likely before you've even looked at the data.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A probability distribution describes how likely each possible value of a random variable is.
+    The <strong>normal distribution</strong> (bell curve) is the most important one in practice —
+    it emerges naturally whenever you're looking at a sum or average of many small independent
+    effects, which is extremely common in real data. Its defining rule of thumb: about 68% of
+    values fall within 1 standard deviation of the mean, about 95% within 2, and about 99.7% within
+    3 — the "68-95-99.7 rule."
+  </div>
+
+  <h2>Try it: drag the slider, watch the 68-95-99.7 rule in action</h2>
+  <div class="pd-box">
+    <div class="pd-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:130px;">Standard deviations</label>
+      <input type="range" id="pd-slider" min="1" max="3" step="0.1" value="1">
+      <span id="pd-readout" style="font-weight:700; min-width:36px; text-align:right;">1.0</span>
+    </div>
+    <div id="pd-normal-fig"></div>
+    <p style="text-align:center; font-size:14px; margin-top:10px;">Area within <strong id="pd-sd-label">1.0</strong> standard deviations: <strong id="pd-pct">68.3%</strong></p>
+  </div>
+
+  <h2>Try it: explore the other common distributions</h2>
+  <div class="pd-box">
+    <div class="pd-tabs">
+      <div class="pd-tab active" data-d="normal">Normal</div>
+      <div class="pd-tab" data-d="binomial">Binomial</div>
+      <div class="pd-tab" data-d="poisson">Poisson</div>
+      <div class="pd-tab" data-d="uniform">Uniform</div>
+    </div>
+    <div id="pd-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why the normal distribution shows up so often</h2>
+  <p>
+    The Central Limit Theorem is the deep reason: when you sum or average many independent random
+    quantities — heights across a population, measurement errors, the average of samples drawn
+    from almost any underlying distribution — the result tends toward a normal distribution
+    regardless of what the original underlying distribution looked like. This is precisely why
+    the normal distribution is the default assumption behind so much of statistics, including the
+    hypothesis testing and confidence intervals covered next in 3.3 and 3.4.
+  </p>
+
+  <h2>Population vs. sample: a distinction that changes your formulas</h2>
+  <p>
+    Descriptive measures of an entire population use Greek letters (population mean μ, population
+    standard deviation σ); descriptive measures computed from a sample use Roman letters (sample
+    mean x̄, sample standard deviation s). This isn't just notation — sample statistics are
+    estimates of unknown population parameters, and that estimation uncertainty is exactly what
+    confidence intervals (3.4) are built to quantify.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Roughly what percentage of values in a normal distribution fall within 2 standard deviations of the mean?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="false">50%</button>
+        <button class="q-option" data-correct="true">About 95%</button>
+        <button class="q-option" data-correct="false">Exactly 100%</button>
+      </div>
+      <div class="q-explain">This is the middle figure in the 68-95-99.7 rule — roughly 95% of values fall within 2 standard deviations, with about 68% within 1 and about 99.7% within 3.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does the Central Limit Theorem explain about why normal distributions appear so often in real data?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Sums or averages of many independent random effects tend toward a normal distribution, regardless of the shape of the original underlying distribution</button>
+        <button class="q-option" data-correct="false">All naturally occurring data is inherently normally distributed from the start</button>
+        <button class="q-option" data-correct="false">The Central Limit Theorem only applies to datasets with fewer than 30 observations</button>
+      </div>
+      <div class="q-explain">This is a statement about sums and averages converging toward normality, not a claim that every raw dataset is normal on its own — it's exactly why aggregated measurements so often look bell-shaped even when individual data points don't.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does it matter whether a statistic is a "population parameter" or a "sample statistic"?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A sample statistic is an estimate of an unknown population parameter, carrying estimation uncertainty that a true population value doesn't have</button>
+        <button class="q-option" data-correct="false">Population parameters and sample statistics are always numerically identical</button>
+        <button class="q-option" data-correct="false">The distinction is purely a notational convention with no practical consequence</button>
+      </div>
+      <div class="q-explain">This distinction is the entire foundation for confidence intervals and hypothesis testing (3.3-3.4) — the uncertainty in a sample-based estimate is precisely what those tools are built to quantify.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Analytics Vidhya "6 Types of Probability Distribution in Data Science" (2026); Natural Resources Biometrics "Descriptive Statistics and the Normal Distribution"; CodeSignal "Descriptive Statistics and Probability Distributions with SciPy".</p>
+
+  <div class="pager">
+    <a href="3-1-descriptive-statistics.html">&larr; 3.1 Descriptive statistics</a>
+    <a href="3-3-hypothesis-testing.html">3.3 Hypothesis testing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function erf(x) {
+  const sign = x >= 0 ? 1 : -1; x = Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t = 1/(1+p*x);
+  const y = 1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function pctWithin(sd) { return erf(sd/Math.sqrt(2)) * 100; }
+
+function renderNormal() {
+  const sd = parseFloat(document.getElementById('pd-slider').value);
+  document.getElementById('pd-readout').textContent = sd.toFixed(1);
+  document.getElementById('pd-sd-label').textContent = sd.toFixed(1);
+  document.getElementById('pd-pct').textContent = pctWithin(sd).toFixed(1) + '%';
+
+  const width = 660, height = 180, cx = width/2, curveW = 260;
+  function y(x) { return height - 30 - 100 * Math.exp(-((x-cx)*(x-cx))/(2*(curveW/3)*(curveW/3))); }
+  let path = `M 10 ${height-30}`;
+  for (let x = 10; x <= width-10; x += 4) path += ` L ${x} ${y(x)}`;
+  path += ` L ${width-10} ${height-30} Z`;
+
+  const shadeLeft = cx - sd * (curveW/3);
+  const shadeRight = cx + sd * (curveW/3);
+  let shadePath = `M ${shadeLeft} ${height-30}`;
+  for (let x = shadeLeft; x <= shadeRight; x += 4) shadePath += ` L ${x} ${y(x)}`;
+  shadePath += ` L ${shadeRight} ${height-30} Z`;
+
+  document.getElementById('pd-normal-fig').innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Normal distribution curve with shaded area within the selected number of standard deviations">
+      <path d="${path}" fill="none" stroke="#5b8cff" stroke-width="2"/>
+      <path d="${shadePath}" fill="rgba(62,207,142,0.3)" stroke="none"/>
+      <line x1="${cx}" y1="10" x2="${cx}" y2="${height-30}" stroke="#9aa4b5" stroke-width="1" stroke-dasharray="3,3"/>
+    </svg>
+  `;
+}
+document.getElementById('pd-slider').addEventListener('input', renderNormal);
+renderNormal();
+
+const DIST_INFO = {
+  normal: "Continuous, symmetric, bell-shaped. Defined by mean and standard deviation. Models: heights, measurement errors, sums of many small effects.",
+  binomial: "Discrete. Models the number of successes in a fixed number of independent yes/no trials (e.g. number of heads in 10 coin flips). Defined by the number of trials and the success probability per trial.",
+  poisson: "Discrete. Models the number of events occurring in a fixed interval of time or space, when events happen independently at a constant average rate (e.g. number of customer support tickets per hour).",
+  uniform: "Every outcome in a range is equally likely — a flat, rectangular distribution. Models: a fair die roll, a random number generator's output.",
+};
+function renderDist(key) { document.getElementById('pd-detail').textContent = DIST_INFO[key]; }
+document.querySelectorAll('.pd-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.pd-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderDist(tab.dataset.d);
+  });
+});
+renderDist('normal');
+</script>
+</body>
+</html>

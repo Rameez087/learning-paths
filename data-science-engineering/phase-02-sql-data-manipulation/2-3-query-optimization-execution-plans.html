@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 Query optimization &amp; execution plans | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.qo-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.qo-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.qo-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.qo-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.qo-metric { display: flex; gap: 16px; margin-top: 14px; }
+.qo-metric .m { background: var(--surface-2); border-radius: 8px; padding: 12px 18px; text-align: center; }
+.qo-metric .n { font-size: 20px; font-weight: 700; }
+.qo-metric .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · SQL &amp; data manipulation</div>
+  <h1>2.3 Query optimization &amp; execution plans</h1>
+  <p class="subtitle">The same query, on the same data, can take 3 seconds or 3 milliseconds — the difference is almost always an index.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An <strong>execution plan</strong> is a report from the database's query optimizer showing
+    exactly how it intends to run your query — whether it'll scan an entire table or use an index,
+    which join algorithm it picked, and the estimated cost of each step. The single most common
+    fix for a slow query: add an index on the columns actually used to filter or join, and avoid
+    wrapping an indexed column in a function (like <code>YEAR(order_date)</code>), which forces
+    the database to evaluate that function on every row — defeating the index entirely.
+  </div>
+
+  <h2>Try it: same query, index on or off</h2>
+  <div class="qo-box">
+    <p style="font-size:13px; margin-bottom:12px;"><code>SELECT * FROM orders WHERE customer_id = 1001 AND order_date >= '2026-01-01'</code></p>
+    <div class="qo-toggle">
+      <div class="qo-toggle-btn active" data-i="off">No index</div>
+      <div class="qo-toggle-btn" data-i="on">Index on customer_id</div>
+    </div>
+    <div class="qo-metric" id="qo-metric"></div>
+  </div>
+
+  <h2>The classic non-sargable mistake</h2>
+  <pre><code>-- Non-sargable: wraps the indexed column in a function
+SELECT * FROM orders WHERE YEAR(order_date) = 2026;
+-- The database must compute YEAR() for every single row before
+-- it can even check the condition — the index on order_date is useless here.
+
+-- Sargable: filters the raw column directly, index-friendly
+SELECT * FROM orders
+WHERE order_date >= '2026-01-01' AND order_date < '2027-01-01';</code></pre>
+  <p>
+    "Sargable" (Search ARGument ABLE) describes a condition the database can use an index to
+    evaluate directly. The rewritten version above expresses exactly the same logical filter, but
+    lets the optimizer use a range scan on the index instead of computing a function on every row
+    in the table.
+  </p>
+
+  <h2>Reading an execution plan: what to actually look for</h2>
+  <ul>
+    <li><strong>Full table scan vs. index scan</strong> — a full scan reads every row; an index scan jumps directly to relevant rows. A full scan on a large table is the first thing to investigate.</li>
+    <li><strong>Join algorithm</strong> — commonly Hash Join (builds a hash table from one side, good for large unsorted sets) or Nested Loop (checks every row in one table against every row in another, fine for small tables, disastrous at scale).</li>
+    <li><strong>Estimated vs. actual row counts</strong> — a huge gap between what the optimizer expected and what actually happened usually means outdated statistics, which can cause the optimizer to pick a bad plan.</li>
+  </ul>
+
+  <h2>Other common fixes, roughly in order of impact</h2>
+  <ol>
+    <li>Add a missing index on filter/join columns</li>
+    <li>Avoid <code>SELECT *</code> — only retrieve columns you actually need</li>
+    <li>Update stale statistics so the optimizer's row-count estimates are accurate</li>
+    <li>Avoid wildcard characters at the start of a <code>LIKE</code> pattern (<code>'%text'</code> can't use a standard index; <code>'text%'</code> often can)</li>
+    <li>Break an overly complex query into smaller CTEs or temp tables so the optimizer has an easier job at each step</li>
+  </ol>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does wrapping an indexed column in a function (like YEAR(order_date)) defeat the index?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The database must compute the function's result for every row before it can check the condition, which bypasses the index's direct lookup capability</button>
+        <button class="q-option" data-correct="false">Functions are not allowed in SQL WHERE clauses at all</button>
+        <button class="q-option" data-correct="false">Indexes only work on numeric columns, not dates</button>
+      </div>
+      <div class="q-explain">A "sargable" condition lets the database use the index's stored order directly; wrapping the column in a function forces a per-row computation, which is exactly what an index is meant to avoid.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does a large gap between an execution plan's estimated and actual row counts usually indicate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Outdated statistics, which can cause the optimizer to choose a suboptimal execution plan</button>
+        <button class="q-option" data-correct="false">The query is guaranteed to be syntactically incorrect</button>
+        <button class="q-option" data-correct="false">The database has run out of storage space</button>
+      </div>
+      <div class="q-explain">The optimizer relies on statistics about data distribution to choose a plan — stale statistics mean its estimates are wrong, which can lead it to pick a join algorithm or scan type that's actually worse for the real data.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is a Nested Loop join fine for small tables but potentially disastrous at scale?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It checks every row in one table against every row in another, so its cost grows multiplicatively with table size</button>
+        <button class="q-option" data-correct="false">Nested Loop joins are always faster than Hash Joins regardless of table size</button>
+        <button class="q-option" data-correct="false">Nested Loop joins cannot be used with indexed columns</button>
+      </div>
+      <div class="q-explain">The row-by-row comparison cost scales as roughly the product of both table sizes — fine when both are small, prohibitively expensive once either grows large.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: InterviewKickstart "40+ Advanced SQL Interview Questions" (2026); DataVidhya "80 SQL Interview Questions for Data Engineers" (2026); SQL Crash Course "SQL Interview Questions Guide" (2026).</p>
+
+  <div class="pager">
+    <a href="2-2-window-functions-ctes.html">&larr; 2.2 Window functions &amp; CTEs</a>
+    <a href="2-4-pandas-vs-polars-vs-sql.html">2.4 Pandas vs. Polars vs. SQL &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const METRICS = {
+  off: { plan: "Full table scan", rows: "2,400,000 scanned", time: "3.2s" },
+  on: { plan: "Index range scan", rows: "340 scanned", time: "4ms" },
+};
+function renderMetric(key) {
+  const m = METRICS[key];
+  document.getElementById('qo-metric').innerHTML = `
+    <div class="m"><div class="n">${m.plan}</div><div class="l">plan chosen</div></div>
+    <div class="m"><div class="n">${m.rows}</div><div class="l">rows examined</div></div>
+    <div class="m"><div class="n">${m.time}</div><div class="l">query time</div></div>
+  `;
+}
+document.querySelectorAll('.qo-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.qo-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderMetric(btn.dataset.i);
+  });
+});
+renderMetric('off');
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.3 Capstone: Analytics dashboard | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+.done-banner { background: linear-gradient(135deg, #182238, #0e2820); border: 1px solid var(--success); border-radius: var(--radius); padding: 24px; margin-top: 48px; text-align: center; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone projects</div>
+  <h1>12.3 Capstone: Analytics dashboard</h1>
+  <p class="subtitle">Phase 4's storytelling principles, made real for an actual audience — because a finding nobody can see doesn't count as delivered.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build a dashboard that answers one specific, real business question clearly — not a general
+    "explore the data" tool. Apply 4.1's exploratory-vs-explanatory distinction directly: this is
+    explanatory work, so it should show the few charts that carry the actual finding, not
+    everything you looked at during EDA. If your Phase 1 pipeline capstone (12.1) produced a
+    gold-layer table, build this dashboard directly on top of it — the two capstones are meant to
+    connect.
+  </div>
+
+  <h2>What to build</h2>
+  <ul>
+    <li>One specific business question your dashboard answers clearly — "which product categories are declining and why" beats "explore our sales data."</li>
+    <li>A data source ideally connected to your 12.1 pipeline's gold layer (6.5) — if you didn't build 12.1, any clean, modeled dataset works.</li>
+    <li>Chart types chosen deliberately per 4.2's decision framework — not defaulted to whatever your tool suggests first.</li>
+    <li>At least one annotation or callout (4.3) that states the finding directly, not just a chart the viewer has to interpret unaided.</li>
+    <li>A conscious check against 4.4's pitfalls — verify your axes aren't misleadingly truncated, and that you haven't accidentally created a Simpson's paradox situation by aggregating over a hidden confounding variable.</li>
+  </ul>
+
+  <h2>Track your progress</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <p>
+    A working dashboard (Power BI, Tableau, or even a well-built set of charts in a notebook) plus
+    a short README stating the specific question it answers, the finding it reveals, and a
+    deliberate note on one chart-selection or truncation decision you made and why — demonstrating
+    you're applying 4.2 and 4.4's principles consciously, not by accident.
+  </p>
+
+  <h2>Common places this goes wrong</h2>
+  <ul>
+    <li><strong>A dashboard with no specific question.</strong> "General exploration" tools are exploratory (4.1) by definition — this capstone specifically wants explanatory, finding-first work.</li>
+    <li><strong>Every chart type used just to show range.</strong> Recall 4.2 — chart choice should follow from what you're actually trying to show, not from a desire to demonstrate variety.</li>
+    <li><strong>No connection back to the pipeline capstone.</strong> If you built 12.1, this dashboard sitting on hand-copied CSVs instead of your actual gold layer misses the point of the track being one connected chain.</li>
+  </ul>
+
+  <div class="done-banner">
+    <h2 style="margin-top:0; border:none; font-size:20px;">🎉 Track complete</h2>
+    <p style="margin-bottom:0;">
+      Twelve phases, from SQL fundamentals through distributed systems, machine learning, and
+      production data governance — 54 pages, verified against current job-market data and
+      practitioner sources, each with a real interactive element and a self-graded quiz.
+      Everything here is yours to publish, extend, and keep improving as the field moves.
+    </p>
+  </div>
+
+  <div class="pager">
+    <a href="12-2-capstone-eda-to-ml-project.html">&larr; 12.2 Capstone: EDA-to-ML project</a>
+    <a href="../index.html">Back to overview</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+const ITEMS = [
+  "One specific business question identified",
+  "Dashboard connected to a clean, modeled data source",
+  "Chart types deliberately chosen per 4.2's framework",
+  "At least one direct annotation/callout stating the finding",
+  "Axes and aggregation checked against 4.4's pitfalls",
+  "README documenting the question, finding, and one deliberate design decision",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} milestones checked off`;
+}
+updateProgress();
+</script>
+</body>
+</html>

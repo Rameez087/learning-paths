@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.2 Cross-validation | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cv-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cv-fold-row { display: flex; gap: 4px; margin-bottom: 6px; }
+.cv-fold-cell { flex: 1; height: 28px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.cv-fold-cell.test { background: rgba(242,184,75,0.3); border-color: var(--warning); }
+.cv-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+.cv-scores { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.cv-score { background: var(--surface-2); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · ML evaluation &amp; experimentation</div>
+  <h1>10.2 Cross-validation</h1>
+  <p class="subtitle">"Cross-validation is not just a statistical ritual — it's your model's reality check." One split can get lucky. Five splits rarely all do.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    K-fold cross-validation splits the data into k equal parts ("folds"), trains and evaluates the
+    model k times — each time holding out a different fold as the test set — and averages the
+    results. This gives a far more reliable performance estimate than a single train/test split,
+    which can look misleadingly good or bad purely from how the data happened to be divided.
+    Watching the <em>variance</em> across folds, not just the average, matters too — a high
+    standard deviation across folds is a warning that the model might not generalize well.
+  </div>
+
+  <h2>Try it: watch how a single lucky split can mislead you</h2>
+  <div class="cv-box">
+    <div id="cv-folds"></div>
+    <button class="cv-btn" id="cv-run">Run 5-fold cross-validation</button>
+    <div class="cv-scores" id="cv-scores"></div>
+    <p id="cv-verdict" style="font-size:13px; margin-top:10px;"></p>
+  </div>
+
+  <h2>Stratified K-Fold for classification</h2>
+  <p>
+    Just as with a simple train/test split (10.1), plain K-Fold can create folds with very
+    different class balances purely by chance — especially damaging with imbalanced data.
+    <strong>StratifiedKFold</strong> ensures each fold preserves the overall class proportions,
+    and is the standard recommendation for classification tasks, while plain KFold remains
+    appropriate for regression, where there's no class balance to preserve.
+  </p>
+
+  <div class="figure" id="fig-kfold"></div>
+
+  <h2>Choosing k: a real trade-off, not an arbitrary number</h2>
+  <p>
+    A commonly cited choice is k=5, corresponding to an 80/20 train/test split per fold — a larger
+    holdout per fold (like k=5) is less prone to overfitting the hyperparameter search than a
+    smaller holdout (like k=10, a 90/10 split), though other values of k can be justified based on
+    the specific dataset and computational constraints. There's no single universally correct k;
+    it's a documented trade-off between validation-set size and computational cost.
+  </p>
+
+  <h2>What high fold-to-fold variance actually tells you</h2>
+  <p>
+    If accuracy swings from 0.95 on one fold to 0.72 on another, that's not noise to ignore — it's
+    a direct signal the model's performance depends heavily on which specific data it happened to
+    see, meaning it likely won't generalize reliably to new, unseen data. This is exactly the kind
+    of diagnostic information a single train/test split would never reveal, since it only ever
+    shows you one particular split's result.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does k-fold cross-validation give a more reliable performance estimate than a single train/test split?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Averaging results across k different train/test divisions reduces the risk that one particular, possibly unrepresentative split misleads the evaluation</button>
+        <button class="q-option" data-correct="false">Cross-validation always trains the model on more total data than a single split ever could</button>
+        <button class="q-option" data-correct="false">Cross-validation eliminates the need for a validation set entirely</button>
+      </div>
+      <div class="q-explain">A single split's result depends on how that particular division happened to fall — averaging across multiple different divisions smooths out this luck-of-the-split effect.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is StratifiedKFold generally preferred over plain KFold for classification tasks?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It preserves overall class proportions in every fold, preventing folds with skewed class balance purely from random chance</button>
+        <button class="q-option" data-correct="false">StratifiedKFold always trains faster than plain KFold</button>
+        <button class="q-option" data-correct="false">Plain KFold cannot technically be used for any classification problem</button>
+      </div>
+      <div class="q-explain">Without stratification, a fold could randomly end up with very few examples of a rare class, giving an unreliable performance read for that fold — stratification directly guards against this.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does high variance in scores across cross-validation folds indicate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The model's performance depends heavily on which specific data it happened to see, suggesting it may not generalize reliably to new data</button>
+        <button class="q-option" data-correct="false">High fold variance is always a sign of a coding bug, never a real modeling issue</button>
+        <button class="q-option" data-correct="false">Fold-to-fold variance is irrelevant as long as the average score is high</button>
+      </div>
+      <div class="q-explain">A model that performs wildly differently depending on which fold it saw is exhibiting instability that a single average score would hide entirely — this is exactly why watching variance, not just the mean, matters.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Nerd Level Tech "Mastering Cross-Validation Techniques in 2026"; TheCodeForge "Train Test Split and Cross Validation" (2026); arXiv "Enhancing Vulnerability Prioritization" (5-fold CV example, 2023).</p>
+
+  <div class="pager">
+    <a href="10-1-train-validation-test-splits.html">&larr; 10.1 Train/validation/test splits</a>
+    <a href="10-3-evaluation-metrics.html">10.3 Evaluation metrics &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderFolds(highlightFold) {
+  let html = '';
+  for (let f = 0; f < 5; f++) {
+    html += '<div class="cv-fold-row">';
+    for (let c = 0; c < 5; c++) {
+      html += `<div class="cv-fold-cell${c === (highlightFold !== undefined ? highlightFold : -1) ? ' test' : ''}">${c === (highlightFold !== undefined ? highlightFold : -1) ? 'TEST' : 'train'}</div>`;
+    }
+    html += `<span style="margin-left:8px; font-size:10px; color:var(--text-muted); align-self:center;">fold ${f+1}</span></div>`;
+  }
+  document.getElementById('cv-folds').innerHTML = html;
+}
+renderFolds();
+
+document.getElementById('cv-run').addEventListener('click', () => {
+  const scores = [0.91, 0.88, 0.93, 0.72, 0.90]; // simulate one fold being an unlucky outlier
+  document.getElementById('cv-scores').innerHTML = scores.map((s,i) =>
+    `<div class="cv-score">Fold ${i+1}: ${s.toFixed(2)}</div>`
+  ).join('');
+  const mean = scores.reduce((a,b)=>a+b,0)/scores.length;
+  const std = Math.sqrt(scores.reduce((a,b)=>a+(b-mean)**2,0)/scores.length);
+  const verdict = document.getElementById('cv-verdict');
+  verdict.innerHTML = `Mean accuracy: <strong>${mean.toFixed(3)}</strong>, std dev: <strong>${std.toFixed(3)}</strong>. ${std > 0.05 ? 'That std dev is high — fold 4 dragged the average down noticeably. A single lucky split (say, fold 3 alone) would have reported 0.93 and hidden this instability entirely.' : 'Low variance — consistent performance across folds.'}`;
+});
+</script>
+</body>
+</html>

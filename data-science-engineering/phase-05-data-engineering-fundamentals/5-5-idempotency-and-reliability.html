@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.5 Idempotency &amp; reliability | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.id-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.id-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.id-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.id-toggle-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.id-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.id-table th, .id-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.id-table th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
+.id-table tr.bad { color: #ff8b8f; }
+.id-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Data engineering fundamentals</div>
+  <h1>5.5 Idempotency &amp; reliability</h1>
+  <p class="subtitle">The single property that separates pipelines you can safely retry from pipelines you're afraid to touch at 3am.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An <strong>idempotent</strong> pipeline produces the same result no matter how many times you
+    run it on the same input — meaning a failed run can always be safely retried, and a backfill
+    never creates duplicates. Pipelines break most often for two specifically named reasons:
+    unhandled schema changes at the source, and missing idempotency, where re-running a failed
+    pipeline silently creates duplicate records. Building idempotency in from the start is
+    consistently named among the highest-impact practices for production reliability.
+  </div>
+
+  <h2>Try it: watch a naive pipeline fail on retry, and a fixed one survive it</h2>
+  <div class="id-box">
+    <div class="id-toggle">
+      <div class="id-toggle-btn active" data-m="naive">Naive INSERT</div>
+      <div class="id-toggle-btn" data-m="idempotent">Idempotent UPSERT</div>
+    </div>
+    <table class="id-table">
+      <thead><tr><th>Run</th><th>Action</th><th>Result</th></tr></thead>
+      <tbody id="id-rows"></tbody>
+    </table>
+    <button class="id-btn" id="id-fail">Simulate a mid-run failure &amp; retry</button>
+  </div>
+
+  <h2>The core techniques</h2>
+  <ul>
+    <li><strong>Stable keys and upserts instead of blind inserts</strong> — an upsert (update if exists, insert if not) means re-running the same batch never creates a second copy of a record that already succeeded.</li>
+    <li><strong>Delete-write pattern for partitions</strong> — delete the relevant partition or date range before rewriting it, ensuring only the latest, correct version of that slice persists, regardless of how many times the job runs.</li>
+    <li><strong>Watermarking</strong> — tracking the highest timestamp or offset successfully processed so far, so a retry knows exactly where to resume rather than reprocessing everything or guessing.</li>
+    <li><strong>State stores for streaming</strong> — in streaming pipelines specifically, maintaining a state store or using upsert strategies prevents replayed or late-arriving events from creating duplicate records for the same underlying event.</li>
+  </ul>
+
+  <div class="figure" id="fig-upsert"></div>
+
+  <h2>Idempotency and reproducibility work together</h2>
+  <p>
+    A closely related property: given the exact same versioned code, configuration, and input
+    data, a <strong>reproducible</strong> pipeline can rebuild its outputs for any specific past
+    point in time. Idempotency handles safe re-runs; reproducibility handles safe historical
+    reconstruction. Together, these two properties are what make audits, debugging, and
+    experimentation dramatically less risky — you can confidently ask "what would this pipeline
+    have produced last Tuesday" and get a trustworthy answer.
+  </p>
+
+  <h2>A real complication: backfills can overwhelm the source</h2>
+  <p>
+    Even a perfectly idempotent pipeline can run into trouble during a large backfill: if the
+    source is an operational database not built for large analytical scans, pulling the full
+    historical dataset can crash or severely degrade it. Practical mitigations include processing
+    the backfill in smaller, throttled date-range chunks with deliberate pauses between them —
+    or, better, using CDC (5.4) from the start so a full historical re-extraction is rarely needed
+    at all.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does it mean for a pipeline to be idempotent?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Running it multiple times on the same input produces the same result as running it once, with no duplicates</button>
+        <button class="q-option" data-correct="false">The pipeline runs faster every time it's executed</button>
+        <button class="q-option" data-correct="false">The pipeline never needs to be retried under any circumstances</button>
+      </div>
+      <div class="q-explain">Idempotency is specifically about safe repetition — the defining property is that re-running doesn't change the outcome or create duplicates, which is exactly what makes retries safe.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does an upsert prevent the duplicate-record problem that a blind insert creates on retry?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An upsert updates the existing record if it's already there instead of blindly adding a new one, so re-running the same batch doesn't create a second copy</button>
+        <button class="q-option" data-correct="false">Upserts are simply faster than inserts, which is why they prevent duplicates</button>
+        <button class="q-option" data-correct="false">Upserts and inserts behave identically in every database</button>
+      </div>
+      <div class="q-explain">The key/matching logic in an upsert is what makes a retry safe — it checks for an existing match before deciding whether to update or insert, unlike a blind insert that always adds a new row.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why might using CDC from the start reduce the risk large backfills pose to a source system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">CDC keeps the destination continuously in sync via incremental changes, so a full historical re-extraction is rarely needed later</button>
+        <button class="q-option" data-correct="false">CDC makes backfills completely risk-free under all circumstances</button>
+        <button class="q-option" data-correct="false">CDC eliminates the need for idempotency entirely</button>
+      </div>
+      <div class="q-explain">The backfill risk specifically arises from needing to pull an entire historical dataset at once — if CDC has been keeping the data continuously synced, that large one-time pull is far less often necessary.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Databricks "Data Pipeline Best Practices" (2026); Ariane Horbach "Building Idempotent Data Pipelines: A Practical Guide to Reliability at Scale" (2025-2026); dataskew.io "Data Pipeline Design Patterns" (2026).</p>
+
+  <div class="pager">
+    <a href="5-4-data-ingestion-strategies.html">&larr; 5.4 Data ingestion strategies</a>
+    <a href="../phase-06-data-modeling-warehousing/6-1-oltp-vs-olap.html">Phase 6: Data modeling &amp; warehousing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let idMode = 'naive';
+function renderIdBase() {
+  document.getElementById('id-rows').innerHTML = `
+    <tr><td>Run 1</td><td>Process order #4471</td><td>1 row written</td></tr>
+  `;
+}
+document.querySelectorAll('.id-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.id-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    idMode = btn.dataset.m;
+    renderIdBase();
+  });
+});
+renderIdBase();
+
+document.getElementById('id-fail').addEventListener('click', () => {
+  const rows = document.getElementById('id-rows');
+  if (idMode === 'naive') {
+    rows.innerHTML += `
+      <tr class="bad"><td>Run 1 (retry after crash)</td><td>INSERT order #4471 again</td><td>2nd row written — duplicate!</td></tr>
+      <tr class="bad"><td>Result</td><td colspan="2">⚠ Order #4471 now counted twice in every downstream report.</td></tr>
+    `;
+  } else {
+    rows.innerHTML += `
+      <tr><td>Run 1 (retry after crash)</td><td>UPSERT order #4471 (match on order_id)</td><td>Existing row updated, no duplicate</td></tr>
+      <tr><td>Result</td><td colspan="2">✓ Safe to retry as many times as needed — same end state every time.</td></tr>
+    `;
+  }
+});
+
+document.getElementById('fig-upsert').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: upsert checks for an existing key before deciding to update or insert">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="20" y="50" width="150" height="40" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="95" y="75" text-anchor="middle">Incoming record</text>
+  <line x1="170" y1="70" x2="220" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a25)"/>
+  <rect x="220" y="50" width="160" height="40" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="300" y="75" text-anchor="middle" fill="#a9c1ff">Key already exists?</text>
+  <line x1="380" y1="60" x2="440" y2="30" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a25g)"/>
+  <text x="410" y="25" fill="#3ecf8e" font-size="10">yes</text>
+  <rect x="440" y="10" width="120" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="500" y="32" text-anchor="middle" fill="#3ecf8e" font-size="10">UPDATE row</text>
+  <line x1="380" y1="80" x2="440" y2="105" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a25f)"/>
+  <text x="410" y="115" fill="#f2b84b" font-size="10">no</text>
+  <rect x="440" y="95" width="120" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="500" y="117" text-anchor="middle" fill="#f2b84b" font-size="10">INSERT row</text>
+  <defs>
+    <marker id="a25" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a25g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="a25f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.2 Data testing &amp; Great Expectations | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dt-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dt-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.dt-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.dt-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Data quality, governance &amp; observability</div>
+  <h1>11.2 Data testing &amp; Great Expectations</h1>
+  <p class="subtitle">dbt tests alone catch roughly 80% of data quality issues at the transformation layer — the remaining 20% is what full observability is for.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>dbt tests</strong> (not null, unique, referential integrity, accepted values) run
+    directly inside your transformation pipeline (Phase 2's SQL, Phase 6's warehousing) and catch
+    the large majority of structural data quality problems cheaply. <strong>Great Expectations</strong>
+    (and similar tools like Soda) go further with richer, custom validation rules — "this column's
+    values should fall within this range," "this column's null rate shouldn't exceed 2%" — run as
+    explicit pipeline steps. Beyond individual tests, full data observability watches four
+    specific pillars continuously: <strong>freshness, volume, schema, and distribution.</strong>
+  </div>
+
+  <h2>Try it: explore the four pillars of data observability</h2>
+  <div class="dt-box">
+    <div class="dt-tabs">
+      <div class="dt-tab active" data-p="freshness">Freshness</div>
+      <div class="dt-tab" data-p="volume">Volume</div>
+      <div class="dt-tab" data-p="schema">Schema</div>
+      <div class="dt-tab" data-p="distribution">Distribution</div>
+    </div>
+    <div id="dt-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>A simple dbt test, and what it actually catches</h2>
+  <pre><code># schema.yml
+models:
+  - name: fct_orders
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_id
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['pending', 'shipped', 'delivered', 'cancelled']</code></pre>
+  <p>
+    This one file catches four distinct real-world failure modes: duplicate order IDs, missing
+    required fields, orphaned foreign keys pointing at customers that don't exist (a broken join
+    in 6.2's dimensional model), and an unexpected status value that would silently break any
+    downstream logic branching on the status field.
+  </p>
+
+  <div class="figure" id="fig-testing-layers"></div>
+
+  <h2>Great Expectations: richer rules beyond dbt's built-ins</h2>
+  <p>
+    Great Expectations lets you define an "expectation suite" — custom, often statistical rules
+    beyond dbt's structural checks: a column's values should fall within a specific numeric range,
+    a column's null rate shouldn't exceed a threshold, or a column's distribution shouldn't shift
+    dramatically from a known-good baseline. These run as explicit validation steps integrated
+    into the orchestrator (Phase 7), the same pattern used for data contract enforcement (11.1).
+  </p>
+
+  <h2>Where "root cause analysis" comes in</h2>
+  <p>
+    When a test fails or an observability pillar flags an anomaly, the next question is always
+    "why, and what's actually affected downstream." This is exactly where data lineage (11.3)
+    becomes essential — a failing test tells you something's wrong, lineage tells you the blast
+    radius of what depends on the broken data.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What kind of data quality problem does a dbt "relationships" test specifically catch?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A foreign key referencing a value that doesn't actually exist in the related table — an orphaned reference</button>
+        <button class="q-option" data-correct="false">A column containing values outside an expected numeric range</button>
+        <button class="q-option" data-correct="false">A gradual drift in a column's statistical distribution over time</button>
+      </div>
+      <div class="q-explain">The relationships test specifically validates referential integrity — that every foreign key value in one table actually corresponds to a real row in the referenced table.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might a team use Great Expectations in addition to dbt's built-in tests?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Great Expectations supports richer, often statistical custom rules — value ranges, null-rate thresholds, distribution checks — beyond dbt's structural test types</button>
+        <button class="q-option" data-correct="false">Great Expectations replaces dbt entirely and cannot be used alongside it</button>
+        <button class="q-option" data-correct="false">dbt tests and Great Expectations checks are functionally identical</button>
+      </div>
+      <div class="q-explain">dbt's built-in tests cover structural checks (uniqueness, nullability, referential integrity) well, while Great Expectations extends into more customizable, statistical validation that dbt's simpler test types don't cover.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does data lineage matter as a follow-up to a failed data quality test?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A failing test identifies that something's wrong, but lineage reveals the actual blast radius — what downstream tables, dashboards, or models depend on the broken data</button>
+        <button class="q-option" data-correct="false">Lineage automatically fixes any data quality issue it detects</button>
+        <button class="q-option" data-correct="false">Lineage and data testing are unrelated and never used together</button>
+      </div>
+      <div class="q-explain">Testing and lineage answer different questions — "is something wrong" versus "what depends on the thing that's wrong" — and both are needed to actually respond to a data quality incident effectively.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Mayurkumar Surani "Data Quality &amp; Observability: Testing, Monitoring, Lineage &amp; Data Contracts" (2026); Atlan "Top open source data quality tools to know in 2026"; Tools for Data "My Data Quality Tool Market Guide 2026".</p>
+
+  <div class="pager">
+    <a href="11-1-data-contracts.html">&larr; 11.1 Data contracts</a>
+    <a href="11-3-data-lineage.html">11.3 Data lineage &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DT_INFO = {
+  freshness: "Is the data arriving on the schedule it's supposed to? A table that hasn't updated in 36 hours when it should update hourly is a freshness failure — often the first symptom of a broken upstream pipeline.",
+  volume: "Is the amount of data arriving roughly what's expected? A sudden drop from millions of rows to a few hundred usually signals a broken extraction step, not a genuine business change.",
+  schema: "Has the structure changed unexpectedly? A column disappearing, a type changing from integer to string, or a new unexpected column appearing — exactly what data contracts (11.1) are built to catch.",
+  distribution: "Do the actual values look statistically normal? A column that's usually 0-100 suddenly showing values in the millions, or a categorical column's proportions shifting dramatically, can signal an upstream bug even when schema and volume look fine.",
+};
+function renderDt(key) { document.getElementById('dt-detail').textContent = DT_INFO[key]; }
+document.querySelectorAll('.dt-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dt-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderDt(tab.dataset.p);
+  });
+});
+renderDt('freshness');
+
+document.getElementById('fig-testing-layers').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: dbt tests catching roughly 80 percent of issues cheaply at the transformation layer, Great Expectations and observability catching the remaining harder cases">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="20" y="30" width="300" height="80" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="170" y="60" text-anchor="middle" fill="#a9c1ff">dbt tests</text>
+  <text x="170" y="80" text-anchor="middle" fill="#7891c9" font-size="10">~80% of issues, caught cheaply</text>
+  <text x="360" y="70" text-anchor="middle" font-size="16">+</text>
+  <rect x="400" y="30" width="260" height="80" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="530" y="60" text-anchor="middle" fill="#f2b84b">Great Expectations + Observability</text>
+  <text x="530" y="80" text-anchor="middle" fill="#c9a05f" font-size="10">custom rules, 4 pillars, harder cases</text>
+</svg>
+`;
+</script>
+</body>
+</html>

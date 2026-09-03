@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.4 Data governance basics | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.gv-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.gv-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.gv-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.gv-tab.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Data quality, governance &amp; observability</div>
+  <h1>11.4 Data governance basics</h1>
+  <p class="subtitle">Every concept from this phase — contracts, testing, lineage — needs a home. Governance is that home, made operational rather than just a policy binder.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Data governance establishes who owns each dataset, who can access it, how quality and
+    compliance standards are enforced, and how issues get resolved when something breaks.
+    Organizations with mature governance practices report fewer operational disruptions, faster
+    issue resolution, and stronger collaboration between data producers and consumers — but
+    governance only delivers this value when it's genuinely operational (workflows, automated
+    controls, a catalog) rather than a static policy document nobody actually references day to
+    day.
+  </div>
+
+  <h2>Try it: explore the core governance components</h2>
+  <div class="gv-box">
+    <div class="gv-tabs">
+      <div class="gv-tab active" data-c="ownership">Ownership</div>
+      <div class="gv-tab" data-c="catalog">Data catalog</div>
+      <div class="gv-tab" data-c="access">Access control</div>
+      <div class="gv-tab" data-c="compliance">Compliance</div>
+    </div>
+    <div id="gv-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>How this phase's four topics fit into one operational whole</h2>
+  <p>
+    These aren't four separate practices bolted together — they're layers of the same system.
+    <strong>Contracts (11.1)</strong> define what's expected of a dataset. <strong>Testing
+    (11.2)</strong> verifies those expectations are actually being met. <strong>Lineage
+    (11.3)</strong> shows what depends on that dataset, so a violation's impact is understood
+    immediately. <strong>Governance</strong> is the organizational layer that assigns ownership,
+    manages access, and defines the escalation process when contracts are violated or quality
+    issues surface — the human and process structure that makes the other three technical
+    practices actually function at an organizational scale.
+  </p>
+
+  <div class="figure" id="fig-governance-stack"></div>
+
+  <h2>Start where failures cost the most</h2>
+  <p>
+    A specifically practical rollout recommendation: begin governance efforts (and data contracts
+    specifically) with the datasets and data products that have the greatest business impact —
+    not an exhaustive, simultaneous rollout across every table in the warehouse. Demonstrating
+    value on high-impact datasets first builds the case for wider adoption, rather than spreading
+    initial effort thin across low-stakes data that wouldn't cause much damage if something went
+    wrong.
+  </p>
+
+  <h2>Why "context layer" language is showing up in 2026 governance tools</h2>
+  <p>
+    Current governance platforms increasingly describe themselves as providing a unified "context
+    layer" — combining metadata, lineage, and quality signals into one place that serves human
+    analysts and AI agents alike. This reflects a genuine shift: as more systems (including AI
+    coding assistants and analytics copilots) query and act on organizational data directly,
+    governance metadata isn't just documentation for humans anymore — it's the trust layer that
+    determines whether an automated system can act on a piece of data confidently.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does governance only deliver real value when it's "operational" rather than a static policy document?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A document nobody actively references or enforces provides no practical protection — governance needs workflows, automated controls, and a catalog to actually function</button>
+        <button class="q-option" data-correct="false">Policy documents are technically incapable of describing data ownership</button>
+        <button class="q-option" data-correct="false">Governance is purely a legal requirement with no operational component ever needed</button>
+      </div>
+      <div class="q-explain">This mirrors 11.1's point about contracts — a rule that exists only on paper without active enforcement mechanisms behind it doesn't actually prevent the problems it describes.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How do contracts, testing, and lineage relate to governance as described in this phase?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">They're layers of one operational system — contracts define expectations, testing verifies them, lineage shows impact, and governance provides the organizational structure connecting all three</button>
+        <button class="q-option" data-correct="false">They are four entirely unrelated practices with no meaningful connection</button>
+        <button class="q-option" data-correct="false">Governance replaces the need for contracts, testing, and lineage entirely</button>
+      </div>
+      <div class="q-explain">This phase's four topics are explicitly designed to work together — technical practices (contracts, testing, lineage) need the organizational layer (governance) to actually scale across a whole company.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is it recommended to start governance efforts with high-impact datasets rather than an exhaustive rollout?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Demonstrating value on datasets where failures cost the most builds the case for wider adoption more effectively than spreading effort thin across low-stakes data</button>
+        <button class="q-option" data-correct="false">Low-impact datasets are technically incompatible with governance tooling</button>
+        <button class="q-option" data-correct="false">Governance can only ever be applied to a single dataset at a time</button>
+      </div>
+      <div class="q-explain">This is a practical, incremental adoption strategy — proving governance's value where it matters most first is more persuasive and sustainable than attempting comprehensive coverage immediately.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: OvalEdge "Data Contracts in Data Governance: The Missing Link" (2026); Atlan "Data Contracts Explained" (2026) and "Top open source data quality tools to know in 2026"; DataHub "What Are Data Contracts? A Practical Guide" (2026).</p>
+
+  <div class="pager">
+    <a href="11-3-data-lineage.html">&larr; 11.3 Data lineage</a>
+    <a href="../phase-12-capstones/12-1-capstone-end-to-end-pipeline.html">Phase 12: Capstone projects &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const GV_INFO = {
+  ownership: "Every dataset needs a clear owner — someone accountable for its quality, responsible for approving schema changes, and the first point of contact when something breaks. Without clear ownership, quality issues can linger with nobody feeling responsible for fixing them.",
+  catalog: "A searchable inventory of all data assets, their schemas, owners, quality status, and lineage — the discoverability layer referenced in 11.1. Without a catalog, even well-governed data is hard to find and evaluate before depending on it.",
+  access: "Controls over who can read, modify, or export each dataset, often tied to sensitivity classification (e.g. PII gets stricter access than aggregated public metrics). This is where compliance requirements become concrete, enforced rules rather than policy statements.",
+  compliance: "Ensuring data handling meets regulatory and internal policy requirements — retention periods, PII masking, audit trails for who accessed what and when. Increasingly automated via the same validation tooling used for quality checks (11.2).",
+};
+function renderGv(key) { document.getElementById('gv-detail').textContent = GV_INFO[key]; }
+document.querySelectorAll('.gv-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.gv-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderGv(tab.dataset.c);
+  });
+});
+renderGv('ownership');
+
+document.getElementById('fig-governance-stack').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: governance as the organizational layer connecting contracts, testing, and lineage">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="150" y="20" width="380" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="50" text-anchor="middle" fill="#a9c1ff">Governance (ownership, access, compliance)</text>
+  <line x1="260" y1="70" x2="220" y2="100" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="70" x2="340" y2="100" stroke="#6b7386" stroke-width="1"/>
+  <line x1="420" y1="70" x2="460" y2="100" stroke="#6b7386" stroke-width="1"/>
+  <rect x="130" y="100" width="180" height="50" rx="8" fill="#1a2029" stroke="#f2b84b"/><text x="220" y="130" text-anchor="middle" fill="#f2b84b">Contracts (11.1)</text>
+  <rect x="250" y="100" width="180" height="50" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="130" text-anchor="middle" fill="#3ecf8e">Testing (11.2)</text>
+  <rect x="370" y="100" width="180" height="50" rx="8" fill="#1a2029" stroke="#e5484d"/><text x="460" y="130" text-anchor="middle" fill="#ff8b8f">Lineage (11.3)</text>
+</svg>
+`;
+</script>
+</body>
+</html>

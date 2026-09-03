@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 Choosing the right chart | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-goal-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13.5px; margin-bottom: 8px; }
+.cs-goal-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.cs-result { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · EDA &amp; visualization</div>
+  <h1>4.2 Choosing the right chart</h1>
+  <p class="subtitle">The chart type isn't a style choice — it's a claim about what kind of comparison you're asking the viewer to make.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Chart selection should follow directly from your goal, not from habit or what looks
+    impressive: <strong>comparing categories</strong> → bar chart; <strong>trend over
+    time</strong> → line chart; <strong>relationship between two numeric variables</strong> →
+    scatter plot; <strong>distribution/spread</strong> → histogram or box plot;
+    <strong>composition</strong> (parts of a whole) → stacked bar, rarely pie. Every chart type
+    has a specific failure mode when misused — a bar chart with too many categories becomes
+    unreadable clutter; a line chart implies continuity even for data points that aren't actually
+    continuous.
+  </div>
+
+  <h2>Try it: pick your goal, get the right chart</h2>
+  <div class="cs-box">
+    <button class="cs-goal-btn active" data-g="compare">Compare values across categories</button>
+    <button class="cs-goal-btn" data-g="trend">Show change over time</button>
+    <button class="cs-goal-btn" data-g="relationship">Show relationship between two numeric variables</button>
+    <button class="cs-goal-btn" data-g="distribution">Show the spread/distribution of one variable</button>
+    <button class="cs-goal-btn" data-g="composition">Show parts of a whole</button>
+    <div class="cs-result" id="cs-result"></div>
+  </div>
+
+  <h2>Why each chart type has a real failure mode, not just a "better fit"</h2>
+  <ul>
+    <li><strong>Bar charts</strong> — excellent for comparing quantities across categories, but become cluttered and unreadable past roughly 8-10 categories, and can visually mislead if the axis doesn't start at zero (a small real difference gets visually exaggerated).</li>
+    <li><strong>Line charts</strong> — good for continuous trends, but misleading with too many overlapping lines, and implicitly claim continuity between points — using one to connect genuinely discrete, unordered categories misrepresents the data's actual structure.</li>
+    <li><strong>Pie charts</strong> — humans are measurably worse at comparing angles and areas than comparing bar lengths, which is why pie charts are widely discouraged for anything beyond 2-3 slices with clearly different sizes.</li>
+    <li><strong>Scatter plots</strong> — reveal relationships bar and line charts can't, but with very large datasets, overlapping points (overplotting) can hide the true density of common values.</li>
+  </ul>
+
+  <h2>The axis-truncation trap</h2>
+  <p>
+    A documented, specific example: comparing donor rate trends between two countries where one
+    line's x-axis quietly starts several years later than the other (due to missing early data),
+    and the y-axis ranges differ between the two charts. The visual impression this creates —
+    that the two regions have similar donor rates — is simply wrong once the axes are made
+    comparable; the corrected version makes clear one region's rate is substantially higher. This
+    is exactly why comparability of axes matters far beyond just this one example — it's a
+    principle that resurfaces constantly in EDA work.
+  </p>
+
+  <div class="figure" id="fig-truncation"></div>
+
+  <h2>The data-ink ratio principle</h2>
+  <p>
+    Every visual element in a chart should earn its place. Heavy gridlines, unnecessary borders,
+    redundant labels, and decorative color all compete with the actual data for the viewer's
+    attention. The practical test: if removing an element doesn't lose any information, remove it
+    — a cluttered chart with high "decoration" and low "data-ink" is measurably harder to read
+    correctly than a clean one carrying the same information.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do pie charts fall out of favor for anything beyond 2-3 clearly different slices?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Humans are measurably worse at comparing angles and areas than at comparing bar lengths</button>
+        <button class="q-option" data-correct="false">Pie charts cannot technically display more than 3 categories</button>
+        <button class="q-option" data-correct="false">Pie charts are only appropriate for time-series data</button>
+      </div>
+      <div class="q-explain">This is a documented perceptual limitation, not an arbitrary style preference — bar length comparisons are simply easier and more accurate for human viewers than angle or area comparisons.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What made the donor-rate line chart example misleading before the axes were corrected?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The two charts had different x-axis start points and different y-axis ranges, making genuinely different rates look visually similar</button>
+        <button class="q-option" data-correct="false">Line charts can never be used to compare two countries</button>
+        <button class="q-option" data-correct="false">The underlying data was calculated incorrectly</button>
+      </div>
+      <div class="q-explain">The data itself wasn't wrong — the axis choices created a false visual impression of similarity that comparable axes immediately corrected, without changing a single underlying number.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does the data-ink ratio principle recommend?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Remove any visual element that doesn't carry actual information, since decoration competes with data for viewer attention</button>
+        <button class="q-option" data-correct="false">Add as much color and decoration as possible to make charts visually appealing</button>
+        <button class="q-option" data-correct="false">Every chart should include gridlines and borders regardless of content</button>
+      </div>
+      <div class="q-explain">The test is specifically whether removing an element loses information — if not, it's decoration competing with the data itself for the viewer's limited attention.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Yu, Kenett &amp; Unwin, "Veridical Data Science" (2026 edition), EDA chapter; Plotivy "Scientific Data Visualization Guide" (2026); Abhishek Shaw "Data Storytelling: Mastering Visualization Techniques for EDA".</p>
+
+  <div class="pager">
+    <a href="4-1-eda-workflow.html">&larr; 4.1 The EDA workflow</a>
+    <a href="4-3-storytelling-with-data.html">4.3 Storytelling with data &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CHART_MAP = {
+  compare: "→ Bar chart. Best for comparing discrete category values side by side. Keep it to roughly 8-10 categories max, and always start the value axis at zero to avoid visually exaggerating small differences.",
+  trend: "→ Line chart. Best when the x-axis is genuinely continuous (time) and you want to show direction and rate of change. Avoid overlaying more than 4-5 lines, or the chart becomes unreadable.",
+  relationship: "→ Scatter plot. The only common chart type that directly shows how two numeric variables move together — reveals correlation, clusters, and outliers a bar or line chart can't.",
+  distribution: "→ Histogram or box plot. A histogram shows the full shape of the spread; a box plot compactly shows median, quartiles, and outliers — better when comparing spread across several groups side by side.",
+  composition: "→ Stacked bar chart (rarely a pie chart). Shows parts of a whole while still letting viewers compare across categories — something a set of separate pie charts makes very hard to do accurately.",
+};
+document.querySelectorAll('.cs-goal-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cs-goal-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('cs-result').textContent = CHART_MAP[btn.dataset.g];
+  });
+});
+document.getElementById('cs-result').textContent = CHART_MAP['compare'];
+
+document.getElementById('fig-truncation').innerHTML = `
+<svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Diagram: two line charts with mismatched axes making different trends look similar, versus corrected comparable axes revealing the true difference">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } .s{font-size:10px; fill:#9aa4b5; font-weight:400;} </style>
+  <text x="160" y="20" text-anchor="middle">Mismatched axes (misleading)</text>
+  <line x1="30" y1="140" x2="290" y2="140" stroke="#262d3a"/>
+  <path d="M 40 130 L 150 110 L 280 90" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <path d="M 40 135 L 150 120 L 280 105" fill="none" stroke="#3ecf8e" stroke-width="2"/>
+  <text x="160" y="160" text-anchor="middle" class="s">lines look close — but y-axes differ</text>
+
+  <text x="500" y="20" text-anchor="middle">Comparable axes (accurate)</text>
+  <line x1="370" y1="140" x2="630" y2="140" stroke="#262d3a"/>
+  <path d="M 380 130 L 490 95 L 620 45" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <path d="M 380 135 L 490 128 L 620 120" fill="none" stroke="#3ecf8e" stroke-width="2"/>
+  <text x="500" y="160" text-anchor="middle" class="s">real gap is now clearly visible</text>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -5,6 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1.2 How LLMs actually work | AI Architect</title>
 <link rel="stylesheet" href="../assets/style.css">
+<style>
+.tk-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.tk-sentence { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; margin-bottom: 16px; }
+.tk-tok { padding: 6px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border-strong); font-size: 14px; }
+.tk-tok.picked { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-text); }
+.tk-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.tk-bar-label { width: 70px; font-size: 12px; text-align: right; }
+.tk-bar-track { flex: 1; height: 16px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.tk-bar-fill { height: 100%; background: #5b8cff; border-radius: 4px; transition: width 0.3s ease; }
+.tk-btn { padding: 8px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top:8px; }
+.tp-slider-row { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+.tp-slider-row input[type=range] { flex: 1; }
+</style>
 </head>
 <body>
 
@@ -41,6 +54,14 @@
     end up as nearby points. We'll go deeper on embeddings in Phase 5; for now, just know: token in,
     numbers out.
   </p>
+
+  <h2>Try it: watch the predict-sample-repeat loop actually run</h2>
+  <div class="tk-box">
+    <div class="tk-sentence" id="tk-sentence"></div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:4px;">Predicted next token:</p>
+    <div id="tk-bars"></div>
+    <button class="tk-btn" id="tk-step">Predict next token &rarr;</button>
+  </div>
 
   <h2>Step 2: attention &mdash; every token looks at every other token</h2>
   <p>
@@ -79,6 +100,16 @@
     guess. Temperature 0 is nearly deterministic; higher temperature means more variety, and
     occasionally more nonsense.
   </p>
+
+  <div class="tk-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;">Try it: same distribution, different temperature</p>
+    <div id="tp-bars"></div>
+    <div class="tp-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:80px;">Temperature</label>
+      <input type="range" id="tp-slider" min="1" max="200" value="100">
+      <span id="tp-readout" style="font-weight:700; min-width:36px; text-align:right;">1.0</span>
+    </div>
+  </div>
   <p>
     That new token gets appended to the sequence, and the entire process repeats: re-attend over
     everything so far (including the token you just generated), predict the next distribution,
@@ -154,6 +185,59 @@ document.querySelectorAll('.q-block').forEach(block => {
     });
   });
 });
+
+// --- Interactive next-token prediction stepper ---
+const TK_SEQ = [
+  {ctx:"The router classifies the", opts:[["intent",62],["weather",8],["dog",4],["number",26]]},
+  {ctx:"The router classifies the intent", opts:[["and",58],["quickly",12],["banana",3],["route",27]]},
+  {ctx:"The router classifies the intent and", opts:[["routes",64],["sleeps",5],["purple",2],["waits",29]]},
+  {ctx:"The router classifies the intent and routes", opts:[["the",71],["a",19],["fish",2],["never",8]]},
+  {ctx:"The router classifies the intent and routes the", opts:[["request",68],["cloud",6],["moon",3],["task",23]]},
+];
+let tkIdx = 0;
+function renderTk() {
+  const words = TK_SEQ[tkIdx].ctx.split(' ');
+  document.getElementById('tk-sentence').innerHTML = words.map((w,i) =>
+    `<span class="tk-tok${i===words.length-1?' picked':''}">${w}</span>`
+  ).join('');
+  const opts = TK_SEQ[tkIdx].opts;
+  document.getElementById('tk-bars').innerHTML = opts.map(([w,p]) => `
+    <div class="tk-bar-row">
+      <div class="tk-bar-label">${w}</div>
+      <div class="tk-bar-track"><div class="tk-bar-fill" style="width:${p}%"></div></div>
+      <div style="width:36px; font-size:12px; text-align:right;">${p}%</div>
+    </div>`).join('');
+  document.getElementById('tk-step').textContent = tkIdx < TK_SEQ.length-1 ? 'Predict next token \u2192' : 'Restart \u2192';
+}
+document.getElementById('tk-step').addEventListener('click', () => {
+  tkIdx = tkIdx < TK_SEQ.length-1 ? tkIdx+1 : 0;
+  renderTk();
+});
+renderTk();
+
+// --- Interactive temperature slider on a toy distribution ---
+const TP_LOGITS = [4.2, 2.1, 1.8, 0.9, 0.3];
+const TP_LABELS = ["intent", "weather", "number", "dog", "banana"];
+function softmaxTemp(logits, temp) {
+  const scaled = logits.map(l => l/temp);
+  const max = Math.max(...scaled);
+  const exps = scaled.map(l => Math.exp(l-max));
+  const sum = exps.reduce((a,b)=>a+b,0);
+  return exps.map(e => e/sum);
+}
+function renderTp() {
+  const t = document.getElementById('tp-slider').value/100;
+  document.getElementById('tp-readout').textContent = t.toFixed(2);
+  const probs = softmaxTemp(TP_LOGITS, t);
+  document.getElementById('tp-bars').innerHTML = TP_LABELS.map((label,i) => `
+    <div class="tk-bar-row">
+      <div class="tk-bar-label">${label}</div>
+      <div class="tk-bar-track"><div class="tk-bar-fill" style="width:${probs[i]*100}%; background:#f2b84b;"></div></div>
+      <div style="width:36px; font-size:12px; text-align:right;">${Math.round(probs[i]*100)}%</div>
+    </div>`).join('');
+}
+document.getElementById('tp-slider').addEventListener('input', renderTp);
+renderTp();
 
 // Attention diagram: one query token fanning out to all others with weighted lines
 document.getElementById('fig-attention').innerHTML = `

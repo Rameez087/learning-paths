@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1.1 What is an AI Engineer in 2026 | AI Architect</title>
 <link rel="stylesheet" href="../assets/style.css">
+<style>
+.sc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sc-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13.5px; margin-bottom: 8px; font-family: var(--font-sans); color: var(--text); }
+.sc-btn:hover { border-color: var(--accent); }
+.sc-verdict { margin-top: 14px; padding: 14px 16px; border-radius: 8px; font-size: 13px; display: none; }
+.sc-verdict.show { display: block; }
+.sc-verdict.ai { background: rgba(91,140,255,0.1); border: 1px solid var(--accent); }
+.sc-verdict.ml { background: rgba(242,184,75,0.1); border: 1px solid var(--warning); }
+.stack-layer { cursor: pointer; }
+.stack-layer:hover rect { stroke-width: 2; }
+</style>
 </head>
 <body>
 
@@ -86,6 +97,15 @@
     genuinely unsure, most 2026 use cases turn out to be the second kind.
   </p>
 
+  <h2>Try it: which role fits each scenario?</h2>
+  <div class="sc-box">
+    <button class="sc-btn" data-s="fraud">"We need sub-100ms fraud predictions on our own transaction data."</button>
+    <button class="sc-btn" data-s="support">"We want a chatbot that answers questions using our help docs."</button>
+    <button class="sc-btn" data-s="churn">"We need to predict which customers will churn next month, using our own historical data."</button>
+    <button class="sc-btn" data-s="agent">"We want an assistant that can look up an order and process a refund."</button>
+    <div class="sc-verdict" id="sc-verdict"></div>
+  </div>
+
   <h2>What this track will make you able to do</h2>
   <p>
     This series focuses on the AI engineer path: the prompt layer, the retrieval layer, the agent
@@ -158,26 +178,45 @@ document.querySelectorAll('.q-block').forEach(block => {
   });
 });
 
-// Inline stack diagram (SVG, dark-theme matched to site palette)
+// Interactive scenario picker: AI engineer vs ML engineer
+const SCENARIOS = {
+  fraud: { role: "ml", text: "→ ML engineer. Proprietary data a foundation model has never seen, plus a strict sub-100ms latency SLA — exactly the case for training and deploying a custom model." },
+  support: { role: "ai", text: "→ AI engineer. An existing model's general language capability is enough; the real work is retrieval over your help docs (RAG) and prompt design, not training anything." },
+  churn: { role: "ml", text: "→ ML engineer. This is a classic supervised learning problem on your own structured historical data — training a model is the actual task here, not composing an existing one." },
+  agent: { role: "ai", text: "→ AI engineer. This needs tool use and an agent loop (order lookup, refund action) orchestrated on top of a foundation model — not a custom-trained model." },
+};
+document.querySelectorAll('.sc-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const s = SCENARIOS[btn.dataset.s];
+    const v = document.getElementById('sc-verdict');
+    v.className = 'sc-verdict show ' + s.role;
+    v.textContent = s.text;
+  });
+});
+
+// Inline stack diagram (SVG, dark-theme matched to site palette) — now clickable per layer
 document.getElementById('fig-stack').innerHTML = `
-<svg viewBox="0 0 680 300" width="100%" role="img" aria-label="Diagram: AI engineer stack layers above foundation models, ML engineer works below">
+<svg viewBox="0 0 680 300" width="100%" role="img" aria-label="Diagram: AI engineer stack layers above foundation models, ML engineer works below. Click each layer for detail.">
   <style>
     text { font-family: -apple-system, sans-serif; fill: #e6e9ef; }
     .lbl { font-size: 13px; font-weight: 600; }
     .sub { font-size: 11.5px; fill: #9aa4b5; }
   </style>
-  <rect x="40" y="210" width="600" height="60" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
-  <text x="60" y="235" class="lbl">Foundation model</text>
-  <text x="60" y="253" class="sub">GPT-5, Claude, Gemini &mdash; trained by frontier labs</text>
-
-  <rect x="40" y="130" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1"/>
-  <text x="60" y="155" class="lbl">AI engineer layer</text>
-  <text x="60" y="173" class="sub">Prompts &middot; retrieval (RAG) &middot; agents &middot; orchestration &middot; evals</text>
-
-  <rect x="40" y="50" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1"/>
-  <text x="60" y="75" class="lbl">Product</text>
-  <text x="60" y="93" class="sub">The feature a user actually touches</text>
-
+  <g class="stack-layer" data-layer="foundation">
+    <rect x="40" y="210" width="600" height="60" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1"/>
+    <text x="60" y="235" class="lbl">Foundation model</text>
+    <text x="60" y="253" class="sub">GPT-5, Claude, Gemini &mdash; trained by frontier labs</text>
+  </g>
+  <g class="stack-layer" data-layer="ai">
+    <rect x="40" y="130" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1"/>
+    <text x="60" y="155" class="lbl">AI engineer layer</text>
+    <text x="60" y="173" class="sub">Prompts &middot; retrieval (RAG) &middot; agents &middot; orchestration &middot; evals</text>
+  </g>
+  <g class="stack-layer" data-layer="product">
+    <rect x="40" y="50" width="600" height="60" rx="8" fill="#1a2029" stroke="#262d3a" stroke-width="1"/>
+    <text x="60" y="75" class="lbl">Product</text>
+    <text x="60" y="93" class="sub">The feature a user actually touches</text>
+  </g>
   <line x1="340" y1="110" x2="340" y2="128" stroke="#6b7386" stroke-width="1.5" marker-end="url(#arrowhead)"/>
   <line x1="340" y1="190" x2="340" y2="208" stroke="#6b7386" stroke-width="1.5" marker-end="url(#arrowhead)"/>
   <defs>
@@ -186,8 +225,18 @@ document.getElementById('fig-stack').innerHTML = `
     </marker>
   </defs>
 </svg>
-<div class="figure-caption">The AI engineer builds and operates the middle layer &mdash; on top of a foundation model, underneath the product surface.</div>
+<div class="figure-caption" id="stack-caption">Click any layer above for detail &mdash; the AI engineer builds and operates the middle layer, on top of a foundation model, underneath the product surface.</div>
 `;
+const LAYER_DETAIL = {
+  foundation: "The foundation model layer is trained by a small number of labs (Anthropic, OpenAI, Google) at enormous cost. As an AI engineer, this is a dependency you call via API — you don't train or fine-tune it from scratch.",
+  ai: "This is where an AI engineer actually spends their time: writing and versioning prompts, building retrieval pipelines, designing agent tool loops, and evaluating whether the whole system actually works.",
+  product: "The product layer is the feature surface a real user touches — a chat window, a search bar, a button that triggers a workflow. The AI engineering layer exists to make this layer reliable.",
+};
+document.querySelectorAll('.stack-layer').forEach(layer => {
+  layer.addEventListener('click', () => {
+    document.getElementById('stack-caption').textContent = LAYER_DETAIL[layer.dataset.layer];
+  });
+});
 </script>
 
 <script src="../assets/nav.js" defer></script>

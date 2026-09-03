@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.3 Evaluation metrics | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.em-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.em-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.em-slider-row input[type=range] { flex: 1; }
+.em-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 10px; }
+.em-metric { background: var(--surface-2); border-radius: 8px; padding: 12px; text-align: center; }
+.em-metric .n { font-size: 18px; font-weight: 700; }
+.em-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:2px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · ML evaluation &amp; experimentation</div>
+  <h1>10.3 Evaluation metrics</h1>
+  <p class="subtitle">A model that predicts "not fraud" for every single transaction can hit 99.9% accuracy — and be completely useless.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Accuracy alone is dangerously misleading on imbalanced data — a model that always predicts the
+    majority class can score deceptively high while being practically useless.
+    <strong>Precision</strong> answers "of everything flagged positive, how much actually was?"
+    <strong>Recall</strong> answers "of everything actually positive, how much did we catch?"
+    <strong>F1</strong> balances the two. For ranking or probability-based models, use
+    <strong>ROC-AUC</strong>, or better, <strong>PR-AUC</strong> specifically when positive cases
+    are rare, since ROC curves can look artificially good under severe class imbalance.
+  </div>
+
+  <h2>Try it: watch accuracy lie on imbalanced data</h2>
+  <div class="em-box">
+    <div class="em-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:140px;">Fraud rate in data</label>
+      <input type="range" id="em-slider" min="1" max="500" value="10">
+      <span id="em-readout" style="font-weight:700; min-width:50px; text-align:right;">1%</span>
+    </div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:10px;">A "lazy" model that always predicts "not fraud":</p>
+    <div class="em-metrics" id="em-metrics"></div>
+  </div>
+
+  <h2>Precision vs. recall: the trade-off, concretely</h2>
+  <p>
+    In fraud detection, high <strong>recall</strong> (catch nearly every fraud case) usually comes
+    at the cost of lower <strong>precision</strong> (more false alarms — legitimate transactions
+    incorrectly flagged). Which matters more depends entirely on the cost of each error type: if
+    missing real fraud is far more costly than a false alarm's customer friction, prioritize
+    recall; if false alarms erode customer trust badly, prioritize precision. There's no
+    universally "better" choice — it's a business decision the metric alone can't make for you.
+  </p>
+
+  <div class="figure" id="fig-confusion"></div>
+
+  <h2>Why PR-AUC beats ROC-AUC for rare positive classes</h2>
+  <p>
+    ROC curves plot true positive rate against false positive rate — but with severe class
+    imbalance, the false positive rate can stay deceptively low even when the model performs
+    poorly at actually distinguishing rare positives, because there are just so many negatives to
+    compare against. Precision-Recall AUC is specifically recommended instead when positive cases
+    are rare, since it directly measures performance on the class that actually matters, without
+    the imbalance-driven distortion ROC-AUC is prone to.
+  </p>
+
+  <h2>Calibration: does "80% confident" actually mean 80%?</h2>
+  <p>
+    Beyond just ranking predictions correctly, calibration checks whether predicted probabilities
+    match real-world frequencies — if a model says "80% probability of fraud" for a batch of
+    transactions, roughly 80% of them should actually turn out to be fraud. This matters
+    specifically anywhere the probability value itself gets used downstream (risk scoring,
+    automated decision thresholds), not just the final yes/no classification.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can a model that always predicts the majority class achieve high accuracy while being practically useless?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">On imbalanced data, correctly predicting the common class for every example is enough to score high accuracy, even while catching zero rare positive cases</button>
+        <button class="q-option" data-correct="false">Accuracy cannot technically be computed on imbalanced datasets</button>
+        <button class="q-option" data-correct="false">This only happens when the model has a coding bug</button>
+      </div>
+      <div class="q-explain">This is the accuracy paradox — accuracy simply measures overall correct predictions, which a majority-class-only model can dominate on imbalanced data without ever correctly identifying a single rare positive case.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What determines whether you should prioritize precision or recall in a given application?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The relative real-world cost of false positives versus false negatives for that specific business problem</button>
+        <button class="q-option" data-correct="false">Recall should always be prioritized over precision regardless of context</button>
+        <button class="q-option" data-correct="false">Precision and recall always move in the same direction, so there's no real trade-off</button>
+      </div>
+      <div class="q-explain">This is a business decision, not a purely technical one — the metric only tells you the trade-off exists; deciding which side to favor requires knowing which error type actually costs more in that specific context.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is PR-AUC often preferred over ROC-AUC when positive cases are rare?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">ROC-AUC's false positive rate can look deceptively good under severe imbalance because there are so many negatives, while PR-AUC directly measures performance on the rare positive class</button>
+        <button class="q-option" data-correct="false">ROC-AUC cannot technically be computed on imbalanced datasets</button>
+        <button class="q-option" data-correct="false">PR-AUC and ROC-AUC always produce identical rankings of model quality</button>
+      </div>
+      <div class="q-explain">The imbalance-driven distortion in ROC-AUC comes specifically from the abundance of true negatives making the false positive rate look artificially small — PR-AUC avoids this by focusing entirely on precision and recall for the positive class.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Zerve "Mastering Model Validation: Effective Train-Test Splits and Cross-Validation Strategies"; TheCodeForge "Train Test Split and Cross Validation" (2026); arXiv "Enhancing Vulnerability Prioritization" (PR-AUC rationale, 2023); MLflow evaluation documentation.</p>
+
+  <div class="pager">
+    <a href="10-2-cross-validation.html">&larr; 10.2 Cross-validation</a>
+    <a href="10-4-experiment-tracking.html">10.4 Experiment tracking &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderEm() {
+  const rateBasis = parseInt(document.getElementById('em-slider').value, 10); // in tenths of a percent
+  const fraudPct = rateBasis / 10;
+  document.getElementById('em-readout').textContent = fraudPct.toFixed(1) + '%';
+  const accuracy = 100 - fraudPct;
+  document.getElementById('em-metrics').innerHTML = `
+    <div class="em-metric"><div class="n">${accuracy.toFixed(1)}%</div><div class="l">Accuracy</div></div>
+    <div class="em-metric" style="border:1px solid #e5484d;"><div class="n" style="color:#ff8b8f;">0%</div><div class="l">Recall</div></div>
+    <div class="em-metric" style="border:1px solid #e5484d;"><div class="n" style="color:#ff8b8f;">undefined</div><div class="l">Precision</div></div>
+    <div class="em-metric" style="border:1px solid #e5484d;"><div class="n" style="color:#ff8b8f;">0</div><div class="l">F1 score</div></div>
+  `;
+}
+document.getElementById('em-slider').addEventListener('input', renderEm);
+renderEm();
+
+document.getElementById('fig-confusion').innerHTML = `
+<svg viewBox="0 0 500 220" width="100%" role="img" aria-label="Confusion matrix showing true positive, false positive, false negative, true negative quadrants with precision and recall formulas">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="100" y="20" width="150" height="80" fill="rgba(62,207,142,0.2)" stroke="#3ecf8e"/><text x="175" y="55" text-anchor="middle" fill="#3ecf8e">True Positive</text><text x="175" y="72" text-anchor="middle" fill="#3ecf8e" font-size="9">(correctly flagged fraud)</text>
+  <rect x="250" y="20" width="150" height="80" fill="rgba(229,72,77,0.2)" stroke="#e5484d"/><text x="325" y="55" text-anchor="middle" fill="#ff8b8f">False Positive</text><text x="325" y="72" text-anchor="middle" fill="#ff8b8f" font-size="9">(false alarm)</text>
+  <rect x="100" y="100" width="150" height="80" fill="rgba(229,72,77,0.2)" stroke="#e5484d"/><text x="175" y="135" text-anchor="middle" fill="#ff8b8f">False Negative</text><text x="175" y="152" text-anchor="middle" fill="#ff8b8f" font-size="9">(missed fraud)</text>
+  <rect x="250" y="100" width="150" height="80" fill="rgba(62,207,142,0.2)" stroke="#3ecf8e"/><text x="325" y="135" text-anchor="middle" fill="#3ecf8e">True Negative</text><text x="325" y="152" text-anchor="middle" fill="#3ecf8e" font-size="9">(correctly ignored)</text>
+  <text x="250" y="205" text-anchor="middle" font-size="10" fill="#9aa4b5">Precision = TP/(TP+FP)  ·  Recall = TP/(TP+FN)</text>
+</svg>
+`;
+</script>
+</body>
+</html>

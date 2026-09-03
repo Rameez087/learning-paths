@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.5 A/B testing fundamentals | Data Science &amp; Engineering</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ab-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ab-btn { padding: 10px 16px; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-text); border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); }
+.ab-day { display: inline-block; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: var(--font-mono); background: var(--surface-2); border: 1px solid var(--border-strong); margin: 2px; opacity: 0; transform: translateY(4px); transition: all 0.25s; }
+.ab-day.shown { opacity: 1; transform: translateY(0); }
+.ab-day.sig { background: rgba(229,72,77,0.2); border-color: #e5484d; color: #ff8b8f; font-weight: 700; }
+.ab-verdict { margin-top: 14px; padding: 14px; border-radius: 8px; font-size: 13px; display: none; }
+.ab-verdict.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Data <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Statistics &amp; probability</div>
+  <h1>3.5 A/B testing fundamentals</h1>
+  <p class="subtitle">Everything from this phase, applied to the single most common real-world use of statistics in tech.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An A/B test randomly splits users between a control and a variant, then uses hypothesis
+    testing (3.3) to check whether an observed difference is real or just noise. The single most
+    damaging, most common mistake in industry experimentation is the <strong>peeking problem</strong>:
+    checking results early and stopping as soon as they look significant. Continuous monitoring of
+    a fixed-horizon test can push the true false-positive rate from a nominal 5% past 30% — meaning
+    roughly one in three "wins" declared this way isn't real. This isn't a fringe issue; it's
+    described as the single most common statistical mistake in industry experimentation.
+  </div>
+
+  <h2>Try it: watch the peeking problem happen in real time</h2>
+  <div class="ab-box">
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
+      This simulates a test where the two variants have <strong>zero real difference</strong> —
+      pure noise. Watch how often it looks "significant" if you check every single day.
+    </p>
+    <button class="ab-btn" id="ab-run">Run a 14-day test, checking daily</button>
+    <div id="ab-days" style="margin-top:14px;"></div>
+    <div class="ab-verdict" id="ab-verdict"></div>
+  </div>
+
+  <h2>Why peeking inflates false positives so badly</h2>
+  <p>
+    Each daily check is, statistically, its own hypothesis test. Checking once and using α = 0.05
+    genuinely gives you a 5% false-positive rate. But checking 14 times and stopping the moment
+    any single check looks significant means you've effectively run 14 chances to hit a false
+    positive by pure noise — and noisy early data (small sample) is exactly when random swings are
+    largest, making early "significant" results the least trustworthy ones, not the most exciting.
+  </p>
+
+  <h2>The fix: commit to a sample size before you start</h2>
+  <p>
+    A properly designed test calculates its required sample size <em>before launch</em>, based on
+    your baseline conversion rate, the smallest effect size you actually care about detecting
+    (the "minimum detectable effect"), and your desired statistical power. You then run the test
+    until that sample size is reached and analyze once, at the predetermined endpoint — not
+    whenever the dashboard happens to look good. If checking in in the meantime is operationally
+    necessary, use a designed <strong>sequential testing</strong> method (alpha spending), which
+    mathematically adjusts the significance threshold at each check specifically to keep the
+    overall false-positive rate at the nominal level despite multiple looks.
+  </p>
+
+  <div class="figure" id="fig-abflow"></div>
+
+  <h2>A common misconception: "I'll just switch to Bayesian testing"</h2>
+  <p>
+    Bayesian A/B testing does solve a real problem — communicating "there's a 94% probability
+    Variant B is better" is far more intuitive to a business stakeholder than "we reject the null
+    hypothesis at α = 0.05." But it is specifically flagged as a misconception that this switch
+    alone fixes the peeking problem — continuously monitoring a Bayesian test and stopping when
+    the posterior looks favorable carries its own, related risk of premature stopping on noise.
+    The fix for peeking is a properly designed stopping rule, not a change of statistical
+    framework alone.
+  </p>
+
+  <h2>Sample ratio mismatch: the sanity check nobody skips</h2>
+  <p>
+    Before trusting any A/B test result, check that users were actually split into the expected
+    proportions (e.g. roughly 50/50). A meaningful deviation — a <strong>sample ratio
+    mismatch</strong> — usually signals a bug in the randomization or logging pipeline, and any
+    result from a test with this problem should be treated as untrustworthy regardless of how
+    significant it looks.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does checking A/B test results daily and stopping at the first significant result inflate the false-positive rate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each check is effectively its own hypothesis test, so multiple checks give multiple chances to hit a false positive purely by noise</button>
+        <button class="q-option" data-correct="false">Daily checking has no effect on the false-positive rate as long as the final sample size is eventually reached</button>
+        <button class="q-option" data-correct="false">Checking results more often always makes a test more accurate</button>
+      </div>
+      <div class="q-explain">This is the core mechanism of the peeking problem — the nominal 5% false-positive guarantee assumes a single look at the data; multiple looks without correction compound the risk far beyond that nominal rate.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Does switching to Bayesian A/B testing solve the peeking problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">No — continuously monitoring a Bayesian test and stopping when the posterior looks favorable carries a related risk of premature stopping on noise</button>
+        <button class="q-option" data-correct="false">Yes — Bayesian methods are immune to the peeking problem by design</button>
+        <button class="q-option" data-correct="false">Bayesian testing eliminates the need for any stopping rule at all</button>
+      </div>
+      <div class="q-explain">This is explicitly flagged as a popular misconception — Bayesian framing improves how results are communicated, but doesn't on its own fix the statistical risk of stopping early based on favorable-looking interim results.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does a sample ratio mismatch usually indicate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A bug in the randomization or logging pipeline, which makes any result from that test untrustworthy regardless of significance</button>
+        <button class="q-option" data-correct="false">That the variant is performing better than the control</button>
+        <button class="q-option" data-correct="false">That the test has reached its planned sample size</button>
+      </div>
+      <div class="q-explain">If users weren't split into the intended proportions, something upstream of the statistics is broken — this is a data-integrity check that should be verified before trusting any result from the test, however clean the p-value looks.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Atticus Li "The Peeking Problem in A/B Testing" (2026); GoPractice "A/B Testing: Avoiding the Peeking Problem"; DRIP "The Peeking Problem in A/B Testing" (2026); A/B Test Pro "The Peeking Problem" (2026).</p>
+
+  <div class="pager">
+    <a href="3-4-confidence-intervals.html">&larr; 3.4 Confidence intervals</a>
+    <a href="../phase-04-eda-visualization/4-1-eda-workflow.html">Phase 4: EDA &amp; visualization &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function gaussianRandom() {
+  let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+document.getElementById('ab-run').addEventListener('click', () => {
+  const container = document.getElementById('ab-days');
+  container.innerHTML = '';
+  let hitSignificant = false;
+  let firstHitDay = null;
+  for (let day = 1; day <= 14; day++) {
+    // simulate a p-value that fluctuates noisily around a non-significant baseline,
+    // occasionally dipping below 0.05 purely by chance -- illustrative of real peeking behavior
+    const noise = gaussianRandom();
+    const pval = Math.max(0.001, Math.min(0.99, 0.3 + noise * 0.18));
+    const sig = pval < 0.05;
+    if (sig && !hitSignificant) { hitSignificant = true; firstHitDay = day; }
+    const el = document.createElement('div');
+    el.className = 'ab-day' + (sig ? ' sig' : '');
+    el.textContent = `Day ${day}: p=${pval.toFixed(3)}`;
+    container.appendChild(el);
+    setTimeout(() => el.classList.add('shown'), day * 80);
+  }
+  setTimeout(() => {
+    const verdict = document.getElementById('ab-verdict');
+    verdict.classList.add('show');
+    if (hitSignificant) {
+      verdict.style.background = 'rgba(229,72,77,0.1)';
+      verdict.style.border = '1px solid #e5484d';
+      verdict.innerHTML = `⚠ A team peeking daily would have stopped on day ${firstHitDay} and shipped a "significant win" — except there was <strong>no real difference</strong> between the variants. This is exactly the false positive the peeking problem produces, and it happens far more often than the nominal 5% rate suggests.`;
+    } else {
+      verdict.style.background = 'rgba(62,207,142,0.1)';
+      verdict.style.border = '1px solid #3ecf8e';
+      verdict.innerHTML = `This particular run didn't dip below significance on any day — but re-run it a few times and you'll see it happen often, since there's no real effect here and every day is a fresh chance for noise to look significant.`;
+    }
+  }, 14*80 + 200);
+});
+document.getElementById('ab-run').click();
+
+document.getElementById('fig-abflow').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: A/B test flow from calculating sample size before launch through running to completion and analyzing once">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="10" y="45" width="150" height="50" rx="8" fill="#182238" stroke="#5b8cff"/>
+  <text x="85" y="75" text-anchor="middle" fill="#a9c1ff">Calculate sample size</text>
+  <line x1="160" y1="70" x2="200" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a20)"/>
+  <rect x="200" y="45" width="150" height="50" rx="8" fill="#1a2029" stroke="#262d3a"/>
+  <text x="275" y="75" text-anchor="middle">Run to completion</text>
+  <line x1="350" y1="70" x2="390" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a20)"/>
+  <rect x="390" y="45" width="150" height="50" rx="8" fill="#1a2029" stroke="#3ecf8e"/>
+  <text x="465" y="75" text-anchor="middle" fill="#3ecf8e">Analyze once, at the end</text>
+  <defs><marker id="a20" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>
