@@ -545,67 +545,26 @@ body.has-sidebar .topnav { padding-left: 20px; }
 }
 .sb-hub-link:hover { color: var(--accent-text); }
 
-/* ============================================
-   TOP-LEVEL HUB (track picker) — no sidebar here
-   ============================================ */
-.track-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 24px;
-  margin: 40px 0;
+/* "Coming soon" phase/topic states */
+.sb-phase.soon .sb-phase-head { cursor: default; opacity: 0.6; }
+.sb-phase.soon .sb-phase-head:hover { background: none; }
+.sb-phase.soon em { font-style: normal; color: var(--text-muted); font-weight: 400; font-size: 11px; }
+.sb-topic.disabled {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px 7px 20px; margin: 1px 0;
+  border-left: 2px solid var(--border);
+  font-size: 12.5px; color: var(--text-muted);
+  opacity: 0.55;
 }
-.track-card {
-  display: block;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 32px;
-  text-decoration: none;
-  color: var(--text);
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.2s ease, transform 0.2s ease;
-}
-.track-card::before {
-  content: "";
-  position: absolute; inset: 0;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-.track-card.ai::before { background: linear-gradient(135deg, rgba(91,140,255,0.12), transparent 65%); }
-.track-card.ds::before { background: linear-gradient(135deg, rgba(62,207,142,0.12), transparent 65%); }
-.track-card:hover { transform: translateY(-3px); }
-.track-card.ai:hover { border-color: var(--accent); }
-.track-card.ds:hover { border-color: var(--success); }
-.track-card:hover::before { opacity: 1; }
-.track-card-icon {
-  width: 52px; height: 52px;
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-  position: relative;
-}
-.track-card.ai .track-card-icon { background: var(--accent-bg); border: 1px solid var(--accent); }
-.track-card.ds .track-card-icon { background: rgba(62,207,142,0.12); border: 1px solid var(--success); }
-.track-card h2 { font-size: 22px; margin: 0 0 10px; position: relative; border: none; padding: 0; }
-.track-card p { font-size: 14.5px; color: var(--text-secondary); position: relative; margin-bottom: 20px; }
-.track-card-meta { display: flex; gap: 20px; position: relative; }
-.track-card-meta .m { font-size: 12px; color: var(--text-muted); }
-.track-card-meta .m strong { color: var(--text); font-weight: 700; display: block; font-size: 16px; }
-.track-card-cta {
-  position: relative;
-  margin-top: 22px;
-  font-size: 13px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.track-card.ai .track-card-cta { color: var(--accent-text); }
-.track-card.ds .track-card-cta { color: var(--success); }
 
-.track-card.fde::before { background: linear-gradient(135deg, rgba(167,139,250,0.14), transparent 65%); }
-.track-card.fde:hover { border-color: #a78bfa; }
-.track-card.fde .track-card-icon { background: rgba(167,139,250,0.14); border: 1px solid #a78bfa; }
-.track-card.fde .track-card-cta { color: #c4b5fd; }
+/* "Coming soon" phase/topic states */
+.sb-phase.soon .sb-phase-head { cursor: default; opacity: 0.6; }
+.sb-phase.soon .sb-phase-head:hover { background: none; }
+.sb-phase.soon em { font-style: normal; color: var(--text-muted); font-weight: 400; font-size: 11px; }
+.sb-topic.disabled {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px 7px 20px; margin: 1px 0;
+  border-left: 2px solid var(--border);
+  font-size: 12.5px; color: var(--text-muted);
+  opacity: 0.55;
+}

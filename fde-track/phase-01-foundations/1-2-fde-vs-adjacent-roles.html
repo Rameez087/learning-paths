@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 FDE vs. adjacent roles | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.rc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.rc-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.rc-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.rc-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.rc-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.rc-table th, .rc-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.rc-table th { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.2 FDE vs. adjacent roles</h1>
+  <p class="subtitle">Same rough skill set, wildly different jobs — and the useful question is always "who owns the deployment once it stops being a proof point and becomes real operational work?"</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Five roles get confused with FDE constantly, and the confusion is understandable — all involve
+    technical depth and customer interaction. The reliable differentiators are three specific
+    things: <strong>ownership</strong> (what do they ultimately own — a design, a deal, or a
+    running system?), <strong>lifecycle timing</strong> (pre-sale, at signing, or post-sale?), and
+    <strong>coding intensity</strong> (prototype-grade or production-grade, and how much of their
+    time is actually spent writing code?).
+  </div>
+
+  <h2>Try it: compare FDE against each adjacent role</h2>
+  <div class="rc-box">
+    <div class="rc-tabs">
+      <div class="rc-tab active" data-r="sa">Solutions Architect</div>
+      <div class="rc-tab" data-r="se">Solutions/Sales Engineer</div>
+      <div class="rc-tab" data-r="ce">Customer Engineer</div>
+      <div class="rc-tab" data-r="sre">DevOps/SRE</div>
+      <div class="rc-tab" data-r="aiml">AI/ML Engineer</div>
+    </div>
+    <table class="rc-table">
+      <thead><tr><th>Dimension</th><th>FDE</th><th id="rc-other-header">Other role</th></tr></thead>
+      <tbody id="rc-rows"></tbody>
+    </table>
+  </div>
+
+  <h2>The lifecycle diagram that resolves most confusion</h2>
+  <p>
+    Plotting each role against the customer journey — pre-sale, at signing, rollout, ongoing
+    operation — makes the boundaries far clearer than any list of responsibilities. A Solutions
+    Architect is often involved before the contract is fully signed, validating technical fit and
+    shaping the design. A Sales/Solutions Engineer lives almost entirely in the pre-sales cycle,
+    running demos to help close deals — their primary metric is revenue influenced, not code
+    shipped. The FDE shows up once the deal is done, to make the product actually deliver value,
+    and stays until the customer is succeeding.
+  </p>
+
+  <div class="figure" id="fig-lifecycle-roles"></div>
+
+  <h2>Why the confusion is genuinely reasonable</h2>
+  <p>
+    Current job markets reinforce it directly: as of mid-2026, OpenAI's careers page lists both
+    Forward Deployed Engineer roles and a separate "Solutions Architect, Digital Natives" role.
+    Anthropic runs an active "Forward Deployed Engineer, Applied AI" posting alongside separate
+    Applied AI Architect roles. The titles genuinely overlap in language even at the companies that
+    use them most precisely — which is exactly why ownership and lifecycle timing, not job titles,
+    are the reliable signal.
+  </p>
+
+  <h2>vs. DevOps/SRE and AI/ML Engineer specifically</h2>
+  <p>
+    DevOps/SRE roles typically own reliability and operations for infrastructure the company
+    already controls internally — not a specific external customer's environment with its own
+    constraints and stakeholders. An AI/ML Engineer typically focuses on model training,
+    fine-tuning, and evaluation as their core craft; an FDE uses those skills as one tool among
+    many (alongside enterprise integration, cloud infrastructure, and customer communication) in
+    service of a specific deployment outcome — the depth is narrower per skill, but the breadth
+    across skills is much wider.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What are the three reliable differentiators between FDE and adjacent roles, according to this material?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Ownership, lifecycle timing, and coding intensity</button>
+        <button class="q-option" data-correct="false">Job title, company size, and years of experience</button>
+        <button class="q-option" data-correct="false">Salary band, location, and team size</button>
+      </div>
+      <div class="q-explain">These three dimensions are specifically named as reliable because job titles alone are demonstrably unreliable — even OpenAI and Anthropic run overlapping-sounding titles for genuinely different roles.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. At what point in the customer lifecycle does an FDE typically become primarily involved?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Post-sale, during rollout and early operations, once the deal is signed</button>
+        <button class="q-option" data-correct="false">Exclusively pre-sale, to help close the deal</button>
+        <button class="q-option" data-correct="false">Only after the customer relationship has already ended</button>
+      </div>
+      <div class="q-explain">This is the key timing distinction from Sales/Solutions Engineers, who live in the pre-sales cycle — the FDE's work begins where theirs ends.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does an FDE's relationship to AI/ML skills typically differ from a dedicated AI/ML Engineer's?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The FDE uses AI/ML skills as one tool among several (alongside integration, cloud, and communication) in service of a deployment outcome, rather than as their singular core craft</button>
+        <button class="q-option" data-correct="false">FDEs never use any AI or ML skills in their work</button>
+        <button class="q-option" data-correct="false">FDEs and AI/ML Engineers have functionally identical job descriptions</button>
+      </div>
+      <div class="q-explain">This reflects the breadth-over-narrow-depth pattern of the FDE role — wide skill coverage in service of a specific customer outcome, rather than deep specialization in one technical craft.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Aced/Exponent "Forward Deployed Engineer vs. Solutions Architect" (June 2026); Paraform "Forward-Deployed Engineer vs. Solutions Engineer vs. Customer Engineer" (April 2026); FDE Brief "Forward Deployed Engineer vs Solutions Architect" (June 11, 2026); Phos AI Labs "FDE vs Solutions Engineer in 2026".</p>
+
+  <div class="pager">
+    <a href="1-1-what-is-an-fde.html">&larr; 1.1 What is a Forward Deployed Engineer?</a>
+    <a href="1-3-the-engagement-lifecycle.html">1.3 The engagement lifecycle &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const RC_DATA = {
+  sa: { header: "Solutions Architect", rows: [
+    ["Owns", "The running production system", "The design and integration plan"],
+    ["Coding intensity", "Up to 70% of time, production-grade", "20% or less, prototype-grade"],
+    ["Lifecycle stage", "Post-sale, rollout and operations", "Late pre-sale through early implementation"],
+    ["Accountability window", "Ongoing, until stable and handed off", "Ends when design is approved"],
+  ]},
+  se: { header: "Solutions/Sales Engineer", rows: [
+    ["Primary metric", "Deployment success, code shipped", "Revenue influenced, deals closed"],
+    ["Lifecycle stage", "Post-signing", "Pre-sales cycle"],
+    ["Core activity", "Production code inside customer environment", "Demos, POCs, technical validation to close deals"],
+    ["Handoff point", "N/A — stays through operation", "Contract signing"],
+  ]},
+  ce: { header: "Customer Engineer (Google-style)", rows: [
+    ["Scope", "Deep, single-customer embedded ownership", "Broader book of accounts, onboarding + support"],
+    ["Coding depth", "Production-grade implementation", "Scripts, API debugging, configuration"],
+    ["Engagement length", "Weeks to months, embedded", "Ongoing but lighter-touch across many accounts"],
+    ["Company examples", "Palantir, OpenAI, Anthropic", "Google Cloud"],
+  ]},
+  sre: { header: "DevOps / SRE", rows: [
+    ["Environment", "Customer's environment, external constraints", "Company's own internal infrastructure"],
+    ["Primary concern", "Making this specific deployment work end-to-end", "Reliability/operations of infra already controlled internally"],
+    ["Customer contact", "High — embedded, direct relationship", "Typically low or none"],
+    ["Scope breadth", "Wide (integration + infra + AI + communication)", "Deep, focused on infra/reliability practices"],
+  ]},
+  aiml: { header: "AI/ML Engineer", rows: [
+    ["Core craft", "Deployment outcome across many skills", "Model training, fine-tuning, evaluation depth"],
+    ["Customer contact", "High, direct and ongoing", "Often low, more internal-facing"],
+    ["Skill depth vs. breadth", "Wide breadth, moderate depth per skill", "Deep depth in ML specifically"],
+    ["Typical output", "A working deployed system", "A trained/tuned model or evaluation pipeline"],
+  ]},
+};
+function renderRc(key) {
+  const d = RC_DATA[key];
+  document.getElementById('rc-other-header').textContent = d.header;
+  document.getElementById('rc-rows').innerHTML = d.rows.map(r => `
+    <tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td><td>${r[2]}</td></tr>
+  `).join('');
+}
+document.querySelectorAll('.rc-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.rc-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderRc(tab.dataset.r);
+  });
+});
+renderRc('sa');
+
+document.getElementById('fig-lifecycle-roles').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: customer lifecycle timeline showing where Sales Engineer, Solutions Architect, and FDE each engage">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <line x1="20" y1="80" x2="660" y2="80" stroke="#262d3a" stroke-width="2"/>
+  <text x="80" y="30" text-anchor="middle" font-size="11">Pre-sale</text>
+  <rect x="20" y="40" width="140" height="30" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="90" y="60" text-anchor="middle" fill="#f2b84b" font-size="9">Sales/Solutions Engineer</text>
+  <text x="330" y="30" text-anchor="middle" font-size="11">Signing → early impl.</text>
+  <rect x="230" y="40" width="200" height="30" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="330" y="60" text-anchor="middle" fill="#a9c1ff" font-size="9">Solutions Architect</text>
+  <line x1="330" y1="80" x2="330" y2="70" stroke="#5b8cff" stroke-width="1"/>
+  <text x="550" y="105" text-anchor="middle" font-size="11">Rollout → ongoing operation</text>
+  <rect x="450" y="115" width="200" height="30" rx="6" fill="#182238" stroke="#a78bfa"/><text x="550" y="135" text-anchor="middle" fill="#c4b5fd" font-size="9">Forward Deployed Engineer</text>
+  <line x1="550" y1="115" x2="550" y2="82" stroke="#a78bfa" stroke-width="1"/>
+  <circle cx="450" cy="80" r="4" fill="#e6e9ef"/><text x="450" y="98" text-anchor="middle" font-size="9">Contract signed</text>
+</svg>
+`;
+</script>
+</body>
+</html>

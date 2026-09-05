@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.3 The engagement lifecycle | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.el-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.el-stages { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.el-stage-chip { padding: 8px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border-strong); cursor: pointer; }
+.el-stage-chip.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.el-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 70px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.3 The engagement lifecycle</h1>
+  <p class="subtitle">Thirteen stages, and skipping any one of them is exactly where engagements go wrong.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A real FDE engagement moves through: <strong>Discover → Understand → Scope → Design →
+    Prototype → Integrate → Build → Deploy → Observe → Iterate → Prove Impact → Scale →
+    Handoff.</strong> This isn't a checklist to rush through — it's a dependency chain. Skipping
+    Discover means Scope is guesswork. Skipping Observe means you can't Iterate on real signal.
+    Skipping Prove Impact means the customer has no reason to renew, however well the system
+    actually works. Every later phase in this track maps back onto one or more of these stages.
+  </div>
+
+  <h2>Try it: walk through every stage</h2>
+  <div class="el-box">
+    <div class="el-stages" id="el-stages"></div>
+    <div class="el-detail" id="el-detail"></div>
+  </div>
+
+  <h2>The stage most engagements skip, and pay for later</h2>
+  <p>
+    <strong>Observe</strong> is the stage most commonly compressed or skipped under deadline
+    pressure — teams ship and move to the next fire. But without genuine observability (Phase 5
+    of this track) into how the deployed system is actually behaving with real customer traffic,
+    <strong>Iterate</strong> becomes guesswork instead of a response to real signal, and
+    <strong>Prove Impact</strong> has no data to draw from. The stages aren't independent chores;
+    each one is a prerequisite the next stage actually needs.
+  </p>
+
+  <div class="figure" id="fig-lifecycle-full"></div>
+
+  <h2>Discover and Scope are engineering work, not sales work</h2>
+  <p>
+    This is one of Palantir's original organizational patterns (1.1): customer discovery is
+    treated as engineering work, done by the engineer who will actually build the system — not
+    handed off from a separate sales or pre-sales function. The reasoning is direct: the person
+    who has to build the thing is the person best positioned to ask the technical questions that
+    reveal whether a proposed scope is actually buildable, and by when.
+  </p>
+
+  <h2>Handoff doesn't mean disappearing</h2>
+  <p>
+    "Handoff" in this lifecycle means transitioning the system to a stable, sustainable operating
+    model — documentation, runbooks, a clear owner on the customer's side, monitoring in place —
+    not simply walking away. A rushed or absent handoff is a common, specifically avoidable failure
+    mode: the system that worked while the FDE was actively watching it can quietly degrade once
+    nobody's paying close attention, exactly the kind of silent failure Phase 5's observability
+    material is built to catch.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is skipping the Observe stage under deadline pressure particularly costly later in the lifecycle?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Without real observability into deployed behavior, Iterate becomes guesswork and Prove Impact has no data to draw from</button>
+        <button class="q-option" data-correct="false">Observe is a purely optional stage with no dependency on any other stage</button>
+        <button class="q-option" data-correct="false">Skipping Observe only affects the Discover stage of a future engagement</button>
+      </div>
+      <div class="q-explain">This is the core "dependency chain" point — later stages genuinely need what earlier stages produce, so skipping one doesn't just remove that stage's value, it degrades everything downstream of it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does Palantir's playbook treat customer discovery as engineering work rather than a separate sales function?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The engineer who will actually build the system is best positioned to ask the technical questions that reveal whether a proposed scope is genuinely buildable</button>
+        <button class="q-option" data-correct="false">Sales teams are categorically incapable of gathering any useful customer information</button>
+        <button class="q-option" data-correct="false">Engineering work and discovery work never overlap in any meaningful way</button>
+      </div>
+      <div class="q-explain">The reasoning is specifically about who has the right expertise to evaluate technical feasibility during discovery — the builder, not a separate function further from the implementation details.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does "Handoff" actually mean in this lifecycle, as distinct from simply ending the engagement?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Transitioning to a stable, sustainable operating model — documentation, runbooks, a clear customer-side owner, monitoring in place</button>
+        <button class="q-option" data-correct="false">The FDE immediately stops all involvement with the customer with no transition process</button>
+        <button class="q-option" data-correct="false">Handoff only applies to engagements that were unsuccessful</button>
+      </div>
+      <div class="q-explain">A rushed or absent handoff is specifically named as a failure mode — the goal is a system that survives and stays healthy after the FDE's direct attention moves elsewhere, not an abrupt exit.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Perspective AI "Palantir's Forward-Deployed Engineering Playbook" (May 2026); Phos AI Labs "FDE vs Solutions Engineer in 2026" (full lifecycle description: discovery, production build, eval engineering, governance, post-launch accountability).</p>
+
+  <div class="pager">
+    <a href="1-2-fde-vs-adjacent-roles.html">&larr; 1.2 FDE vs. adjacent roles</a>
+    <a href="1-4-the-2026-fde-landscape.html">1.4 The 2026 FDE landscape &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const STAGES = [
+  { name: "1. Discover", detail: "Understand the customer's world before proposing anything — their systems, their data, their stakeholders, what's actually broken. Treated as engineering work, done by the builder (Phase 9)." },
+  { name: "2. Understand", detail: "Go deeper than the surface ask. 'We need AI' is not a requirement — it's a starting point for finding the actual problem underneath it (Phase 9.1)." },
+  { name: "3. Scope", detail: "Turn the understood problem into a bounded, buildable commitment — what's in, what's out, what success looks like, by when (Phase 9.3)." },
+  { name: "4. Design", detail: "Architect the solution against real constraints — latency, security, existing infrastructure, budget (Phase 8's system design method)." },
+  { name: "5. Prototype", detail: "Build the smallest thing that proves the design works, fast — before investing in the full production build." },
+  { name: "6. Integrate", detail: "Connect to the customer's actual systems — auth, data sources, legacy platforms. This is where 'the customer's environment is not clean' becomes very real (Phase 6)." },
+  { name: "7. Build", detail: "Write the real, production-grade system — not the prototype's shortcuts (Phases 2-3)." },
+  { name: "8. Deploy", detail: "Ship it into the customer's actual environment, safely — often inside real infrastructure constraints like private networks (Phase 4-5)." },
+  { name: "9. Observe", detail: "Watch how the deployed system actually behaves with real traffic — the stage most commonly skipped under pressure, and the one everything after it depends on (Phase 5)." },
+  { name: "10. Iterate", detail: "Fix what Observe revealed, based on real signal rather than guesswork." },
+  { name: "11. Prove Impact", detail: "Demonstrate the measurable business outcome — the reason the customer renews (Phase 10.1)." },
+  { name: "12. Scale", detail: "Expand from the initial deployment to broader usage across the customer's organization." },
+  { name: "13. Handoff", detail: "Transition to a stable operating model with documentation, runbooks, and a clear owner — not an abrupt exit." },
+];
+let elIdx = 0;
+function renderEl() {
+  document.getElementById('el-stages').innerHTML = STAGES.map((s,i) =>
+    `<div class="el-stage-chip${i===elIdx?' active':''}" data-i="${i}">${s.name}</div>`
+  ).join('');
+  document.getElementById('el-detail').textContent = STAGES[elIdx].detail;
+  document.querySelectorAll('.el-stage-chip').forEach(chip => {
+    chip.addEventListener('click', () => { elIdx = parseInt(chip.dataset.i,10); renderEl(); });
+  });
+}
+renderEl();
+
+document.getElementById('fig-lifecycle-full').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Diagram: thirteen-stage lifecycle grouped into discovery, build, and operate phases">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="10" y="20" width="200" height="60" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="110" y="45" text-anchor="middle" fill="#f2b84b">Discover · Understand · Scope</text>
+  <text x="110" y="65" text-anchor="middle" fill="#c9a05f" font-size="8">the "what" phase</text>
+
+  <rect x="240" y="20" width="200" height="60" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="40" text-anchor="middle" fill="#a9c1ff">Design · Prototype · Integrate</text>
+  <text x="340" y="55" text-anchor="middle" fill="#a9c1ff">Build · Deploy</text>
+  <text x="340" y="70" text-anchor="middle" fill="#7891c9" font-size="8">the "build" phase</text>
+
+  <rect x="470" y="20" width="200" height="60" rx="8" fill="#1a2029" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="570" y="40" text-anchor="middle" fill="#c4b5fd">Observe · Iterate · Prove Impact</text>
+  <text x="570" y="55" text-anchor="middle" fill="#c4b5fd">Scale · Handoff</text>
+  <text x="570" y="70" text-anchor="middle" fill="#9d8ac2" font-size="8">the "operate" phase</text>
+
+  <line x1="210" y1="50" x2="238" y2="50" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a41)"/>
+  <line x1="440" y1="50" x2="468" y2="50" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a41)"/>
+  <path d="M 570 82 C 570 150, 110 150, 110 82" fill="none" stroke="#6b7386" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a41)"/>
+  <text x="340" y="175" text-anchor="middle" fill="#9aa4b5" font-size="9">Scale often loops back to Discover for the next phase of the engagement</text>
+  <defs><marker id="a41" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

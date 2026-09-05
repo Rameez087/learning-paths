@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.1 What is a Forward Deployed Engineer? | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fd-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.fd-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.fd-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.fd-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; }
+.fd-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.fd-metric .n { font-size: 15px; font-weight: 700; }
+.fd-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Foundations</div>
+  <h1>1.1 What is a Forward Deployed Engineer?</h1>
+  <p class="subtitle">"A consultant produces a deliverable and exits. An FDE ships running production code and stays on it." — the accountability difference is the whole role.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A Forward Deployed Engineer is a software engineer embedded directly inside a customer's
+    organization — sometimes on-site for weeks or months — who learns the customer's actual domain,
+    ships production code against the customer's real data and systems, and owns whether the
+    deployment actually works. Palantir invented the role around 2010 for classified US government
+    accounts, facing a problem traditional consultants couldn't solve. By 2026, OpenAI, Anthropic,
+    and Google have all built dedicated FDE business units, treating the role as a strategic
+    category rather than a tactical hire.
+  </div>
+
+  <h2>Try it: see why the role exists</h2>
+  <div class="fd-box">
+    <div class="fd-toggle">
+      <div class="fd-toggle-btn active" data-v="demo">The problem: demos that don't deploy</div>
+      <div class="fd-toggle-btn" data-v="consultant">Why a traditional consultant falls short</div>
+      <div class="fd-toggle-btn" data-v="fde">What an FDE does differently</div>
+    </div>
+    <div id="fd-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>The defining trait: accountability that doesn't end at handoff</h2>
+  <p>
+    A solutions architect draws blueprints from a distance and confirms technical feasibility. An
+    FDE is "on-site pouring the concrete, adjusting the plan when it collides with reality, and
+    owning whether the house gets built and stays standing." The accountability sits with the same
+    person who wrote the code — not a separate implementation team, not a partner, and not a
+    hand-off to someone else once the interesting part is done.
+  </p>
+
+  <div class="figure" id="fig-origin"></div>
+
+  <h2>Why 2026 specifically: the gap AI products created</h2>
+  <p>
+    A raw LLM API demos brilliantly and deploys unevenly. The FDE is the engineer who builds the
+    enterprise-grade application, the retrieval pipeline, and the security layers that make a
+    frontier model actually usable inside a bank or a hospital — work a general-purpose API call
+    alone doesn't do. This exact gap is why OpenAI launched "The Deployment Company" in May 2026
+    (a dedicated FDE business backed by $4B+ in investor funding) and Anthropic announced a
+    $1.5B joint venture with Blackstone and Goldman Sachs to embed Claude FDEs inside
+    financial-services customers — both in the same month.
+  </p>
+
+  <h2>Seven patterns Palantir established that the industry is now copying</h2>
+  <ul>
+    <li><strong>Hire engineer-diplomats</strong> — strong enough to write production code, comfortable enough to sit in a room with a skeptical customer.</li>
+    <li><strong>Embed at the customer</strong> — not remote consulting from a distance.</li>
+    <li><strong>Ship on day one</strong> — bias toward working code over polished proposals.</li>
+    <li><strong>Treat customer discovery as engineering work</strong> — not a separate pre-sales phase.</li>
+    <li><strong>Build a customer-specific model of their world</strong> — deep enough to reason about edge cases.</li>
+    <li><strong>Route product feedback through the FDE</strong> — the person closest to the friction reports it back to the platform team.</li>
+    <li><strong>Refuse the systems-integrator role</strong> — the goal is a working product, not a billable-hours relationship.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the core accountability difference between an FDE and a traditional consultant?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An FDE ships running production code and stays accountable for it; a consultant produces a deliverable and exits</button>
+        <button class="q-option" data-correct="false">Consultants write more code than FDEs on average</button>
+        <button class="q-option" data-correct="false">There is no meaningful accountability difference between the two roles</button>
+      </div>
+      <div class="q-explain">This is the defining distinction the role was built around — ongoing ownership of a working system, not a one-time deliverable someone else has to make work.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why did the rise of generative AI products specifically accelerate demand for FDEs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A raw LLM API demos well but deploys unevenly — FDEs build the enterprise-grade application, retrieval, and security layers that make it usable in a real customer environment</button>
+        <button class="q-option" data-correct="false">LLM APIs eliminated the need for any engineering work at customer sites</button>
+        <button class="q-option" data-correct="false">Generative AI products require no integration work at all</button>
+      </div>
+      <div class="q-explain">The gap between "impressive demo" and "production system a regulated enterprise can actually run" is exactly the gap FDEs fill — this is precisely why frontier labs built dedicated FDE business units in 2026.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does "routing product feedback through the FDE" matter as an organizational pattern?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The FDE is the person closest to real deployment friction, so they're positioned to report back what's actually broken or missing to the platform team</button>
+        <button class="q-option" data-correct="false">This pattern exists purely for administrative record-keeping with no engineering value</button>
+        <button class="q-option" data-correct="false">Product feedback should never come from customer-facing engineers</button>
+      </div>
+      <div class="q-explain">This closes a feedback loop that's otherwise easy to lose — the person who hit the real-world edge case is the same person who can accurately describe it back to the team that can fix the underlying product.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Perspective AI "Palantir's Forward-Deployed Engineering Playbook" (May 2026), citing Palantir's Form 10-K and S-1 filings; jobsbyculture.com "Forward Deployed Engineer: The Fastest-Growing AI Role in 2026" (July 2026); Aced/Exponent "Forward Deployed Engineer vs. Solutions Architect" (June 2026); LynkAI "What is a Forward Deployed Engineer? The Complete Guide for AI Buyers" (May 2026).</p>
+
+  <div class="pager">
+    <a href="../index.html">&larr; Track overview</a>
+    <a href="1-2-fde-vs-adjacent-roles.html">1.2 FDE vs. adjacent roles &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const FD_INFO = {
+  demo: "A frontier model can summarize documents, answer questions, and write code impressively in a sales demo. But a demo runs on curated examples, no real authentication, no real data volume, and no real failure modes. The gap between 'looks great in the room' and 'runs reliably on this bank's actual transaction data behind their actual firewall' is enormous — and nobody on the sales team is equipped to close it.",
+  consultant: "A traditional consultant is optimized to produce a deliverable — a report, an architecture diagram, a proof of concept — and then leave. Their incentive is billable hours and client satisfaction with the deliverable, not the deliverable's fate six months later. When the customer needs someone to actually keep the thing running against messy real infrastructure, the consultant has usually already moved to the next engagement.",
+  fde: "The FDE embeds inside the customer's environment, writes production code directly against their real systems and data, and stays accountable until the deployment is stable and delivering value. This isn't a bigger consulting engagement — it's a fundamentally different accountability model: the same person who designed it is the one who has to make it actually work, and keeps working, day to day.",
+};
+document.querySelectorAll('.fd-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fd-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('fd-detail').textContent = FD_INFO[btn.dataset.v];
+  });
+});
+document.getElementById('fd-detail').textContent = FD_INFO['demo'];
+
+document.getElementById('fig-origin').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Timeline: Palantir originates the FDE role around 2010 for government accounts, industry adopts it through the 2010s, AI labs build dedicated FDE business units in 2026">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <line x1="30" y1="70" x2="650" y2="70" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="80" cy="70" r="6" fill="#a78bfa"/><text x="80" y="50" text-anchor="middle" fill="#c4b5fd">~2010</text><text x="80" y="95" text-anchor="middle" font-size="9">Palantir originates FDE</text><text x="80" y="108" text-anchor="middle" font-size="9">for classified gov accounts</text>
+  <circle cx="300" cy="70" r="6" fill="#5b8cff"/><text x="300" y="50" text-anchor="middle" fill="#a9c1ff">2010s-2023</text><text x="300" y="95" text-anchor="middle" font-size="9">Model spreads to Databricks,</text><text x="300" y="108" text-anchor="middle" font-size="9">enterprise software cos.</text>
+  <circle cx="500" cy="70" r="6" fill="#3ecf8e"/><text x="500" y="50" text-anchor="middle" fill="#3ecf8e">2023-2025</text><text x="500" y="95" text-anchor="middle" font-size="9">AI labs adopt FDE model</text><text x="500" y="108" text-anchor="middle" font-size="9">as demos outpace deployment</text>
+  <circle cx="620" cy="70" r="7" fill="#f2b84b"/><text x="620" y="50" text-anchor="middle" fill="#f2b84b">May 2026</text><text x="620" y="95" text-anchor="middle" font-size="9">OpenAI + Anthropic launch</text><text x="620" y="108" text-anchor="middle" font-size="9">dedicated FDE business units</text>
+</svg>
+`;
+</script>
+</body>
+</html>
