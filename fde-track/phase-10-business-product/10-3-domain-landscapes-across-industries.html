@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.3 Domain landscapes across industries | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dl-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dl-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.dl-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.dl-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12.5px; }
+.dl-cell-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Business &amp; product thinking</div>
+  <h1>10.3 Domain landscapes across industries</h1>
+  <p class="subtitle">The same RAG architecture means something completely different when the documents are legal contracts versus patient records versus factory sensor logs.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An FDE doesn't need deep domain expertise in every industry — but walking into a discovery
+    call with zero vocabulary for the customer's world wastes their time and yours. This topic is
+    a reference, not a mastery requirement: enough shared language to ask informed questions in
+    discovery (9.1), and enough awareness of each industry's typical constraints to avoid an
+    obviously naive first design.
+  </div>
+
+  <h2>Try it: explore the landscape by industry</h2>
+  <div class="dl-box">
+    <div class="dl-tabs">
+      <div class="dl-tab active" data-i="finance">Finance</div>
+      <div class="dl-tab" data-i="healthcare">Healthcare</div>
+      <div class="dl-tab" data-i="manufacturing">Manufacturing</div>
+      <div class="dl-tab" data-i="logistics">Logistics</div>
+      <div class="dl-tab" data-i="government">Government/Defense</div>
+    </div>
+    <div class="dl-grid" id="dl-grid"></div>
+  </div>
+
+  <h2>Why this reference matters more now, specifically</h2>
+  <p>
+    Recall Phase 1.4: Anthropic's $1.5B joint venture with Blackstone and Goldman Sachs is
+    specifically targeting financial services. OpenAI's "The Deployment Company" targets Fortune
+    500 enterprise broadly. As frontier labs build industry-specific FDE business units, walking
+    into a specific vertical with zero grounding in its typical systems and regulatory landscape
+    is an increasingly real gap, not a hypothetical one.
+  </p>
+
+  <div class="figure" id="fig-domain-map"></div>
+
+  <h2>The pattern that repeats across every industry</h2>
+  <p>
+    Despite genuinely different vocabularies and regulations, the same underlying question
+    structure applies everywhere: what systems already hold this industry's core data (a CRM in
+    retail, an EHR in healthcare, a core banking system in finance), what regulatory framework
+    constrains how that data can be used (HIPAA, SOX, ITAR), and what's the actual cost of an
+    error in this specific domain (a wrong product recommendation vs. a wrong clinical
+    suggestion). Learning to ask these three questions for an unfamiliar industry is more durable
+    than memorizing any one industry's specifics.
+  </p>
+
+  <h2>Building genuine depth in one industry over time</h2>
+  <p>
+    Most FDEs end up with real depth in one or two industries after enough engagements, not broad
+    shallow knowledge everywhere. This is a natural, healthy specialization — the reference table
+    above is meant to get someone started in an unfamiliar vertical quickly, not to substitute for
+    the genuine depth that comes from actually working several engagements in a given industry.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is this domain-landscape material meant to provide, according to the framing given?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Enough shared vocabulary and awareness of typical constraints to ask informed questions during discovery — not deep mastery of every industry</button>
+        <button class="q-option" data-correct="false">Complete expert-level knowledge of every named industry's regulations and systems</button>
+        <button class="q-option" data-correct="false">A replacement for actually working real engagements in any given industry</button>
+      </div>
+      <div class="q-explain">This is explicitly framed as a reference and a starting point, not a substitute for the genuine depth that comes from real engagement experience.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What three underlying questions does this material suggest apply across every industry, despite differing vocabularies?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">What systems already hold the industry's core data, what regulatory framework constrains its use, and what's the actual cost of an error in that specific domain</button>
+        <button class="q-option" data-correct="false">Every industry requires an entirely unique, unrelated set of discovery questions with no common structure</button>
+        <button class="q-option" data-correct="false">The only question that matters across industries is the customer's budget</button>
+      </div>
+      <div class="q-explain">This is the durable, transferable pattern underneath industry-specific details — learning this question structure generalizes better than memorizing any single industry's specifics.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does the material note that frontier labs building industry-specific FDE business units makes this topic more practically relevant now?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">As labs like Anthropic and OpenAI build dedicated business units targeting specific verticals (like financial services), walking into that vertical with zero domain grounding becomes an increasingly real professional gap</button>
+        <button class="q-option" data-correct="false">Industry-specific business units have no bearing on what an individual FDE needs to know</button>
+        <button class="q-option" data-correct="false">This trend means domain knowledge is now completely unnecessary for FDE work</button>
+      </div>
+      <div class="q-explain">This connects the topic directly back to Phase 1.4's real market data — the industry-vertical specialization trend at the company level creates real pressure for individual FDEs to have at least baseline domain fluency.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This reference synthesizes general enterprise-domain patterns with the industry-vertical FDE trends documented in Phase 1.4.</p>
+
+  <div class="pager">
+    <a href="10-2-build-vs-buy-and-tco.html">&larr; 10.2 Build vs. buy &amp; TCO</a>
+    <a href="../phase-11-security-governance/11-1-owasp-llm-risks-in-deployment.html">Phase 11: Security &amp; governance &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DL_DATA = {
+  finance: { systems: "Core banking systems, trading platforms, SWIFT messaging", regulation: "SOX, PCI-DSS, KYC/AML, SEC/FINRA", data: "Highly sensitive transaction and identity data", errorCost: "Very high — financial and regulatory consequences" },
+  healthcare: { systems: "EHR/EMR (Epic, Cerner), HL7/FHIR interfaces", regulation: "HIPAA, HITECH, FDA (for clinical decision support)", data: "Protected health information (PHI), extremely sensitive", errorCost: "Very high — direct patient safety implications" },
+  manufacturing: { systems: "MES, SCADA, IoT sensor networks, ERP", regulation: "ISO standards, industry-specific safety codes", data: "Sensor telemetry, production schedules, quality records", errorCost: "High — safety incidents, production downtime" },
+  logistics: { systems: "TMS, WMS, EDI for partner integration", regulation: "DOT/customs regulations, trade compliance", data: "Shipment tracking, inventory, partner/customer data", errorCost: "Moderate-high — delivery failures, contract penalties" },
+  government: { systems: "Legacy mainframes, classified networks, GovCloud", regulation: "FedRAMP, ITAR, classification handling requirements", data: "Often highly classified or sensitive citizen data", errorCost: "Very high — security clearance and national security implications" },
+};
+function renderDl(key) {
+  const d = DL_DATA[key];
+  document.getElementById('dl-grid').innerHTML = `
+    <div><div class="dl-cell-label">Typical systems</div>${d.systems}</div>
+    <div><div class="dl-cell-label">Key regulations</div>${d.regulation}</div>
+    <div><div class="dl-cell-label">Typical data</div>${d.data}</div>
+    <div><div class="dl-cell-label">Cost of error</div>${d.errorCost}</div>
+  `;
+}
+document.querySelectorAll('.dl-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.dl-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderDl(tab.dataset.i);
+  });
+});
+renderDl('finance');
+
+document.getElementById('fig-domain-map').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: three universal discovery questions applied consistently across five different named industries">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="240" y="10" width="200" height="35" rx="8" fill="#182238" stroke="#a78bfa"/><text x="340" y="32" text-anchor="middle" fill="#c4b5fd">Systems + regulation + error cost</text>
+  <line x1="280" y1="45" x2="100" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="320" y1="45" x2="260" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="360" y1="45" x2="420" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="400" y1="45" x2="580" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <rect x="30" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="100" y="101" text-anchor="middle" font-size="8">Finance</text>
+  <rect x="190" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="260" y="101" text-anchor="middle" font-size="8">Healthcare</text>
+  <rect x="350" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="420" y="101" text-anchor="middle" font-size="8">Manufacturing</text>
+  <rect x="510" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="580" y="101" text-anchor="middle" font-size="8">Gov/Defense</text>
+</svg>
+`;
+</script>
+</body>
+</html>

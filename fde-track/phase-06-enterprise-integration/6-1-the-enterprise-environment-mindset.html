@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.1 The enterprise environment mindset | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.em-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.em-item-btn { display: block; width: 100%; text-align: left; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.em-cause { display: none; padding: 10px 12px; background: var(--code-bg); border-radius: 6px; margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.em-cause.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Enterprise integration</div>
+  <h1>6.1 The enterprise environment mindset</h1>
+  <p class="subtitle">Most enterprises discover they have two to three times more integrations than they thought they had. Nothing you assumed about "how systems are organized here" is safe to assume.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    "The customer's environment is not clean" isn't a complaint — it's the actual job description.
+    Twenty years of acquisitions, replatforming, and bolt-on tools accumulate real "integration
+    debt": systems nobody fully understands anymore, integrations built by people who left the
+    company years ago, and undocumented dependencies between things that look unrelated. The FDE's
+    job is to work productively inside this reality, not to wait for it to be cleaned up first —
+    that cleanup, if it ever happens, is a multi-year initiative, not a precondition for shipping.
+  </div>
+
+  <h2>Try it: spot the real cause behind each "surprising" enterprise moment</h2>
+  <div class="em-box">
+    <div id="em-items"></div>
+  </div>
+
+  <h2>Why integration debt accumulates specifically over decades</h2>
+  <p>
+    The pattern across real enterprise integration work: consolidation, not connection, is the
+    actual first step. A company doesn't set out to have three overlapping identity systems and
+    a homegrown message bus nobody remembers building — it accumulates through years of
+    acquisitions bringing in their own tech stacks, platform migrations that never fully finished,
+    and point-to-point integrations added under deadline pressure that were meant to be temporary.
+    None of this is negligence in any single moment — it's the compound result of years of
+    reasonable individual decisions.
+  </p>
+
+  <div class="figure" id="fig-integration-debt"></div>
+
+  <h2>The three-phase pattern that actually works</h2>
+  <ol>
+    <li><strong>Inventory and classify</strong> every integration in the estate before touching anything — most organizations are surprised by how much actually exists once someone counts.</li>
+    <li><strong>Consolidate the integration layer</strong> onto fewer, better-understood platforms, retiring point tools as you go rather than adding yet another one-off connection.</li>
+    <li><strong>Refactor business logic out of the integration code itself</strong>, back into the systems where it actually belongs — the unglamorous step that produces most of the long-term value, and the one most tempting to skip under deadline pressure.</li>
+  </ol>
+
+  <h2>Why "wait until it's cleaner" is never the right response</h2>
+  <p>
+    An engagement's timeline doesn't pause for the customer to fix their infrastructure first —
+    that's frequently part of why an FDE is there at all. The practical discipline: work
+    productively within real constraints, document what you learn about the mess as you go (this
+    becomes genuinely valuable institutional knowledge the customer often doesn't have written
+    down anywhere), and flag consolidation opportunities as a separate recommendation rather than
+    blocking the current engagement on fixing them first.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does "integration debt" typically accumulate in large enterprises, according to this material?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It builds up gradually over years through acquisitions bringing in different tech stacks, unfinished platform migrations, and point-to-point integrations meant to be temporary — not through negligence in any single decision</button>
+        <button class="q-option" data-correct="false">Integration debt only occurs when a company deliberately chooses to build a messy system</button>
+        <button class="q-option" data-correct="false">Enterprise systems are always clean and well-documented by design</button>
+      </div>
+      <div class="q-explain">This is the "compound result of reasonable individual decisions" framing — no single moment was necessarily a mistake, but years of them accumulate into genuine complexity.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What is the correct first step in the three-phase pattern for addressing a messy integration estate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Inventory and classify every existing integration before making any changes, since most organizations significantly underestimate how many actually exist</button>
+        <button class="q-option" data-correct="false">Immediately begin building new integrations to replace the old ones</button>
+        <button class="q-option" data-correct="false">Wait for the customer to document their systems before starting any work</button>
+      </div>
+      <div class="q-explain">Consolidation before connection — understanding the full scope of what already exists is the necessary foundation before deciding what to consolidate or build next.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is "wait until the customer's environment is cleaner" never the right response to a messy integration reality?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The engagement's purpose is often specifically to work productively within the current mess — waiting for it to be cleaned up first defeats the reason the FDE is there</button>
+        <button class="q-option" data-correct="false">Enterprise environments always clean themselves up quickly once a problem is identified</button>
+        <button class="q-option" data-correct="false">Messy environments should always be fully refactored before any new work begins</button>
+      </div>
+      <div class="q-explain">This is the core mindset shift the whole topic is built around — real value comes from shipping inside real constraints, with cleanup flagged as a separate recommendation rather than a blocker.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: GlobeTom "Enterprise System Integration: Legacy and Cloud Guide" (June 2026); Okta "Integration Patterns for Legacy Applications" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-05-devops-sre/5-4-diagnosing-a-5x-slowdown.html">&larr; 5.4 Diagnosing a 5x slowdown</a>
+    <a href="6-2-identity-and-access-at-scale.html">6.2 Identity &amp; access at scale &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const EM_ITEMS = [
+  { symptom: "There are three different systems that all claim to be 'the source of truth' for customer data, and they disagree with each other.", cause: "This is a classic sign of integration debt from multiple acquisitions or platform migrations — each system was probably the source of truth at some point, and nobody fully retired the old ones when the new one arrived." },
+  { symptom: "A critical nightly batch job runs on a server nobody currently at the company has admin access to.", cause: "A common consequence of staff turnover combined with undocumented systems — the person who built and maintained it left, and the knowledge left with them." },
+  { symptom: "The customer's IT team is surprised to learn a specific integration exists at all when you ask about it.", cause: "Exactly the 'two to three times more integrations than they thought' pattern — shadow integrations built by individual teams under deadline pressure, never centrally tracked." },
+  { symptom: "Two departments have built separate, incompatible workflows to solve what is functionally the same business problem.", cause: "Organizational silos plus the absence of a shared platform — each team solved their own version of the problem independently, without visibility into what the other team built." },
+];
+document.getElementById('em-items').innerHTML = EM_ITEMS.map((m,i) => `
+  <button class="em-item-btn" data-i="${i}">${m.symptom}</button>
+  <div class="em-cause" id="em-cause-${i}">${m.cause}</div>
+`).join('');
+document.querySelectorAll('.em-item-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('em-cause-' + btn.dataset.i).classList.toggle('show');
+  });
+});
+
+document.getElementById('fig-integration-debt').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: integration debt accumulating over time through acquisitions, migrations, and point integrations">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <line x1="30" y1="100" x2="650" y2="100" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="100" cy="100" r="5" fill="#f2b84b"/><text x="100" y="85" text-anchor="middle" fill="#f2b84b" font-size="9">Acquisition A</text>
+  <circle cx="250" cy="100" r="5" fill="#5b8cff"/><text x="250" y="85" text-anchor="middle" fill="#a9c1ff" font-size="9">Platform migration (unfinished)</text>
+  <circle cx="400" cy="100" r="5" fill="#3ecf8e"/><text x="400" y="85" text-anchor="middle" fill="#3ecf8e" font-size="9">"Temporary" point integration</text>
+  <circle cx="550" cy="100" r="5" fill="#e5484d"/><text x="550" y="85" text-anchor="middle" fill="#ff8b8f" font-size="9">Acquisition B</text>
+  <text x="620" y="125" fill="#a78bfa" font-size="10">→ Today's integration debt</text>
+</svg>
+`;
+</script>
+</body>
+</html>

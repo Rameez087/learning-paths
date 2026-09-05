@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.2 Data governance &amp; compliance | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.gc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.gc-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.gc-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.gc-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Security &amp; governance</div>
+  <h1>11.2 Data governance &amp; compliance</h1>
+  <p class="subtitle">$12.9M a year — the Gartner-benchmarked cost large enterprises spend just on data governance and quality maintenance for AI workloads. This is not a rounding error in anyone's budget.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Data governance for AI deployments extends the Data Science track's governance material
+    (contracts, lineage, ownership) with AI-specific requirements: knowing exactly what data fed
+    a model or a RAG system's retrieval index, being able to demonstrate compliance with the
+    specific regulatory framework governing that data (HIPAA, GDPR, SOX, depending on the
+    industry from 10.3), and maintaining an audit trail robust enough to satisfy an external
+    regulator, not just an internal reviewer.
+  </div>
+
+  <h2>Try it: explore what compliance actually requires by data type</h2>
+  <div class="gc-box">
+    <div class="gc-tabs">
+      <div class="gc-tab active" data-d="pii">Personal data (PII)</div>
+      <div class="gc-tab" data-d="phi">Health data (PHI)</div>
+      <div class="gc-tab" data-d="financial">Financial data</div>
+    </div>
+    <div id="gc-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Data lineage for AI: extending the Data Science track's principle</h2>
+  <p>
+    The Data Science &amp; Engineering track's Phase 11 covers data lineage as a general
+    warehouse practice — mapping which datasets feed which downstream tables. For AI deployments
+    specifically, this extends to a harder question: which specific documents fed a RAG index, and
+    can you trace a given model response back to the source documents that informed it? This
+    matters directly for 7.3's evaluation-as-deliverable material — a compliance reviewer will
+    often ask not just "is this accurate" but "can you prove exactly what data produced this
+    specific answer."
+  </p>
+
+  <div class="figure" id="fig-governance-layers"></div>
+
+  <h2>Retention and deletion: the AI-specific complication</h2>
+  <p>
+    Standard data governance includes retention policies — how long data is kept, when it's
+    deleted. AI systems complicate this: if a document was used to fine-tune a model, or is
+    embedded in a vector index, "deleting" it from the source system doesn't automatically remove
+    its influence from the model or the index. A genuinely compliant deletion process for an AI
+    system needs to account for every place that data's influence persists, not just the original
+    source record — a specific, real technical challenge with fine-tuned models and embedded
+    indexes alike.
+  </p>
+
+  <h2>Consent and purpose limitation in an AI context</h2>
+  <p>
+    Data collected and consented to for one purpose (say, customer support ticket resolution)
+    being repurposed to train or fine-tune a model is a genuinely distinct use that may not be
+    covered by the original consent, depending on the applicable regulatory framework. This is a
+    specific question worth raising proactively during discovery (9.1) with any customer proposing
+    to use existing data for a new AI application — assuming existing consent automatically covers
+    a new use case is a real, avoidable compliance risk.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. How does data lineage for AI deployments extend beyond the general data warehouse lineage concept from the Data Science track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It requires tracing which specific documents fed a RAG index or model, and being able to connect a specific model response back to the source data that informed it</button>
+        <button class="q-option" data-correct="false">AI-specific lineage is identical to warehouse lineage with no meaningful differences</button>
+        <button class="q-option" data-correct="false">Lineage has no relevance to AI systems, only traditional data pipelines</button>
+      </div>
+      <div class="q-explain">This connects the general lineage concept to the specific evaluation-as-deliverable need from 7.3 — a compliance reviewer often wants response-level traceability, a harder bar than table-level lineage.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does "deleting" a document from its source system not necessarily satisfy a genuine deletion requirement for an AI system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If the document was used to fine-tune a model or is embedded in a vector index, its influence can persist in those places even after the original source record is deleted</button>
+        <button class="q-option" data-correct="false">Deletion from a source system always automatically removes all traces of that data everywhere</button>
+        <button class="q-option" data-correct="false">Fine-tuned models and vector indexes are never affected by the data used to build them</button>
+      </div>
+      <div class="q-explain">This is a specific, real technical complication — genuine compliance requires accounting for every place data's influence persists, not just the original record.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should an FDE proactively raise consent and purpose limitation during discovery when a customer proposes reusing existing data for a new AI application?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Data consented to for one purpose (like support ticket resolution) being repurposed for AI training may not be covered by the original consent, depending on the applicable regulation — assuming it's automatically covered is a real compliance risk</button>
+        <button class="q-option" data-correct="false">Consent and purpose limitation only apply to data that has never been collected before</button>
+        <button class="q-option" data-correct="false">Any data a company already possesses can always be freely repurposed for any new use case</button>
+      </div>
+      <div class="q-explain">This is a specific, proactive discovery question (connecting to 9.1) that can surface a real compliance gap early, before it becomes a problem discovered only after a system is already built.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Sthambh "AI ROI Measurement for Enterprise" (June 2026), citing Gartner's 2026 data governance cost benchmark; this topic extends data governance concepts from the Data Science &amp; Engineering track's Phase 11.</p>
+
+  <div class="pager">
+    <a href="11-1-owasp-llm-risks-in-deployment.html">&larr; 11.1 OWASP LLM risks in deployment</a>
+    <a href="11-3-red-teaming-and-guardrails.html">11.3 Red teaming &amp; guardrails &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const GC_INFO = {
+  pii: "Governed broadly by GDPR (EU), CCPA/CPRA (California), and similar regional laws. Requires purpose limitation, the right to deletion, and often explicit consent for AI-specific processing beyond the original collection purpose.",
+  phi: "Governed by HIPAA in the US — requires strict access controls, audit logging of every access, and Business Associate Agreements with any vendor (including AI providers) that touches the data. De-identification standards are specific and technical, not just 'remove the name.'",
+  financial: "Governed by SOX (financial reporting integrity), PCI-DSS (payment card data), and KYC/AML requirements. Often requires demonstrable, auditable decision trails — especially relevant if AI is involved in any credit, fraud, or risk decision.",
+};
+document.querySelectorAll('.gc-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.gc-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('gc-detail').textContent = GC_INFO[tab.dataset.d];
+  });
+});
+document.getElementById('gc-detail').textContent = GC_INFO['pii'];
+
+document.getElementById('fig-governance-layers').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: source data traced through ingestion, embedding index, and model response, with lineage tracked at every stage">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="130" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="85" y="64" text-anchor="middle">Source document</text>
+  <line x1="150" y1="60" x2="190" y2="60" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#a64)"/>
+  <rect x="190" y="40" width="130" height="40" rx="6" fill="#182238" stroke="#a78bfa"/><text x="255" y="64" text-anchor="middle" fill="#c4b5fd">Vector index</text>
+  <line x1="320" y1="60" x2="360" y2="60" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#a64)"/>
+  <rect x="360" y="40" width="130" height="40" rx="6" fill="#1a2029" stroke="#a78bfa"/><text x="425" y="64" text-anchor="middle" fill="#c4b5fd">Retrieved context</text>
+  <line x1="490" y1="60" x2="530" y2="60" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#a64)"/>
+  <rect x="530" y="40" width="130" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="595" y="64" text-anchor="middle" fill="#3ecf8e">Model response</text>
+  <text x="340" y="20" text-anchor="middle" fill="#9aa4b5" font-size="9">lineage tracked end-to-end for compliance traceability</text>
+  <defs><marker id="a64" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

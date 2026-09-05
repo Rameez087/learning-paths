@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.1 From API to enterprise application | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fa-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fa-item { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-strong); background: var(--surface-2); cursor: pointer; }
+.fa-item.expanded { background: rgba(167,139,250,0.1); border-color: #a78bfa; }
+.fa-item-detail { display: none; margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+.fa-item.expanded .fa-item-detail { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · AI/LLM deployment for FDEs</div>
+  <h1>7.1 From API to enterprise application</h1>
+  <p class="subtitle">GPT-4 is a raw API. The FDE is the one building the enterprise-grade application, RAG pipeline, and security layers that make it usable for a bank or a hospital.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This phase deliberately doesn't re-teach RAG, agents, or evaluation from scratch — the AI
+    Engineering track covers those in full depth. What's unique to FDE work is everything <em>
+    around</em> the model call: enterprise-grade error handling, tenant isolation, audit logging,
+    the security posture in 7.2, and proving the system works in 7.3. The gap between a working
+    prototype and a production enterprise deployment is exactly where FDE work lives.
+  </div>
+
+  <h2>Try it: what closes the prototype-to-production gap</h2>
+  <div class="fa-box">
+    <div class="fa-item" data-i="0">
+      <strong>Graceful degradation when the model API is slow or down</strong>
+      <div class="fa-item-detail">A prototype can just fail. Production needs a fallback — a cached response, a clear "try again" message, or a queued retry — rather than a raw error surfacing to an end user mid-workflow.</div>
+    </div>
+    <div class="fa-item" data-i="1">
+      <strong>Cost and rate limit management at real usage volume</strong>
+      <div class="fa-item-detail">A prototype's occasional test calls look nothing like production traffic from hundreds of real users. Rate limiting, request queuing, and cost monitoring (recall the token cost calculator from the AI Engineering track) become load-bearing concerns, not afterthoughts.</div>
+    </div>
+    <div class="fa-item" data-i="2">
+      <strong>Tenant isolation in multi-customer deployments</strong>
+      <div class="fa-item-detail">If the same application serves multiple customers or departments, one tenant's data must never leak into another's context or retrieval results — a real, specifically named risk covered fully in 7.2.</div>
+    </div>
+    <div class="fa-item" data-i="3">
+      <strong>Audit logging of every model interaction</strong>
+      <div class="fa-item-detail">Regulated industries specifically require a record of what was asked, what the model returned, and what action (if any) was taken — not just for debugging, but for compliance review.</div>
+    </div>
+    <div class="fa-item" data-i="4">
+      <strong>A rollback path when the model itself changes behavior</strong>
+      <div class="fa-item-detail">Model providers update models over time. An enterprise deployment needs a way to pin a specific model version and deliberately test before adopting a new one — not silently inherit behavior changes mid-production.</div>
+    </div>
+  </div>
+
+  <h2>Why the demo-to-production gap is the whole reason FDE roles exist</h2>
+  <p>
+    Recall Phase 1.1's framing directly: a raw LLM API demos brilliantly and deploys unevenly.
+    None of the five items above are exotic — they're the unglamorous, specific engineering work
+    that turns a genuinely impressive demo into something a bank's compliance team will actually
+    approve for production use. This is quite literally the market gap that created the 2026 FDE
+    hiring boom covered in Phase 1.4.
+  </p>
+
+  <div class="figure" id="fig-gap"></div>
+
+  <h2>What to bring from the AI Engineering track, and what's genuinely new here</h2>
+  <p>
+    RAG system design, agent architecture, prompt engineering, embeddings, and evaluation metrics
+    all transfer directly from the AI Engineering track — an FDE working on an AI deployment needs
+    that foundation solidly in place. What's specifically added in this phase: the enterprise
+    deployment context those techniques have to survive inside — security threats unique to
+    agentic systems with real tool access (7.2), proving correctness to a skeptical, non-technical
+    stakeholder (7.3), and standardized tool integration at enterprise scale (7.4).
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does an enterprise AI deployment need graceful degradation when the model API is slow or unavailable, while a prototype often doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A raw error surfacing mid-workflow to a real end user is unacceptable in production, while a prototype can simply fail during testing without real business consequences</button>
+        <button class="q-option" data-correct="false">Model APIs never actually experience slowness or downtime in production</button>
+        <button class="q-option" data-correct="false">Graceful degradation is only relevant for non-AI applications</button>
+      </div>
+      <div class="q-explain">This is exactly the prototype-to-production gap this topic is about — reliability expectations genuinely change once real users and real business processes depend on the system.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is pinning a specific model version important for an enterprise deployment, rather than always using the latest available model?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Model providers update models over time, and an enterprise deployment needs a deliberate testing process before adopting behavior changes, rather than silently inheriting them mid-production</button>
+        <button class="q-option" data-correct="false">Newer model versions are always strictly worse than older ones</button>
+        <button class="q-option" data-correct="false">Model version pinning is only relevant for open-source models, never API-based ones</button>
+      </div>
+      <div class="q-explain">This connects to the evaluation-as-deliverable material in 7.3 — you can't credibly claim a system's behavior is validated if the underlying model can silently shift out from under that validation.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does this phase deliberately avoid re-teaching, and why?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">RAG, agents, and evaluation techniques already covered in depth by the AI Engineering track — this phase focuses specifically on what's unique to enterprise deployment context around those techniques</button>
+        <button class="q-option" data-correct="false">This phase avoids covering any AI-specific content at all</button>
+        <button class="q-option" data-correct="false">The AI Engineering track and this phase cover completely identical material with no distinction</button>
+      </div>
+      <div class="q-explain">This is a deliberate design choice across the whole FDE track — cross-linking to existing deep-dive content rather than duplicating it, so this phase can focus on its genuinely distinct value.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic builds directly on Phase 1.1's "demo vs. deployment" framing and cross-links to the AI Engineering track's RAG, agents, and evaluation material rather than duplicating it.</p>
+
+  <div class="pager">
+    <a href="../phase-06-enterprise-integration/6-5-api-gateways-and-integration-patterns.html">&larr; 6.5 API gateways &amp; integration patterns</a>
+    <a href="7-2-ai-security-for-customer-deployments.html">7.2 AI security for customer deployments &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.querySelectorAll('.fa-item').forEach(el => {
+  el.addEventListener('click', () => el.classList.toggle('expanded'));
+});
+
+document.getElementById('fig-gap').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: gap between a working prototype and an approved enterprise production deployment, closed by reliability, security, and audit work">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="45" width="150" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="95" y="69" text-anchor="middle">Working prototype</text>
+  <rect x="510" y="45" width="150" height="40" rx="6" fill="#182238" stroke="#3ecf8e"/><text x="585" y="69" text-anchor="middle" fill="#3ecf8e">Approved production</text>
+  <line x1="170" y1="65" x2="510" y2="65" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a58)"/>
+  <text x="340" y="50" text-anchor="middle" fill="#c4b5fd" font-size="9">reliability + security + audit + eval</text>
+  <text x="340" y="100" text-anchor="middle" fill="#9aa4b5" font-size="9">this is where FDE work actually happens</text>
+  <defs><marker id="a58" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

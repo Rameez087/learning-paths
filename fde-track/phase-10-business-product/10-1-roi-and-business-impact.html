@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.1 ROI &amp; business impact | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ri-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ri-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.ri-slider-row input[type=range] { flex: 1; }
+.ri-result { padding: 14px; background: var(--code-bg); border-radius: 8px; text-align: center; margin-top: 10px; }
+.ri-result .n { font-size: 24px; font-weight: 700; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Business &amp; product thinking</div>
+  <h1>10.1 ROI &amp; business impact</h1>
+  <p class="subtitle">"If you build your business case around the direct inference cost line, you are wrong by a factor of four." Most of the real cost — and most of the real value — lives elsewhere.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    ROI = (Net Gain − Total Investment) / Total Investment × 100. The trap most teams fall into:
+    calculating ROI from initial cost only, ignoring infrastructure, maintenance, talent, and
+    time-to-market. In real 2026 enterprise GenAI deployments, direct inference cost is typically
+    only 20-25% of total cost — data and integration work together exceed 40%. This directly
+    connects to Phase 1.3's "Prove Impact" stage: an FDE who can only point to "the model works"
+    hasn't yet made the actual business case a renewal decision depends on.
+  </div>
+
+  <h2>Try it: build a realistic ROI estimate</h2>
+  <div class="ri-box">
+    <div class="ri-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:160px;">Annual labor savings ($k)</label>
+      <input type="range" id="ri-savings" min="0" max="500" value="200">
+      <span id="ri-savings-val" style="font-weight:700; min-width:50px;">$200k</span>
+    </div>
+    <div class="ri-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:160px;">Direct inference cost ($k)</label>
+      <input type="range" id="ri-inference" min="0" max="100" value="25">
+      <span id="ri-inference-val" style="font-weight:700; min-width:50px;">$25k</span>
+    </div>
+    <div class="ri-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:160px;">Data + integration cost ($k)</label>
+      <input type="range" id="ri-data" min="0" max="200" value="50">
+      <span id="ri-data-val" style="font-weight:700; min-width:50px;">$50k</span>
+    </div>
+    <div class="ri-result" id="ri-result"></div>
+  </div>
+
+  <h2>Why "we saved $X in labor" is necessary but not sufficient</h2>
+  <p>
+    A genuinely complete ROI model includes labor savings, but also revenue lift, risk reduction,
+    and the full cost side: infrastructure, data pipeline maintenance, ongoing model evaluation
+    (Phase 7.3), and talent. Real 2026 data shows the direct model API cost is often only a
+    quarter of total spend — the data and integration work (much of it exactly the kind of work
+    covered in Phases 3 and 6) is frequently the larger, less visible cost, and skipping it in the
+    business case is a documented, common cause of AI projects being abandoned after launch.
+  </p>
+
+  <div class="figure" id="fig-cost-split"></div>
+
+  <h2>A number that survives audit</h2>
+  <p>
+    A specific, practical bar: "your CFO needs a number that survives audit." This means the ROI
+    model needs to hold up when someone in finance actually checks it line by line — conservative
+    assumptions stated explicitly, both direct and indirect costs included, and a benefits model
+    that can genuinely be re-measured after launch (connecting to Phase 7.3's continuous evaluation
+    principle) rather than a one-time optimistic projection nobody checks again.
+  </p>
+
+  <h2>Why the FDE specifically needs to own this number, not just the model</h2>
+  <p>
+    Recall Phase 1.4: the 2026 market has shifted toward paying a premium for engineers who can
+    demonstrate a direct link between their deployments and customer retention. A technically
+    excellent system with no clear, defensible ROI story is a much harder renewal conversation than
+    a good-enough system with a rock-solid, board-presentable business case — which is exactly why
+    this skill sits inside the FDE role rather than being purely a sales or finance function.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is calculating AI project ROI based on direct inference cost alone typically wrong by a large margin?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Direct inference cost is often only 20-25% of total real-world cost — data and integration work together frequently exceed 40%, and both need to be included for an accurate picture</button>
+        <button class="q-option" data-correct="false">Inference cost is always the largest cost category in any AI deployment</button>
+        <button class="q-option" data-correct="false">ROI calculations should never include any cost figures at all</button>
+      </div>
+      <div class="q-explain">This is a specifically documented pattern in real 2026 enterprise data — the model API line is the one everyone focuses on, while the larger costs hide in less visible categories.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does it mean for an ROI number to "survive audit"?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It holds up when finance checks it line by line — built on explicit, conservative assumptions, including both direct and indirect costs, with benefits that can genuinely be re-measured after launch</button>
+        <button class="q-option" data-correct="false">The number is calculated once and never needs to be checked again after the initial presentation</button>
+        <button class="q-option" data-correct="false">Surviving audit means presenting the most optimistic possible projection</button>
+      </div>
+      <div class="q-explain">This is a specific credibility bar — a defensible ROI figure needs to withstand real scrutiny, not just sound impressive in an initial pitch.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does owning the ROI story matter specifically for an FDE's role, rather than being purely a sales or finance function?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The 2026 market specifically rewards engineers who can demonstrate a direct link between their deployments and customer retention — a technically excellent system without a clear ROI story is a much harder renewal conversation</button>
+        <button class="q-option" data-correct="false">FDEs should never be involved in any business-facing conversations</button>
+        <button class="q-option" data-correct="false">ROI has no bearing on whether a customer engagement continues or renews</button>
+      </div>
+      <div class="q-explain">This connects directly back to Phase 1.4's market shift toward proven-ROI hiring — this isn't an optional soft skill, it's literally part of what the market is paying FDEs a premium to do well.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Sthambh "AI ROI Measurement for Enterprise: The 2026 Business Case Framework for GenAI" (June 2026); Just Think AI "Build vs Buy for Enterprise AI in 2026" (May 2026); CMARIX "Build vs Buy AI Software: The CTO's 2026 Guide" (May 2026).</p>
+
+  <div class="pager">
+    <a href="../phase-09-customer-consulting/9-4-workshops-demos-and-tradeoffs.html">&larr; 9.4 Workshops, demos &amp; tradeoffs</a>
+    <a href="10-2-build-vs-buy-and-tco.html">10.2 Build vs. buy &amp; TCO &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderRi() {
+  const savings = parseInt(document.getElementById('ri-savings').value, 10);
+  const inference = parseInt(document.getElementById('ri-inference').value, 10);
+  const data = parseInt(document.getElementById('ri-data').value, 10);
+  document.getElementById('ri-savings-val').textContent = '$' + savings + 'k';
+  document.getElementById('ri-inference-val').textContent = '$' + inference + 'k';
+  document.getElementById('ri-data-val').textContent = '$' + data + 'k';
+  const totalCost = inference + data;
+  const netGain = savings - totalCost;
+  const roi = totalCost > 0 ? ((netGain / totalCost) * 100).toFixed(0) : '—';
+  const result = document.getElementById('ri-result');
+  result.innerHTML = `<div class="n" style="color:${netGain >= 0 ? '#3ecf8e' : '#ff8b8f'}">${roi}%</div><div style="font-size:11px; color:var(--text-muted); margin-top:4px;">ROI = (Net Gain / Total Investment) × 100 &nbsp;·&nbsp; Total investment: $${totalCost}k</div>`;
+}
+['ri-savings','ri-inference','ri-data'].forEach(id => document.getElementById(id).addEventListener('input', renderRi));
+renderRi();
+
+document.getElementById('fig-cost-split').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: typical enterprise GenAI cost split showing inference at roughly one quarter, and data plus integration exceeding 40 percent of total cost">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="30" width="150" height="70" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="95" y="60" text-anchor="middle" fill="#a9c1ff">Inference</text>
+  <text x="95" y="80" text-anchor="middle" fill="#7891c9" font-size="9">~20-25% of TCO</text>
+  <rect x="190" y="30" width="260" height="70" rx="8" fill="#182238" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="320" y="60" text-anchor="middle" fill="#c4b5fd">Data + integration</text>
+  <text x="320" y="80" text-anchor="middle" fill="#9d8ac2" font-size="9">40%+ of TCO — often underestimated</text>
+  <rect x="470" y="30" width="190" height="70" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="565" y="60" text-anchor="middle" fill="#3ecf8e">Everything else</text>
+  <text x="565" y="80" text-anchor="middle" fill="#5fb98a" font-size="9">talent, governance, monitoring</text>
+</svg>
+`;
+</script>
+</body>
+</html>

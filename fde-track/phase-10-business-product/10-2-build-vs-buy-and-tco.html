@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.2 Build vs. buy &amp; TCO | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.bb-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.bb-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.bb-slider-row input[type=range] { flex: 1; }
+.bb-verdict { padding: 14px; border-radius: 8px; font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · Business &amp; product thinking</div>
+  <h1>10.2 Build vs. buy &amp; TCO</h1>
+  <p class="subtitle">"The enterprise AI agent market presents a genuine build-vs-buy decision for the first time — the answer changes at approximately 1 million conversations per year."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Buying wins on short-term ROI — faster to live, lower upfront cost, returns within months.
+    Building wins over a 3-5 year horizon specifically when the capability is central to the
+    business — custom systems compound in value on proprietary data, while vendor pricing
+    compounds in cost as usage scales. A concrete 2026 data point for AI agents specifically: buy
+    wins below roughly 1 million conversations per year; build wins above it, as per-conversation
+    vendor pricing costs more than owning the infrastructure at real scale.
+  </div>
+
+  <h2>Try it: find where the crossover point actually lands</h2>
+  <div class="bb-box">
+    <div class="bb-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:170px;">Annual conversations (millions)</label>
+      <input type="range" id="bb-volume" min="1" max="30" value="10">
+      <span id="bb-volume-val" style="font-weight:700; min-width:40px;">1.0M</span>
+    </div>
+    <div class="bb-verdict" id="bb-verdict"></div>
+  </div>
+
+  <h2>Why Year-1 cost comparisons are structurally misleading</h2>
+  <p>
+    "Every enterprise AI TCO analysis is built on the same structural error: Year 1 costs are
+    compared, not 3-year costs." Building looks expensive in Year 1 because engineering time is
+    genuinely being spent up front. Buying looks cheap in Year 1 because the license fee is the
+    only visible number. By Year 3, this frequently reverses — build costs decline as the system
+    matures, while buy costs often rise as usage scales and vendor pricing compounds.
+  </p>
+
+  <div class="figure" id="fig-tco-curves"></div>
+
+  <h2>The questions that actually determine the right answer</h2>
+  <ul>
+    <li><strong>Is this capability central to the business, or commodity?</strong> A hospital's uniquely-shaped triage workflow may deserve a custom build; standard document processing a vendor already does well usually doesn't.</li>
+    <li><strong>Who controls the model, and what happens to your data?</strong> A specific, pointed due-diligence question for any "buy" decision — can you export cleanly if you switch vendors later?</li>
+    <li><strong>What's the real 3-year TCO, not the Year-1 number?</strong> Request vendor pricing at your actual projected production volume, not the pricing at a pilot's small scale — a vendor declining to share production-volume pricing before signature is itself a meaningful finding.</li>
+  </ul>
+
+  <h2>The hybrid path: increasingly the realistic answer in 2026</h2>
+  <p>
+    A specifically named, increasingly common pattern for 2026: build the differentiating
+    "intelligence layer" — the piece trained on proprietary data that actually becomes a
+    competitive advantage — while buying the commodity infrastructure underneath it. This fits
+    when the use case genuinely needs both proprietary differentiation and commodity capability,
+    and a pure build path would take too long to meet real business timelines.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does comparing only Year-1 costs between build and buy options produce a structurally misleading picture?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Build looks expensive in Year 1 due to upfront engineering time, while buy looks cheap due to a single visible license fee — by Year 3, these patterns frequently reverse as build costs decline and buy costs scale up</button>
+        <button class="q-option" data-correct="false">Year-1 costs are always identical to Year-3 costs for both build and buy options</button>
+        <button class="q-option" data-correct="false">Build always costs more than buy at every point in time, with no exceptions</button>
+      </div>
+      <div class="q-explain">This is a specifically documented structural bias in how these comparisons are typically (incorrectly) made — a genuine decision needs the multi-year view, not the snapshot.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What real-world crossover point was identified for AI agent build-vs-buy decisions specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Approximately 1 million conversations per year — buy wins on speed and integration below this, build wins on per-token economics above it</button>
+        <button class="q-option" data-correct="false">There is no volume-based crossover point for AI agent decisions</button>
+        <button class="q-option" data-correct="false">Build always wins regardless of usage volume</button>
+      </div>
+      <div class="q-explain">This is a concrete, documented 2026 data point — the decision genuinely flips based on projected scale, not a fixed universal answer.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does the "hybrid path" approach to build vs. buy specifically involve?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Building the differentiating, proprietary-data-driven "intelligence layer" while buying the commodity infrastructure underneath it</button>
+        <button class="q-option" data-correct="false">Hybrid means alternating between fully building and fully buying every year</button>
+        <button class="q-option" data-correct="false">Hybrid approaches are never viable for real enterprise AI decisions</button>
+      </div>
+      <div class="q-explain">This is a specific, increasingly common 2026 pattern — separating what's genuinely differentiating (worth building) from what's commodity (worth buying) rather than treating the decision as all-or-nothing.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Digital Applied "Enterprise AI Agents 2026: Build vs Buy Decision Guide" (May 2026); expertaiprompts.blog "The 3-Year TCO Reality: What Enterprise AI Actually Costs When You Build vs Buy" (May 2026); CMARIX "Build vs Buy AI Software: The CTO's 2026 Guide" (May 2026).</p>
+
+  <div class="pager">
+    <a href="10-1-roi-and-business-impact.html">&larr; 10.1 ROI &amp; business impact</a>
+    <a href="10-3-domain-landscapes-across-industries.html">10.3 Domain landscapes across industries &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderBb() {
+  const volume = parseFloat(document.getElementById('bb-volume').value) / 10;
+  document.getElementById('bb-volume-val').textContent = volume.toFixed(1) + 'M';
+  const verdict = document.getElementById('bb-verdict');
+  if (volume < 1) {
+    verdict.style.background = 'rgba(62,207,142,0.1)'; verdict.style.border = '1px solid #3ecf8e';
+    verdict.textContent = `At ${volume.toFixed(1)}M conversations/year, BUY typically wins — speed and integration simplicity outweigh the per-conversation cost at this volume.`;
+  } else if (volume < 2) {
+    verdict.style.background = 'rgba(242,184,75,0.1)'; verdict.style.border = '1px solid #f2b84b';
+    verdict.textContent = `At ${volume.toFixed(1)}M conversations/year, you're right at the crossover zone — worth modeling both paths carefully with real vendor production-volume pricing before deciding.`;
+  } else {
+    verdict.style.background = 'rgba(167,139,250,0.1)'; verdict.style.border = '1px solid #a78bfa';
+    verdict.textContent = `At ${volume.toFixed(1)}M conversations/year, BUILD typically wins — per-token economics favor owning the infrastructure at this scale, despite higher upfront investment.`;
+  }
+}
+document.getElementById('bb-volume').addEventListener('input', renderBb);
+renderBb();
+
+document.getElementById('fig-tco-curves').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Chart: build cost declining over three years while buy cost rising, with a crossover point where the lines meet">
+  <style>text{font-family:-apple-system,sans-serif;font-size:9px;fill:#9aa4b5;}</style>
+  <line x1="40" y1="20" x2="40" y2="120" stroke="#262d3a" stroke-width="1"/>
+  <line x1="40" y1="120" x2="650" y2="120" stroke="#262d3a" stroke-width="1"/>
+  <path d="M 40 40 L 250 70 L 460 90 L 650 100" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <text x="600" y="95" fill="#a9c1ff">Build</text>
+  <path d="M 40 100 L 250 85 L 460 60 L 650 30" fill="none" stroke="#f2b84b" stroke-width="2"/>
+  <text x="600" y="25" fill="#f2b84b">Buy</text>
+  <circle cx="330" cy="78" r="4" fill="#e6e9ef"/><text x="330" y="60" text-anchor="middle" fill="#e6e9ef">Crossover ~33mo</text>
+  <text x="60" y="135" fill="#9aa4b5">Year 1</text>
+  <text x="600" y="135" fill="#9aa4b5">Year 3</text>
+</svg>
+`;
+</script>
+</body>
+</html>

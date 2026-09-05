@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2 Stakeholder communication | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.st-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.st-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.st-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.st-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Customer &amp; consulting skills</div>
+  <h1>9.2 Stakeholder communication</h1>
+  <p class="subtitle">"The professionals who move fastest are the ones who can translate technical work into a business outcome a non-technical stakeholder can act on." One sentence, and most of consulting communication follows from it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The same underlying fact needs a genuinely different presentation depending on who's hearing
+    it — not a different fact, a different framing. This directly extends 8.1's "state the
+    tradeoff once, in plain terms" principle: a well-chosen plain-language framing often serves
+    multiple audiences at once, rather than requiring an entirely separate explanation for each.
+  </div>
+
+  <h2>Try it: translate one technical fact for different audiences</h2>
+  <div class="st-box">
+    <div class="st-toggle">
+      <div class="st-toggle-btn active" data-a="engineer">To an engineer</div>
+      <div class="st-toggle-btn" data-a="pm">To a product manager</div>
+      <div class="st-toggle-btn" data-a="exec">To an executive</div>
+    </div>
+    <div id="st-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Written communication: status updates that don't require a meeting to interpret</h2>
+  <p>
+    A weak status update reports activity ("we worked on the integration this week"). A strong one
+    reports state and implication ("the integration is 70% complete; the remaining 30% depends on
+    the customer's security team approving our access request, submitted Tuesday — no action
+    needed from you unless that approval doesn't land by Friday"). The second version lets a busy
+    stakeholder actually understand where things stand and what, if anything, needs their
+    attention — without a follow-up conversation.
+  </p>
+
+  <div class="figure" id="fig-audience-map"></div>
+
+  <h2>Delivering bad news: the discipline of not burying it</h2>
+  <p>
+    A specifically important skill: when something is genuinely behind schedule or broken, saying
+    so clearly and early, with a plan attached, rather than hoping it resolves before anyone
+    notices. A customer who hears about a real problem from the FDE first, with a plan already in
+    hand, trusts that FDE considerably more than one who has to ask "why didn't you tell us this
+    was happening" after finding out some other way.
+  </p>
+
+  <h2>Technical writing as a durable artifact, not just a meeting summary</h2>
+  <p>
+    A design document or architecture writeup outlives the meeting where it was discussed —
+    someone joining the project six months later, or a stakeholder who missed the original
+    conversation, needs to be able to read it and understand the actual reasoning, not just the
+    conclusion. This connects forward directly to Phase 1.3's Handoff stage: documentation
+    written clearly enough for someone who wasn't in the room is part of what makes a system
+    genuinely sustainable after the FDE moves on.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the key difference between translating a technical fact for different audiences versus simply changing the fact itself?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The underlying fact stays the same — only the framing and level of detail change based on what that specific audience needs to understand or act on</button>
+        <button class="q-option" data-correct="false">Different audiences should always be told different, unrelated facts about the same situation</button>
+        <button class="q-option" data-correct="false">Technical facts cannot be meaningfully communicated to non-technical audiences under any circumstances</button>
+      </div>
+      <div class="q-explain">This is the core translation skill — accuracy is preserved across audiences, only the presentation adapts to what's relevant and actionable for each one.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a status update that reports "state and implication" serve a busy stakeholder better than one that reports "activity"?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets the stakeholder understand where things actually stand and what (if anything) needs their attention, without requiring a follow-up conversation to interpret</button>
+        <button class="q-option" data-correct="false">Activity-based updates are always more detailed and therefore more useful</button>
+        <button class="q-option" data-correct="false">State-and-implication updates take longer to write and read than activity updates</button>
+      </div>
+      <div class="q-explain">The practical value is self-sufficiency — a good update answers the reader's real question ("do I need to do anything?") without them having to ask.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does delivering bad news early, with a plan attached, build more trust than waiting to see if the problem resolves on its own?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A customer who hears about a real problem from the FDE first, already accompanied by a plan, trusts that FDE more than one who has to discover the problem some other way and ask why they weren't told</button>
+        <button class="q-option" data-correct="false">Bad news should always be delayed until it's fully resolved before mentioning it</button>
+        <button class="q-option" data-correct="false">Customers never actually notice or care when problems aren't communicated promptly</button>
+      </div>
+      <div class="q-explain">This is a specific, named trust-building discipline — proactive transparency about real problems, not just successes, is what distinguishes a genuinely trusted FDE relationship.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Yochana "2026 Skills In Demand: AI Fluency Beats Tech Skills Alone" (August 2026); Artech "Skills IT Consultants 2026 Career Demand" (June 2026), citing Deloitte's 2025 tech talent strategy research.</p>
+
+  <div class="pager">
+    <a href="9-1-discovery-and-problem-framing.html">&larr; 9.1 Discovery &amp; problem framing</a>
+    <a href="9-3-scope-and-expectation-management.html">9.3 Scope &amp; expectation management &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ST_INFO = {
+  engineer: "\"We're seeing p95 latency spike to 4.8s on the checkout service after the last deploy — traced it to an unindexed column in the new WHERE clause. Rolling back now, will add the index and re-deploy tomorrow.\"",
+  pm: "\"Checkout got slower after yesterday's release due to a database performance issue. We've rolled back to restore normal speed, and the permanent fix ships tomorrow — no user-facing impact expected in the meantime.\"",
+  exec: "\"We caught and fixed a performance issue from yesterday's release within the hour, before it affected customers meaningfully. Full resolution lands tomorrow.\"",
+};
+document.querySelectorAll('.st-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.st-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('st-detail').textContent = ST_INFO[btn.dataset.a];
+  });
+});
+document.getElementById('st-detail').textContent = ST_INFO['engineer'];
+
+document.getElementById('fig-audience-map').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: one underlying fact translated into three different levels of detail for engineer, product manager, and executive audiences">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="270" y="15" width="140" height="35" rx="8" fill="#182238" stroke="#a78bfa"/><text x="340" y="37" text-anchor="middle" fill="#c4b5fd">One underlying fact</text>
+  <line x1="300" y1="50" x2="150" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="50" x2="340" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="380" y1="50" x2="540" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <rect x="60" y="90" width="180" height="30" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="150" y="109" text-anchor="middle" fill="#a9c1ff" font-size="9">Engineer: full technical detail</text>
+  <rect x="250" y="90" width="180" height="30" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="340" y="109" text-anchor="middle" fill="#f2b84b" font-size="9">PM: impact + timeline</text>
+  <rect x="440" y="90" width="180" height="30" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="530" y="109" text-anchor="middle" fill="#3ecf8e" font-size="9">Exec: outcome, one line</text>
+</svg>
+`;
+</script>
+</body>
+</html>

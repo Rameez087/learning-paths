@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.3 Scope &amp; expectation management | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sp-btn { display: block; width: 100%; text-align: left; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.sp-result { display: none; padding: 10px 12px; border-radius: 6px; margin-top: 6px; font-size: 12px; }
+.sp-result.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Customer &amp; consulting skills</div>
+  <h1>9.3 Scope &amp; expectation management</h1>
+  <p class="subtitle">"Can you also just add..." is the four most expensive words in any engagement, and saying yes reflexively is how a two-week project becomes a two-month one.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Scope creep rarely arrives as one dramatic ask — it arrives as a series of individually
+    reasonable-sounding small additions, each easy to say yes to in isolation. The discipline
+    isn't refusing every request; it's making the tradeoff visible every time: "yes, we can add
+    that — here's what it means for the timeline or what else it would displace." Saying no well
+    is a skill, not just a boundary.
+  </div>
+
+  <h2>Try it: respond to a scope-creep request</h2>
+  <div class="sp-box">
+    <p style="font-size:13px; margin-bottom:14px;"><strong>The situation:</strong> Three days before a scheduled demo, the customer's stakeholder asks: "Since we're already in there, can you also add export-to-PDF? Shouldn't take long, right?"</p>
+    <button class="sp-btn" data-r="a">"Sure, I'll fit it in."</button>
+    <button class="sp-btn" data-r="b">"No, that's out of scope."</button>
+    <button class="sp-btn" data-r="c">"We can add that — it'll push the demo back two days, or we ship the current scope on time and add PDF export next sprint. Which do you prefer?"</button>
+    <div class="sp-result" id="sp-result"></div>
+  </div>
+
+  <h2>Why the third response is specifically the right shape</h2>
+  <p>
+    It doesn't reflexively agree (which risks silently absorbing the cost and quietly slipping the
+    original commitment) and it doesn't flatly refuse (which can feel unhelpful and doesn't
+    actually serve the customer's real interest). It makes the tradeoff explicit and hands the
+    actual decision to the person who should be making it — the stakeholder, who has context on
+    which outcome matters more to them that the FDE doesn't have.
+  </p>
+
+  <div class="figure" id="fig-scope-creep"></div>
+
+  <h2>The "just" trap</h2>
+  <p>
+    Requests that include the word "just" ("can you just add...", "it's just a small change") are
+    worth specific attention — "just" is doing a lot of work minimizing what's actually being
+    asked, often unintentionally. A quick mental check: would this request, described without the
+    word "just," still sound small? If describing it plainly reveals real scope, treat it as real
+    scope, regardless of how it was originally phrased.
+  </p>
+
+  <h2>Documenting scope changes as they happen, not retroactively</h2>
+  <p>
+    When a scope change is agreed to, writing it down immediately — what changed, why, and what
+    it costs — prevents the specific, common dispute that happens weeks later: "I don't remember
+    agreeing that this would delay things." A brief written confirmation (even just a short email
+    recap) protects both the FDE and the customer relationship by keeping the record accurate as
+    changes actually happen, not reconstructed from memory afterward.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does scope creep typically arrive as a series of small requests rather than one large one?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each individual small addition sounds reasonable in isolation, making it easy to say yes to repeatedly without noticing the cumulative impact</button>
+        <button class="q-option" data-correct="false">Scope creep is always the result of one single dramatic, easily identifiable request</button>
+        <button class="q-option" data-correct="false">Small requests never actually accumulate into meaningful additional work</button>
+      </div>
+      <div class="q-explain">This is exactly why the discipline of making every tradeoff explicit matters — the danger isn't any one request, it's the pattern of reflexively accepting each one without tracking the total.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is making the tradeoff explicit and handing the decision to the stakeholder better than either always saying yes or always saying no?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It avoids silently absorbing costs (saying yes) or seeming unhelpful (saying no), while giving the actual decision to the person who has the context to know which outcome matters more to them</button>
+        <button class="q-option" data-correct="false">Stakeholders should never be involved in scope tradeoff decisions</button>
+        <button class="q-option" data-correct="false">Always saying yes to every request is the best way to maintain a good customer relationship</button>
+      </div>
+      <div class="q-explain">This is the specific shape of a good response to scope requests — transparency about cost plus respecting the stakeholder's authority to make the actual tradeoff call.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should the word "just" in a scope request trigger extra scrutiny rather than being taken at face value?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">"Just" often minimizes what's actually being asked, sometimes unintentionally — checking whether the request still sounds small when described plainly reveals its real scope</button>
+        <button class="q-option" data-correct="false">Any request containing the word "just" should always be automatically refused</button>
+        <button class="q-option" data-correct="false">The word "just" has no bearing on how a request should actually be evaluated</button>
+      </div>
+      <div class="q-explain">This is a practical linguistic tell worth noticing — the word itself can obscure genuine scope, which is why testing the request's plain-language size is a useful habit.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic reflects durable project and consulting-engagement management practice around scope discipline and stakeholder communication.</p>
+
+  <div class="pager">
+    <a href="9-2-stakeholder-communication.html">&larr; 9.2 Stakeholder communication</a>
+    <a href="9-4-workshops-demos-and-tradeoffs.html">9.4 Workshops, demos &amp; tradeoffs &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SP_RESULTS = {
+  a: { cls: "", bg: "rgba(229,72,77,0.1)", border: "#e5484d", text: "Risky. This silently absorbs the cost — the demo timeline is now at risk without the stakeholder knowing there's a tradeoff happening at all." },
+  b: { cls: "", bg: "rgba(229,72,77,0.1)", border: "#e5484d", text: "Also risky, in the other direction. A flat no with no alternative can feel unhelpful and doesn't give the stakeholder a real choice." },
+  c: { cls: "", bg: "rgba(62,207,142,0.1)", border: "#3ecf8e", text: "This is the disciplined response — the tradeoff is explicit, both real options are on the table, and the decision goes to the person with the context to make it." },
+};
+document.querySelectorAll('.sp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const r = SP_RESULTS[btn.dataset.r];
+    const result = document.getElementById('sp-result');
+    result.className = 'sp-result show';
+    result.style.background = r.bg;
+    result.style.border = '1px solid ' + r.border;
+    result.textContent = r.text;
+  });
+});
+
+document.getElementById('fig-scope-creep').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: original scope accumulates several small additions over time, each individually reasonable, together significantly expanding total work">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="120" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="80" y="67" text-anchor="middle" fill="#a9c1ff">Original scope</text>
+  <rect x="160" y="50" width="80" height="25" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="200" y="66" text-anchor="middle" fill="#f2b84b" font-size="7">+small ask 1</text>
+  <rect x="260" y="50" width="80" height="25" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="300" y="66" text-anchor="middle" fill="#f2b84b" font-size="7">+small ask 2</text>
+  <rect x="360" y="50" width="80" height="25" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="400" y="66" text-anchor="middle" fill="#f2b84b" font-size="7">+small ask 3</text>
+  <rect x="470" y="35" width="180" height="55" rx="6" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/><text x="560" y="60" text-anchor="middle" fill="#ff8b8f" font-size="9">Actual total scope</text><text x="560" y="75" text-anchor="middle" fill="#d98f92" font-size="8">much larger than anyone tracked</text>
+</svg>
+`;
+</script>
+</body>
+</html>

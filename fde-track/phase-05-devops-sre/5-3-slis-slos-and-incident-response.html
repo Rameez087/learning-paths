@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.3 SLIs, SLOs &amp; incident response | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.eb-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.eb-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.eb-slider-row input[type=range] { flex: 1; }
+.eb-track { height: 24px; background: var(--surface-2); border-radius: 6px; overflow: hidden; position: relative; margin-bottom: 10px; }
+.eb-fill { height: 100%; transition: width 0.3s ease; }
+.eb-verdict { padding: 12px 14px; border-radius: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · DevOps, SRE &amp; observability</div>
+  <h1>5.3 SLIs, SLOs &amp; incident response</h1>
+  <p class="subtitle">"Two bad rollouts burned 88% of a 30-day error budget in a day, while the SLI still read 99.56%." A healthy-looking number can hide a genuine crisis in progress.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An <strong>SLI</strong> (Service Level Indicator) is a measured value — request success rate,
+    latency. An <strong>SLO</strong> (Service Level Objective) is your internal target for that
+    SLI — "99.9% of requests succeed." An <strong>SLA</strong> (Service Level Agreement) is the
+    external contract with consequences if the SLO isn't met — and current practice recommends
+    setting internal SLOs stricter than external SLAs, as a safety buffer. The gap between perfect
+    (100%) and your SLO is your <strong>error budget</strong> — and alerting on how fast you're
+    burning that budget, not just the raw SLI, is what catches a real crisis while the current
+    snapshot still looks fine.
+  </div>
+
+  <h2>Try it: watch a burn rate consume a 30-day error budget</h2>
+  <div class="eb-box">
+    <div class="eb-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:120px;">Burn rate multiplier</label>
+      <input type="range" id="eb-slider" min="1" max="30" value="1">
+      <span id="eb-readout" style="font-weight:700; min-width:20px;">1x</span>
+    </div>
+    <div class="eb-track"><div class="eb-fill" id="eb-fill"></div></div>
+    <div class="eb-verdict" id="eb-verdict"></div>
+  </div>
+
+  <h2>Why burn-rate alerting beats simple threshold alerting</h2>
+  <p>
+    A fast burn (2% of budget in 1 hour) deserves paging someone immediately — P0, 5-minute
+    response. A slow burn (10% over 3 days) might only need next-business-day attention. A simple
+    "alert if error rate exceeds X%" threshold can't distinguish these two very different
+    situations, while burn-rate alerting fires specifically when you're consuming reliability
+    budget faster than sustainable — catching a real crisis while you still have budget left to
+    respond deliberately, rather than after it's already gone.
+  </p>
+
+  <div class="figure" id="fig-slo-sla"></div>
+
+  <h2>Blameless postmortems: the culture that makes incident response actually work</h2>
+  <p>
+    A specific, repeated principle: focus accountability on systems and processes, not
+    individuals. "Why didn't our CI catch this?" instead of "why didn't you test properly?" This
+    isn't just a nicety — a team that fears blame for an honest mistake starts hiding information
+    during incidents, which is exactly the information a genuine root-cause investigation needs.
+    In an FDE context specifically, this culture matters doubly: you're often the outsider in the
+    room during an incident, and how you handle blame directly shapes whether the customer's team
+    trusts you enough to share what actually happened.
+  </p>
+
+  <h2>What a good postmortem actually contains</h2>
+  <ul>
+    <li><strong>Timeline</strong> — when the incident started, when it was detected, when it was resolved.</li>
+    <li><strong>Impact</strong> — who was affected, how badly, for how long — ideally tied to actual SLI data, not just impressions.</li>
+    <li><strong>Root cause</strong> — the actual mechanism, not just the symptom that was fixed.</li>
+    <li><strong>Action items</strong> — specific, owned, and tracked — not vague intentions that quietly never happen.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is burn-rate alerting more useful than a simple fixed-threshold alert?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It distinguishes a fast, urgent crisis from a slow, manageable one by measuring how quickly the error budget is being consumed, not just whether an error rate crossed a fixed line</button>
+        <button class="q-option" data-correct="false">Burn-rate alerting and threshold alerting always fire under exactly the same conditions</button>
+        <button class="q-option" data-correct="false">Burn-rate alerting eliminates the need for any error budget at all</button>
+      </div>
+      <div class="q-explain">The rate of consumption carries information a static threshold can't — the same current error rate could represent a genuine crisis or a manageable blip depending on how fast it's actually burning the budget.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does current guidance recommend setting internal SLOs stricter than external SLAs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It creates a safety buffer, so an internal target being missed triggers action before the situation ever reaches an actual contractual SLA breach with real consequences</button>
+        <button class="q-option" data-correct="false">SLOs and SLAs must always be set to identical values</button>
+        <button class="q-option" data-correct="false">External SLAs are always stricter than any reasonable internal target</button>
+      </div>
+      <div class="q-explain">This buffer is a deliberate risk-management choice — internal alarm bells ring before the external, consequence-bearing threshold is actually crossed.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does blameless postmortem culture matter specifically for an FDE embedded with a customer during an incident?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">As an outsider in the room, how the FDE handles blame directly shapes whether the customer's team trusts them enough to share what actually happened, which is essential for genuine root-cause analysis</button>
+        <button class="q-option" data-correct="false">Blameless culture is irrelevant when an external engineer is involved in an incident</button>
+        <button class="q-option" data-correct="false">Blameless postmortems mean nobody is ever held accountable for anything</button>
+      </div>
+      <div class="q-explain">Trust and information flow are directly connected — a team that fears blame withholds exactly the details a real investigation needs, and an outsider's handling of that dynamic matters even more than an insider's.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Elastic Observability Labs "Kubernetes observability: SLO templates for error budgets" (August 2026); OneUptime "How to Implement SLO Monitoring with OpenTelemetry Metrics" (February 2026); SigNoz "SLO vs SLA: Key Differences Explained" (June 2026); Fatih Koç "From Signals to Reliability: SLOs, Runbooks and Post-Mortems" (November 2025).</p>
+
+  <div class="pager">
+    <a href="5-2-monitoring-logging-tracing.html">&larr; 5.2 Monitoring, logging &amp; tracing</a>
+    <a href="5-4-diagnosing-a-5x-slowdown.html">5.4 Diagnosing a 5x slowdown &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderEb() {
+  const rate = parseInt(document.getElementById('eb-slider').value, 10);
+  document.getElementById('eb-readout').textContent = rate + 'x';
+  // baseline sustainable rate = 1x consumes budget linearly over 30 days
+  // simulate: at rate x, how much budget consumed in 1 day
+  const dailyConsumption = Math.min(100, rate * (100/30));
+  document.getElementById('eb-fill').style.width = dailyConsumption + '%';
+  const verdict = document.getElementById('eb-verdict');
+  if (rate <= 2) {
+    document.getElementById('eb-fill').style.background = '#3ecf8e';
+    verdict.style.background = 'rgba(62,207,142,0.1)'; verdict.style.border = '1px solid #3ecf8e';
+    verdict.textContent = `Sustainable burn rate. At ${rate}x, the budget lasts the full 30-day window comfortably.`;
+  } else if (rate <= 10) {
+    document.getElementById('eb-fill').style.background = '#f2b84b';
+    verdict.style.background = 'rgba(242,184,75,0.1)'; verdict.style.border = '1px solid #f2b84b';
+    verdict.textContent = `Medium burn (P1). At ${rate}x, budget depletes in roughly ${Math.round(30/rate)} days — Slack notification, response within 30 minutes.`;
+  } else {
+    document.getElementById('eb-fill').style.background = '#e5484d';
+    verdict.style.background = 'rgba(229,72,77,0.1)'; verdict.style.border = '1px solid #e5484d';
+    verdict.textContent = `Fast burn (P0 — critical). At ${rate}x, budget depletes in under ${Math.max(1,Math.round(30/rate))} day(s) — page on-call immediately, 5-minute response target.`;
+  }
+}
+document.getElementById('eb-slider').addEventListener('input', renderEb);
+renderEb();
+
+document.getElementById('fig-slo-sla').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: SLI measures actual performance, SLO is internal target stricter than external SLA, gap between SLO and 100 percent is the error budget">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <line x1="30" y1="90" x2="650" y2="90" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="600" cy="90" r="4" fill="#e6e9ef"/><text x="600" y="75" text-anchor="middle" font-size="9">100% (perfect)</text>
+  <circle cx="480" cy="90" r="4" fill="#f2b84b"/><text x="480" y="75" text-anchor="middle" fill="#f2b84b" font-size="9">SLO (internal, 99.9%)</text>
+  <circle cx="420" cy="90" r="4" fill="#e5484d"/><text x="420" y="115" text-anchor="middle" fill="#ff8b8f" font-size="9">SLA (external, 99.5%)</text>
+  <line x1="480" y1="90" x2="600" y2="90" stroke="#3ecf8e" stroke-width="4"/>
+  <text x="540" y="60" text-anchor="middle" fill="#3ecf8e" font-size="9">Error budget</text>
+  <line x1="420" y1="90" x2="480" y2="90" stroke="#f2b84b" stroke-width="4" stroke-dasharray="3,2"/>
+  <text x="450" y="45" text-anchor="middle" fill="#c9a05f" font-size="8">safety buffer</text>
+</svg>
+`;
+</script>
+</body>
+</html>

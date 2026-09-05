@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.4 Private networking &amp; hybrid cloud | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.pn-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.pn-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pn-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.pn-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Enterprise integration</div>
+  <h1>6.4 Private networking &amp; hybrid cloud</h1>
+  <p class="subtitle">The customer's security team will not open an inbound firewall port for you. Plan the integration assuming that answer from day one.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Real enterprise customers frequently run hybrid infrastructure — some systems on-premise,
+    some in one or more clouds — connected through VPNs, private links, or relay-style patterns
+    that avoid opening inbound firewall rules entirely. A specific, increasingly common pattern:
+    an agent or relay running inside the customer's network makes an <em>outbound</em> connection
+    to your service, avoiding the need for any inbound firewall exception at all — since outbound
+    connections are almost always allowed, while inbound ones require security approval that can
+    take weeks.
+  </div>
+
+  <h2>Try it: compare connectivity patterns for reaching a customer's private systems</h2>
+  <div class="pn-box">
+    <div class="pn-tabs">
+      <div class="pn-tab active" data-p="vpn">Site-to-site VPN</div>
+      <div class="pn-tab" data-p="privatelink">Private link/peering</div>
+      <div class="pn-tab" data-p="relay">Outbound relay/agent</div>
+    </div>
+    <div id="pn-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why the outbound-only relay pattern has become genuinely popular</h2>
+  <p>
+    A concrete real-world example: a relay-based connection can let a gateway listen for inbound
+    requests over what is actually an outbound HTTPS connection — meaning no inbound firewall
+    rules are required at all on the customer's side. This matters enormously for FDE timelines:
+    requesting a new inbound firewall exception often means weeks of security review, while an
+    outbound connection frequently needs no special approval, since the customer's network already
+    permits outbound HTTPS traffic by default.
+  </p>
+
+  <div class="figure" id="fig-relay"></div>
+
+  <h2>Hybrid cloud is the default assumption, not the exception</h2>
+  <p>
+    Assume the customer runs more than one environment — some combination of on-premise
+    infrastructure and one or more cloud providers — until you've confirmed otherwise. This isn't
+    pessimism; it's simply the statistical default for real enterprises in 2026. Planning an
+    integration around a single, clean cloud environment and then discovering mid-engagement that
+    critical data actually lives on-premise is a specifically avoidable mistake if hybrid
+    complexity is assumed from the start of discovery (Phase 9).
+  </p>
+
+  <h2>Latency becomes a real design constraint across hybrid boundaries</h2>
+  <p>
+    A call that crosses from your cloud service to an on-premise system (or vice versa) through a
+    VPN tunnel carries real latency that a same-datacenter call doesn't. This isn't just a
+    performance nicety — it can change architectural decisions: whether a call belongs in the
+    synchronous request path (3.4) or should be queued, and how aggressively you can afford to
+    make repeated round-trip calls across that boundary versus batching them.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why has the outbound-only relay/agent pattern become a popular way to connect to customer private systems?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It avoids needing any inbound firewall exception, since outbound connections are typically already permitted while inbound rules require a lengthy security review process</button>
+        <button class="q-option" data-correct="false">Outbound relays are always faster than any other connectivity pattern</button>
+        <button class="q-option" data-correct="false">Relay patterns eliminate the need for any authentication between systems</button>
+      </div>
+      <div class="q-explain">This is a specifically practical, timeline-driven reason — sidestepping the weeks-long inbound firewall approval process can meaningfully speed up an engagement's integration timeline.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should an FDE assume hybrid cloud infrastructure by default, rather than assuming a clean single-cloud environment?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Running multiple environments (some on-premise, some cloud) is the statistical default for real enterprises, so planning around a single clean environment risks a mid-engagement surprise</button>
+        <button class="q-option" data-correct="false">Hybrid cloud environments are extremely rare and only occur in unusual circumstances</button>
+        <button class="q-option" data-correct="false">All enterprises have fully migrated to a single cloud provider by 2026</button>
+      </div>
+      <div class="q-explain">This connects directly to 6.1's mindset — assuming complexity from the start of discovery avoids the specific, avoidable mistake of designing around an oversimplified picture of the customer's actual infrastructure.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does latency across a hybrid cloud/on-premise boundary matter for architectural decisions, not just raw performance?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It can influence whether a call belongs in the synchronous request path or should be queued, and how much repeated round-trip calling versus batching makes sense across that boundary</button>
+        <button class="q-option" data-correct="false">Latency across hybrid boundaries never has any measurable impact on system design</button>
+        <button class="q-option" data-correct="false">All network calls have identical latency regardless of whether they cross a hybrid boundary</button>
+      </div>
+      <div class="q-explain">This ties directly back to 3.4's synchronous-vs-queue decision — a genuinely higher-latency dependency is exactly the kind of factor that should push a call out of the blocking request path.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: GitHub "scimgateway" documentation (Azure Relay hybrid connection pattern); GlobeTom "Enterprise System Integration: Legacy and Cloud Guide" (June 2026), hybrid integration challenge framing.</p>
+
+  <div class="pager">
+    <a href="6-3-legacy-systems-and-investigation.html">&larr; 6.3 Legacy systems &amp; investigation</a>
+    <a href="6-5-api-gateways-and-integration-patterns.html">6.5 API gateways &amp; integration patterns &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const PN_INFO = {
+  vpn: "A persistent encrypted tunnel between two networks, making resources on each side reachable as if on the same network. Requires network-level configuration on both sides and ongoing maintenance, but supports rich, low-level connectivity once established.",
+  privatelink: "Cloud-provider-specific private connectivity (AWS PrivateLink, Azure Private Link) that connects services without traversing the public internet at all. Fast to provision within one cloud ecosystem, but doesn't help much for genuinely on-premise systems.",
+  relay: "An agent inside the customer's network makes an outbound connection to your service — no inbound firewall rule needed at all. Often the fastest to get approved, since outbound HTTPS is rarely restricted, though it requires deploying and maintaining that agent.",
+};
+document.querySelectorAll('.pn-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.pn-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('pn-detail').textContent = PN_INFO[tab.dataset.p];
+  });
+});
+document.getElementById('pn-detail').textContent = PN_INFO['vpn'];
+
+document.getElementById('fig-relay').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: agent inside customer network makes outbound connection to external service, avoiding any inbound firewall rule">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="30" width="260" height="80" rx="8" fill="none" stroke="#262d3a" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="40" y="50" fill="#9aa4b5" font-size="9">Customer network (firewalled)</text>
+  <rect x="60" y="65" width="140" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="130" y="87" text-anchor="middle" fill="#f2b84b" font-size="9">Relay agent</text>
+  <line x1="200" y1="82" x2="400" y2="82" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a56)"/>
+  <text x="300" y="70" text-anchor="middle" fill="#3ecf8e" font-size="9">outbound HTTPS (no inbound rule needed)</text>
+  <rect x="400" y="65" width="180" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="490" y="87" text-anchor="middle" fill="#a9c1ff" font-size="9">Your external service</text>
+  <defs><marker id="a56" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

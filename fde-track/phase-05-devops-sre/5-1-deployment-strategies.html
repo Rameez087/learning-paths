@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.1 Deployment strategies | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ds-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ds-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ds-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ds-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · DevOps, SRE &amp; observability</div>
+  <h1>5.1 Deployment strategies</h1>
+  <p class="subtitle">Deploying into a customer's production environment for the first time is not the moment to discover your rollback plan doesn't actually work.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Three strategies dominate: <strong>rolling deployment</strong> (gradually replace old
+    instances with new ones), <strong>blue-green</strong> (two complete environments, switch
+    traffic all at once with instant rollback), and <strong>canary</strong> (route a small
+    percentage of real traffic to the new version, watch closely, then ramp up). The right choice
+    for a customer engagement depends on how much risk tolerance the customer has, how reversible
+    a bad deploy would be, and how much infrastructure duplication the engagement can actually
+    afford.
+  </div>
+
+  <h2>Try it: compare the three strategies</h2>
+  <div class="ds-box">
+    <div class="ds-tabs">
+      <div class="ds-tab active" data-s="rolling">Rolling</div>
+      <div class="ds-tab" data-s="bluegreen">Blue-green</div>
+      <div class="ds-tab" data-s="canary">Canary</div>
+    </div>
+    <div id="ds-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why "define the rollback plan before deploying" isn't optional in customer engagements</h2>
+  <p>
+    In your own team's infrastructure, a bad deploy is embarrassing but recoverable through
+    familiar channels. In a customer's production environment, a bad deploy with no clear rollback
+    plan can directly damage the trust the entire engagement depends on. The specific discipline:
+    know exactly how to revert — a previous container image tag, a database migration's down
+    script, a feature flag — <em>before</em> you deploy, not as something you figure out under
+    pressure once something's already broken.
+  </p>
+
+  <div class="figure" id="fig-rollback"></div>
+
+  <h2>Feature flags: decoupling deployment from release</h2>
+  <p>
+    A feature flag lets you deploy new code to production while keeping it inactive until you
+    explicitly turn it on — separating "is the code running" from "is the feature visible to
+    users." This is specifically valuable in customer engagements: you can deploy ahead of a
+    scheduled demo or go-live date with the feature flagged off, then flip it on at exactly the
+    right moment, without a risky last-minute deploy coinciding with the moment everyone's
+    watching.
+  </p>
+
+  <h2>Database migrations: the deployment risk that's easy to forget</h2>
+  <p>
+    Application code can usually roll back cleanly. A database schema migration often can't —
+    once you've dropped a column or changed a type, going back isn't just "redeploy the old
+    version." The safe pattern for customer environments: additive migrations first (add a new
+    column alongside the old one, backfill data, switch reads/writes over, only then remove the
+    old column in a separate, later deploy) rather than one migration that changes and removes in
+    the same step.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does canary deployment specifically help catch a bad release before it affects everyone?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It routes only a small percentage of real traffic to the new version first, letting you observe real-world behavior before ramping up exposure</button>
+        <button class="q-option" data-correct="false">Canary deployment tests the new version with zero real traffic before any rollout</button>
+        <button class="q-option" data-correct="false">Canary deployment is identical to blue-green deployment with a different name</button>
+      </div>
+      <div class="q-explain">The defining feature is partial, real traffic exposure — enough to get a genuine signal, small enough that a problem affects only a limited slice of users before you catch it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is having a clear rollback plan defined before deploying especially important in a customer engagement specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A bad deploy with no clear rollback plan can directly damage the customer's trust in the entire engagement, beyond just the technical inconvenience</button>
+        <button class="q-option" data-correct="false">Rollback plans are only necessary for internal company deployments, never customer environments</button>
+        <button class="q-option" data-correct="false">A rollback plan is unnecessary if the deployment strategy is canary-based</button>
+      </div>
+      <div class="q-explain">The stakes are different in an embedded customer engagement — trust, not just uptime, is on the line, which is exactly why this discipline gets called out as non-optional here.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should a database migration that drops a column be split into separate additive and cleanup steps rather than done in one deploy?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Once a column is dropped, rolling back isn't as simple as redeploying old application code — the safer pattern adds new structure first and removes old structure only later, in a separate step</button>
+        <button class="q-option" data-correct="false">Database migrations should always be split into as many steps as possible regardless of content</button>
+        <button class="q-option" data-correct="false">Application code rollback and database migration rollback always work identically</button>
+      </div>
+      <div class="q-explain">This is a specifically named asymmetry — application rollback is often straightforward, while destructive schema changes create a genuinely harder-to-reverse situation, which is why additive-first migration patterns exist.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic reflects established deployment-strategy practice (rolling, blue-green, canary) consistent across cloud providers and orchestration tools — durable concepts rather than fast-changing tooling specifics.</p>
+
+  <div class="pager">
+    <a href="../phase-04-cloud-infrastructure/4-4-infrastructure-as-code-and-cicd.html">&larr; 4.4 Infrastructure as code &amp; CI/CD</a>
+    <a href="5-2-monitoring-logging-tracing.html">5.2 Monitoring, logging &amp; tracing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DS_INFO = {
+  rolling: "Gradually replaces old instances with new ones, a few at a time. Simple, no extra infrastructure needed, but rollback means rolling forward again with the old version — slower to fully revert than blue-green.",
+  bluegreen: "Two complete, identical environments. Traffic switches from the old (blue) to the new (green) all at once, with instant rollback by switching back. Costs double the infrastructure during the transition, but rollback is immediate.",
+  canary: "A small percentage of real traffic routes to the new version first. Watch closely, then gradually increase. Catches problems on a limited slice of real users before a full rollout — the most cautious option, at the cost of a slower full rollout.",
+};
+document.querySelectorAll('.ds-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ds-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('ds-detail').textContent = DS_INFO[tab.dataset.s];
+  });
+});
+document.getElementById('ds-detail').textContent = DS_INFO['rolling'];
+
+document.getElementById('fig-rollback').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: deploy decision point with a pre-defined rollback path ready before anything goes live">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="40" width="160" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="100" y="64" text-anchor="middle">Rollback plan defined</text>
+  <line x1="180" y1="60" x2="230" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a51)"/>
+  <rect x="230" y="40" width="160" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="310" y="64" text-anchor="middle" fill="#a9c1ff">Deploy</text>
+  <line x1="390" y1="50" x2="440" y2="25" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a51g)"/>
+  <text x="480" y="20" fill="#3ecf8e" font-size="9">healthy → done</text>
+  <line x1="390" y1="70" x2="440" y2="95" stroke="#e5484d" stroke-width="1.5" marker-end="url(#a51r)"/>
+  <text x="480" y="105" fill="#ff8b8f" font-size="9">problem → execute rollback (already known)</text>
+  <defs>
+    <marker id="a51" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a51g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="a51r" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

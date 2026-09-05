@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.5 API gateways &amp; integration patterns | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ag-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ag-node { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.ag-node.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.ag-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Enterprise integration</div>
+  <h1>6.5 API gateways &amp; integration patterns</h1>
+  <p class="subtitle">A modern integration platform replaces the ESB, the point integrations, the partner gateway, and the batch tool — in a single environment, if you consolidate deliberately instead of adding yet another one-off connection.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An API gateway sits in front of your services, handling cross-cutting concerns centrally —
+    authentication, rate limiting, request routing, logging — so individual services don't each
+    reimplement them. For an FDE, the practical value is specific: a customer's existing gateway
+    is often the correct place to register your new integration, rather than building a parallel
+    path around it. Closing Phase 6, this ties directly back to 6.1's consolidation principle:
+    routing through the existing gateway is itself a small act of not adding new integration debt.
+  </div>
+
+  <h2>Try it: what a gateway actually centralizes</h2>
+  <div class="ag-box">
+    <div id="ag-nodes"></div>
+    <div class="ag-detail" id="ag-detail">Click a responsibility above.</div>
+  </div>
+
+  <h2>iPaaS: consolidating what used to be many separate tools</h2>
+  <p>
+    A modern Integration Platform as a Service can replace what used to require an ESB
+    (Enterprise Service Bus), a set of individual point integrations, a separate partner gateway,
+    and a batch orchestration tool — all in one environment. This matters for an FDE specifically
+    when a customer is mid-migration: understanding whether the customer already has (or is
+    building toward) a consolidated platform changes whether your new integration should plug into
+    that platform or risk becoming one more point tool that needs retiring later.
+  </p>
+
+  <div class="figure" id="fig-gateway"></div>
+
+  <h2>Webhooks and events as an alternative to gateway-fronted APIs</h2>
+  <p>
+    Not every integration point is a request-response API behind a gateway — recall 3.4's webhook
+    material. Some enterprise systems specifically publish events (a new order created, a record
+    updated) that your integration subscribes to, rather than you calling them directly. This
+    pattern is common in customer environments with existing enterprise messaging infrastructure
+    (a message bus, an event stream) — plugging into an existing event stream is often less
+    invasive than adding a new synchronous API dependency to a system already under load.
+  </p>
+
+  <h2>The full Phase 6 synthesis: "not clean" is workable, with the right posture</h2>
+  <p>
+    Across all five topics in this phase, the same underlying discipline recurs: understand what
+    already exists (6.1's inventory-first principle), work with existing identity infrastructure
+    rather than around it (6.2), investigate before touching anything (6.3), plan for realistic
+    hybrid connectivity constraints (6.4), and integrate through existing gateways and patterns
+    rather than adding new debt (6.5). None of this is about avoiding complexity — it's about
+    meeting real complexity with a consistent, disciplined process rather than assumptions.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should a new integration typically register with a customer's existing API gateway rather than building a parallel path around it?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Routing through the existing gateway avoids adding new integration debt, directly serving 6.1's consolidation principle rather than creating one more point tool to manage later</button>
+        <button class="q-option" data-correct="false">Existing gateways are always technically incompatible with any new integration</button>
+        <button class="q-option" data-correct="false">Building a parallel path is always faster and simpler than using an existing gateway</button>
+      </div>
+      <div class="q-explain">This connects the whole phase together — the disciplined choice is to work with what already exists, consistent with 6.1's consolidation-first framing rather than 6.1's cautionary tale of accumulating debt.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might subscribing to an existing event stream be less invasive than adding a new synchronous API call to a system already under load?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Publishing to an existing event stream the system already supports doesn't add new direct load or a new synchronous dependency on that system the way a fresh API call would</button>
+        <button class="q-option" data-correct="false">Event streams and synchronous APIs always have identical performance characteristics</button>
+        <button class="q-option" data-correct="false">Synchronous APIs are always the less invasive integration choice</button>
+      </div>
+      <div class="q-explain">This mirrors 3.4's synchronous-vs-async reasoning at the integration-pattern level — plugging into infrastructure the system already publishes to avoids adding new direct coupling.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What is the common thread running through all five topics in Phase 6?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Understanding and working within what already exists in the customer's environment, rather than assuming a clean slate or adding new complexity on top of the existing mess</button>
+        <button class="q-option" data-correct="false">Each topic in Phase 6 covers a completely unrelated technical skill with no connecting theme</button>
+        <button class="q-option" data-correct="false">The goal throughout Phase 6 is to replace all existing customer infrastructure with new systems</button>
+      </div>
+      <div class="q-explain">This is the phase's central discipline, stated explicitly — meeting real, existing complexity with a consistent process (inventory, investigate, integrate with what's there) rather than fighting or ignoring it.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: GlobeTom "Enterprise System Integration: Legacy and Cloud Guide" (June 2026); this topic also synthesizes the webhook/async patterns from Phase 3.4 applied at the enterprise integration layer.</p>
+
+  <div class="pager">
+    <a href="6-4-private-networking-and-hybrid-cloud.html">&larr; 6.4 Private networking &amp; hybrid cloud</a>
+    <a href="../phase-07-ai-llm-deployment/7-1-from-api-to-enterprise-application.html">Phase 7: AI/LLM deployment for FDEs &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const AG_NODES = [
+  { name: "Authentication", detail: "Validates tokens/API keys once, at the edge — individual backend services don't each need to reimplement auth logic." },
+  { name: "Rate limiting", detail: "Enforces per-client and per-IP request limits centrally, protecting backend services from being overwhelmed by any single caller." },
+  { name: "Routing", detail: "Directs incoming requests to the correct backend service based on path, headers, or other rules — a single entry point for many services underneath." },
+  { name: "Logging & monitoring", detail: "Captures request/response data centrally, feeding the observability pillars from 5.2 without every service needing its own logging setup." },
+];
+document.getElementById('ag-nodes').innerHTML = AG_NODES.map((n,i) =>
+  `<div class="ag-node" data-i="${i}">${n.name}</div>`
+).join('');
+document.querySelectorAll('.ag-node').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.ag-node').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('ag-detail').textContent = AG_NODES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-gateway').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: API gateway sitting in front of multiple backend services, centralizing auth, rate limiting, routing, and logging">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="50" width="100" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="70" y="74" text-anchor="middle">Client</text>
+  <line x1="120" y1="70" x2="170" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a57)"/>
+  <rect x="170" y="45" width="160" height="50" rx="6" fill="#182238" stroke="#a78bfa"/><text x="250" y="65" text-anchor="middle" fill="#c4b5fd">API Gateway</text><text x="250" y="82" text-anchor="middle" fill="#9d8ac2" font-size="8">auth, rate limit, route, log</text>
+  <line x1="330" y1="60" x2="380" y2="30" stroke="#6b7386" stroke-width="1"/>
+  <line x1="330" y1="70" x2="380" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="330" y1="80" x2="380" y2="110" stroke="#6b7386" stroke-width="1"/>
+  <rect x="380" y="15" width="120" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="440" y="34" text-anchor="middle">Service A</text>
+  <rect x="380" y="55" width="120" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="440" y="74" text-anchor="middle">Service B</text>
+  <rect x="380" y="95" width="120" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="440" y="114" text-anchor="middle">Legacy system</text>
+  <defs><marker id="a57" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

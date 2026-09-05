@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.1 OWASP LLM risks in deployment | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ow-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ow-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ow-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ow-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Security &amp; governance</div>
+  <h1>11.1 OWASP LLM risks in deployment</h1>
+  <p class="subtitle">7.2 covered prompt injection, excessive agency, and tenant isolation. These are the other risks a customer's security review will ask about.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Beyond the agentic-specific risks in 7.2, four more OWASP LLM risk categories come up
+    constantly in deployment reviews: <strong>insecure output handling</strong> (treating a
+    model's output as trusted, executable content), <strong>sensitive information
+    disclosure</strong> (a model leaking training data or context it shouldn't reveal),
+    <strong>supply chain vulnerabilities</strong> (compromised models, packages, or datasets in
+    the pipeline), and <strong>overreliance</strong> (humans trusting AI output without adequate
+    verification). Each maps to a concrete, addressable deployment decision.
+  </div>
+
+  <h2>Try it: explore each risk category</h2>
+  <div class="ow-box">
+    <div class="ow-tabs">
+      <div class="ow-tab active" data-r="output">Insecure output handling</div>
+      <div class="ow-tab" data-r="disclosure">Sensitive info disclosure</div>
+      <div class="ow-tab" data-r="supply">Supply chain</div>
+      <div class="ow-tab" data-r="overreliance">Overreliance</div>
+    </div>
+    <div id="ow-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Insecure output handling: the trap of treating LLM output as safe</h2>
+  <p>
+    If an application takes a model's output and executes it — runs generated SQL directly,
+    renders generated HTML without sanitization, executes generated shell commands — it's
+    trusting content that could contain injected instructions (7.2) or simply model error, as if
+    it came from a trusted source. The fix mirrors standard secure-coding practice: treat model
+    output exactly like untrusted user input, validating and sanitizing it the same way you would
+    anything else the model's context could have been influenced by.
+  </p>
+
+  <div class="figure" id="fig-output-handling"></div>
+
+  <h2>Sensitive information disclosure: a real risk even without a training-data leak</h2>
+  <p>
+    Beyond the (rarer) risk of a model reproducing memorized training data, a more common and
+    practical risk in enterprise deployments: a model's context window accumulates information
+    across a conversation, and a poorly designed system can leak information from one part of a
+    session into a response where it shouldn't appear — an internal system prompt detail, a piece
+    of another user's data mistakenly included in context. The mitigation is architectural:
+    minimize what actually goes into context, and treat the system prompt itself as something
+    that could eventually be exposed, never as a place to put genuine secrets.
+  </p>
+
+  <h2>Supply chain: the model and package layer</h2>
+  <p>
+    A specific, real 2026 concern connects directly to 7.4's MCP security material: a compromised
+    open-source model, a poisoned training dataset, or a malicious package in the AI toolchain can
+    introduce vulnerabilities before any application code is even written. The practical FDE
+    discipline: verify model provenance for any non-major-vendor model, and apply the same package
+    supply-chain scrutiny (checking for known vulnerabilities, verified publishers) to AI-specific
+    dependencies as to any other production dependency.
+  </p>
+
+  <h2>Overreliance: the human factor that no technical control fixes alone</h2>
+  <p>
+    A model can be technically well-evaluated (7.3) and still cause real harm if the humans using
+    its output stop applying independent judgment — trusting a generated summary of a legal
+    document without reading the source, or accepting an AI-suggested diagnosis without
+    verification. This is why calibrated confidence signals and clear UI cues about
+    AI-generated content (recall Phase 7.3's calibration discussion) matter as much as the model's
+    raw accuracy — a highly accurate but overtrusted system can still produce a bad outcome the
+    rare time it's wrong.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should an application's use of LLM-generated content (SQL, HTML, shell commands) be treated the same way as untrusted user input?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Model output could contain injected instructions or simply model error, so executing it directly without validation carries the same risk as trusting any other unvalidated external input</button>
+        <button class="q-option" data-correct="false">LLM output is always guaranteed to be safe to execute directly without any validation</button>
+        <button class="q-option" data-correct="false">Insecure output handling only matters for applications that never display any AI-generated content</button>
+      </div>
+      <div class="q-explain">This directly extends standard secure-coding discipline (never trust unvalidated input) to a new source of potentially untrustworthy content — the model's own output.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should a system prompt never be treated as a safe place to store genuine secrets?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A poorly designed system can leak context information into responses where it shouldn't appear, and system prompts should be treated as something that could eventually be exposed</button>
+        <button class="q-option" data-correct="false">System prompts are technically incapable of containing any sensitive information</button>
+        <button class="q-option" data-correct="false">Secrets stored in a system prompt are always completely secure by default</button>
+      </div>
+      <div class="q-explain">This is a specific architectural discipline — genuine secrets belong in proper secrets management, not in a prompt whose contents could theoretically surface in an unexpected response.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why can a technically well-evaluated, highly accurate model still contribute to a bad outcome due to overreliance?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If humans stop applying independent judgment and trust AI output without verification, even a rare model error can go unchecked and cause real harm</button>
+        <button class="q-option" data-correct="false">Overreliance is impossible once a model has been properly evaluated for accuracy</button>
+        <button class="q-option" data-correct="false">Human judgment has no bearing on the outcomes of an AI-assisted process</button>
+      </div>
+      <div class="q-explain">This is why overreliance is listed as a distinct risk category from accuracy itself — a technically excellent model doesn't eliminate the risk of humans over-trusting its output on the occasions it's wrong.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic covers the OWASP LLM risk categories not already addressed in Phase 7.2 (prompt injection, excessive agency, tenant isolation/RAG poisoning), completing the practical risk picture relevant to enterprise deployment approval.</p>
+
+  <div class="pager">
+    <a href="../phase-10-business-product/10-3-domain-landscapes-across-industries.html">&larr; 10.3 Domain landscapes across industries</a>
+    <a href="11-2-data-governance-and-compliance.html">11.2 Data governance &amp; compliance &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const OW_INFO = {
+  output: "Treating model output as trusted, executable content — running generated SQL, rendering generated HTML, executing generated commands without validation. Fix: sanitize and validate model output exactly like any other untrusted input.",
+  disclosure: "A model exposing information it shouldn't — from training data (rare) or more commonly from context accumulated during a session leaking into a response where it doesn't belong. Fix: minimize what enters context, never store real secrets in a system prompt.",
+  supply: "Compromised models, poisoned datasets, or malicious packages in the AI toolchain, introducing risk before any application code is written. Fix: verify model provenance, apply standard supply-chain scrutiny to AI-specific dependencies too.",
+  overreliance: "Humans trusting AI output without independent verification, even when the underlying model is well-evaluated. Fix: calibrated confidence signals, clear UI cues distinguishing AI-generated content, and workflows that don't assume the model is always right.",
+};
+document.querySelectorAll('.ow-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ow-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('ow-detail').textContent = OW_INFO[tab.dataset.r];
+  });
+});
+document.getElementById('ow-detail').textContent = OW_INFO['output'];
+
+document.getElementById('fig-output-handling').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: model output passing through a validation and sanitization layer before being executed or rendered, the same as any untrusted input">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="40" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="90" y="64" text-anchor="middle" fill="#a9c1ff">Model output</text>
+  <line x1="160" y1="60" x2="220" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a63)"/>
+  <rect x="220" y="40" width="180" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="310" y="64" text-anchor="middle" fill="#f2b84b">Validate/sanitize (same as user input)</text>
+  <line x1="400" y1="60" x2="440" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a63)"/>
+  <rect x="440" y="40" width="180" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="530" y="64" text-anchor="middle" fill="#3ecf8e">Safe to execute/render</text>
+  <defs><marker id="a63" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

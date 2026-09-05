@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.4 Diagnosing a 5x slowdown | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sd-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.sd-btn:hover { border-color: #a78bfa; }
+.sd-log { padding: 10px 12px; background: var(--code-bg); border-radius: 6px; margin-bottom: 6px; font-size: 12px; font-family: var(--font-mono); }
+.sd-result { padding: 14px 16px; border-radius: 8px; font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · DevOps, SRE &amp; observability</div>
+  <h1>5.4 Diagnosing a 5x slowdown</h1>
+  <p class="subtitle">The scenario: "Your customer's AI application suddenly becomes 5x slower. Diagnose it." No other information. Where do you actually start?</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This scenario deliberately has no single right first move — the discipline is the process, not
+    a memorized answer. Apply 2.4's method: check what changed recently before assuming anything,
+    separate containment from root cause, and use the observability pillars from 5.2 (metrics
+    first for the big picture, traces to localize, logs to confirm) rather than guessing. Below is
+    one realistic path through the investigation — work through it, and notice how each finding
+    narrows the next step rather than requiring you to know the answer upfront.
+  </div>
+
+  <h2>Try it: run the investigation</h2>
+  <div class="sd-box">
+    <div id="sd-log"></div>
+    <div id="sd-choices"></div>
+    <div class="sd-result" id="sd-result" style="display:none;"></div>
+  </div>
+
+  <h2>Why this scenario resists a memorized playbook</h2>
+  <p>
+    A 5x slowdown could be a database query that lost its index, a downstream dependency (an LLM
+    API, a third-party service) suddenly running slower, a connection pool exhausted under higher
+    load (3.3), a bad deploy that shipped a performance regression, or infrastructure-level
+    resource exhaustion. The actual skill being tested isn't "know the answer to this specific
+    puzzle" — it's demonstrating a systematic narrowing process under uncertainty, using the tools
+    from this phase in the right order.
+  </p>
+
+  <div class="figure" id="fig-diagnosis-tree"></div>
+
+  <h2>The narration habit, applied to this exact scenario</h2>
+  <p>
+    Recall 2.4's point about narrating your hypothesis out loud. In a live version of this
+    scenario with a customer watching, saying "metrics show the slowdown is isolated to the
+    checkout service, not global — checking its trace data now" does real work: it shows visible
+    progress even before you've found the actual cause, and it invites correction if someone in
+    the room already knows something you don't yet.
+  </p>
+
+  <h2>What "done" looks like for this kind of incident</h2>
+  <p>
+    Beyond finding and fixing the immediate cause: confirm the fix actually resolved it by
+    watching the relevant SLI return to normal (5.3) — not just assuming a deploy worked — and
+    write the postmortem while the investigation is still fresh, including the specific detection
+    gap if the customer found it before your monitoring did (a common, humbling, and genuinely
+    useful finding to document honestly).
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does this "5x slower" scenario deliberately resist a single memorized playbook answer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A slowdown can stem from many different genuine causes (database, dependency, connection pool, deploy regression, resource exhaustion) — the skill being tested is systematic narrowing, not recall of one specific answer</button>
+        <button class="q-option" data-correct="false">The scenario always has exactly one cause, which experienced engineers should already know</button>
+        <button class="q-option" data-correct="false">Slowdowns are never diagnosable through any systematic process</button>
+      </div>
+      <div class="q-explain">This is the point of using this exact scenario as a teaching tool — it forces demonstrating a process (check recent changes, use observability layers in order) rather than pattern-matching to a memorized fix.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. In what order does this material suggest using the three observability pillars (5.2) during this kind of investigation?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Metrics first for the big picture (is it global or isolated?), traces to localize where in the request path the delay is, then logs to confirm the specific cause</button>
+        <button class="q-option" data-correct="false">Logs first, then metrics, then traces, in every situation without exception</button>
+        <button class="q-option" data-correct="false">Only one pillar is ever needed regardless of the type of incident</button>
+      </div>
+      <div class="q-explain">This ordering moves from broad signal (is something actually wrong, and where roughly) to increasingly specific detail (exactly where, exactly why) — matching each pillar's strength to the stage of investigation it fits.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should you confirm a fix worked by watching the relevant SLI return to normal, rather than just assuming a deploy resolved the issue?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A deploy completing successfully doesn't guarantee the underlying performance issue is actually fixed — checking the SLI directly confirms whether real user-facing behavior actually improved</button>
+        <button class="q-option" data-correct="false">Deploys are always successful the moment they complete without any need for verification</button>
+        <button class="q-option" data-correct="false">SLIs cannot be used to confirm whether an incident has actually resolved</button>
+      </div>
+      <div class="q-explain">This mirrors the "green DAG run" caution from data engineering — a completed action (deploy) isn't the same claim as a verified outcome (the actual problem being resolved), which is why checking the real signal matters.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This scenario synthesizes Phase 2.4 (debugging under pressure), 3.3 (connection pooling), 5.2 (observability pillars), and 5.3 (SLIs) into one worked investigation.</p>
+
+  <div class="pager">
+    <a href="5-3-slis-slos-and-incident-response.html">&larr; 5.3 SLIs, SLOs &amp; incident response</a>
+    <a href="../phase-06-enterprise-integration/6-1-the-enterprise-environment-mindset.html">Phase 6: Enterprise integration &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SD_TREE = {
+  start: {
+    log: "🔔 Alert: p95 latency up 5x on checkout-service, last 20 minutes.",
+    choices: [
+      { text: "Check: is this global, or isolated to one service?", next: "isolated" },
+    ]
+  },
+  isolated: {
+    log: "📊 Metrics: latency spike is isolated to checkout-service. Other services are normal.",
+    choices: [
+      { text: "Check: was there a recent deploy to checkout-service?", next: "deploycheck" },
+    ]
+  },
+  deploycheck: {
+    log: "🔍 Deploy history: checkout-service deployed 25 minutes ago — right before the spike started.",
+    choices: [
+      { text: "Pull a trace for a slow request through checkout-service", next: "trace" },
+    ]
+  },
+  trace: {
+    log: "🔎 Trace: 4.8s total. 4.6s of it is one span: 'db.query — get_inventory_status'.",
+    choices: [
+      { text: "Check the deploy diff for anything touching that query", next: "diff" },
+    ]
+  },
+  diff: {
+    log: "📝 Diff review: the deploy added a new WHERE clause filter on a column with no index.",
+    choices: [
+      { text: "Diagnosis complete — see result below", next: "done" },
+    ]
+  },
+};
+let sdState = 'start';
+function renderSd() {
+  const node = SD_TREE[sdState];
+  const logDiv = document.getElementById('sd-log');
+  if (!logDiv.dataset.entries) logDiv.dataset.entries = '[]';
+  const entries = JSON.parse(logDiv.dataset.entries);
+  entries.push(node.log);
+  logDiv.dataset.entries = JSON.stringify(entries);
+  logDiv.innerHTML = entries.map(e => `<div class="sd-log">${e}</div>`).join('');
+
+  if (sdState === 'done') {
+    document.getElementById('sd-choices').innerHTML = '';
+    const result = document.getElementById('sd-result');
+    result.style.display = 'block';
+    result.style.background = 'rgba(62,207,142,0.1)';
+    result.style.border = '1px solid #3ecf8e';
+    result.innerHTML = `<strong>Root cause found:</strong> the deploy 25 minutes ago added a query filter on an unindexed column, turning a fast indexed lookup into a full table scan — exactly matching both the timing (right after deploy) and the localization (isolated to checkout-service, one specific query). <br><br><strong>Containment:</strong> roll back the deploy immediately, or add the missing index as a hotfix if rollback isn't safe. <strong>Root cause fix:</strong> add the index properly, with a migration, before re-deploying the new filter logic.`;
+    return;
+  }
+  document.getElementById('sd-choices').innerHTML = node.choices.map((c,i) =>
+    `<div class="sd-btn" data-i="${i}">${c.text}</div>`
+  ).join('');
+  document.querySelectorAll('.sd-btn').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      sdState = node.choices[i].next;
+      renderSd();
+    });
+  });
+}
+renderSd();
+
+document.getElementById('fig-diagnosis-tree').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: investigation narrows from a global check through isolation, deploy correlation, tracing, and diff review to root cause">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="10" y="50" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="65" y="74" text-anchor="middle">Global or isolated?</text>
+  <line x1="120" y1="70" x2="150" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a53)"/>
+  <rect x="150" y="50" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="205" y="74" text-anchor="middle">Recent deploy?</text>
+  <line x1="260" y1="70" x2="290" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a53)"/>
+  <rect x="290" y="50" width="110" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="345" y="74" text-anchor="middle" fill="#a9c1ff">Trace the request</text>
+  <line x1="400" y1="70" x2="430" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a53)"/>
+  <rect x="430" y="50" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="485" y="74" text-anchor="middle">Review deploy diff</text>
+  <line x1="540" y1="70" x2="570" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a53)"/>
+  <rect x="570" y="50" width="100" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="620" y="74" text-anchor="middle" fill="#3ecf8e">Root cause</text>
+  <defs><marker id="a53" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.1 The FDE system design method | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sm-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sm-step-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 6px; font-size: 13px; }
+.sm-step-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.sm-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · System design for FDE scenarios</div>
+  <h1>8.1 The FDE system design method</h1>
+  <p class="subtitle">A generic system design interview asks "design Twitter." An FDE design conversation asks "design this, for this specific customer, inside these specific constraints, and explain your tradeoffs to both the engineer and the VP in the room."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    FDE system design differs from a standard interview-style exercise in one critical way: the
+    constraints aren't hypothetical, they're the specific customer's actual environment —
+    everything from Phase 6's enterprise integration reality, Phase 4's cloud/networking
+    limitations, and Phase 7's AI security requirements all apply simultaneously, for one real
+    deployment. The method below is what the next three topics apply to three concrete scenarios.
+  </div>
+
+  <h2>Try it: walk through the method</h2>
+  <div class="sm-box">
+    <div id="sm-steps"></div>
+    <div class="sm-detail" id="sm-detail"></div>
+  </div>
+
+  <h2>Why "requirements" means something more specific here than in a generic interview</h2>
+  <p>
+    A textbook system design exercise often invents its own requirements as it goes. An FDE
+    engagement's requirements come from actual discovery (Phase 9) — a real customer's real
+    latency tolerance, real data sensitivity classification, real existing infrastructure. The
+    discipline here: resist designing before discovery is genuinely done, even under time
+    pressure, since a technically elegant design built on wrong assumptions about the customer's
+    actual constraints is worse than a rougher design built on accurate ones.
+  </p>
+
+  <div class="figure" id="fig-method-flow"></div>
+
+  <h2>Presenting tradeoffs to two audiences in the same room</h2>
+  <p>
+    A specifically FDE-flavored skill: the same design conversation often has both a technical
+    counterpart (who wants to understand the actual architecture and its failure modes) and a
+    business stakeholder (who wants to understand cost, timeline, and risk) present at once. The
+    practical technique: state the tradeoff once, in plain terms ("we can ship faster with less
+    redundancy, or slower with a fully redundant setup — here's what each costs and risks"), which
+    genuinely serves both audiences rather than requiring two separate explanations.
+  </p>
+
+  <h2>Constraints stack, they don't average</h2>
+  <p>
+    A common mistake: treating multiple real constraints (data must stay on-premise, latency must
+    be under 200ms, the budget caps at a specific compute tier) as things to balance against each
+    other, when they're often all simultaneously hard requirements that must each be fully
+    satisfied. The design method's job is finding an architecture that satisfies every genuine
+    constraint at once — not a compromise that partially violates each one a little.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do FDE system design constraints differ fundamentally from a typical system design interview's constraints?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">FDE constraints come from a specific real customer's actual environment and requirements, not a hypothetical scenario invented for the exercise</button>
+        <button class="q-option" data-correct="false">FDE system design has no real constraints at all, unlike interview exercises</button>
+        <button class="q-option" data-correct="false">Interview-style system design and FDE system design use identical constraint sets in every case</button>
+      </div>
+      <div class="q-explain">This is the core distinction the whole phase is built around — real constraints from real discovery, not invented ones, which is exactly why Phase 9's discovery work has to genuinely precede design.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is stating a tradeoff once, in plain terms, often better than giving separate technical and business explanations to different audiences in the same room?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A single, plainly-stated tradeoff can genuinely serve both a technical and a business audience simultaneously, without requiring the redundant work of two separate explanations</button>
+        <button class="q-option" data-correct="false">Technical stakeholders never care about cost or timeline considerations</button>
+        <button class="q-option" data-correct="false">Business stakeholders should always be given a completely different, simplified version of the actual tradeoff</button>
+      </div>
+      <div class="q-explain">This is a practical communication efficiency — a well-chosen plain-language framing of a real tradeoff doesn't require dumbing anything down, and it keeps both audiences in the same shared understanding.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should multiple real customer constraints often be treated as things that must all be simultaneously satisfied, rather than balanced against each other?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Constraints like data residency, latency limits, and budget caps are frequently genuine hard requirements, not preferences — a design that partially violates each one isn't actually acceptable</button>
+        <button class="q-option" data-correct="false">Constraints should always be averaged into a single compromise value</button>
+        <button class="q-option" data-correct="false">Only one constraint ever matters in a real design, and the rest can be safely ignored</button>
+      </div>
+      <div class="q-explain">This is the "constraints stack, don't average" principle — a design that's 80% compliant with a hard data-residency requirement is still non-compliant, not 80% acceptable.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This method synthesizes principles from earlier phases: discovery-driven requirements (Phase 9), real infrastructure constraints (Phases 4 and 6), and the dual-audience communication skill developed further in Phase 9.2.</p>
+
+  <div class="pager">
+    <a href="../phase-07-ai-llm-deployment/7-4-mcp-and-enterprise-tool-integration.html">&larr; 7.4 MCP &amp; enterprise tool integration</a>
+    <a href="8-2-design-enterprise-document-search.html">8.2 Design: enterprise document search &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SM_STEPS = [
+  { name: "1. Requirements (from real discovery)", detail: "What does the customer actually need, in their own words, translated into concrete technical requirements? Not invented — pulled from genuine discovery (Phase 9)." },
+  { name: "2. Constraints", detail: "Data residency, latency limits, budget, existing infrastructure, security/compliance requirements. List every real constraint explicitly before designing anything." },
+  { name: "3. Architecture options", detail: "Sketch 2-3 genuinely different architectures that could satisfy the requirements, not just one default choice — this makes the tradeoffs visible instead of hidden inside a single 'the' design." },
+  { name: "4. Tradeoffs, stated plainly", detail: "For each option: what does it cost, what does it risk, how fast can it ship. State this in language that works for both a technical and a business audience at once." },
+  { name: "5. Recommendation, with reasoning shown", detail: "Pick one, but show why — which constraint mattered most in tipping the decision, and what would change the recommendation if that constraint were different." },
+  { name: "6. Validation plan", detail: "How will you know the chosen design actually works once built? This connects directly to Phase 7.3's evaluation-as-deliverable material." },
+];
+let smIdx = 0;
+function renderSm() {
+  document.getElementById('sm-steps').innerHTML = SM_STEPS.map((s,i) =>
+    `<div class="sm-step-btn${i===smIdx?' active':''}" data-i="${i}">${s.name}</div>`
+  ).join('');
+  document.getElementById('sm-detail').textContent = SM_STEPS[smIdx].detail;
+  document.querySelectorAll('.sm-step-btn').forEach(btn => {
+    btn.addEventListener('click', () => { smIdx = parseInt(btn.dataset.i,10); renderSm(); });
+  });
+}
+renderSm();
+
+document.getElementById('fig-method-flow').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: requirements and constraints feed into architecture options, which lead to a stated tradeoff and recommendation with a validation plan">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="120" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="80" y="64" text-anchor="middle">Requirements + constraints</text>
+  <line x1="140" y1="60" x2="180" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a60)"/>
+  <rect x="180" y="40" width="120" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="240" y="64" text-anchor="middle" fill="#a9c1ff">Architecture options</text>
+  <line x1="300" y1="60" x2="340" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a60)"/>
+  <rect x="340" y="40" width="120" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="400" y="64" text-anchor="middle" fill="#f2b84b">Tradeoffs stated plainly</text>
+  <line x1="460" y1="60" x2="500" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a60)"/>
+  <rect x="500" y="40" width="160" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="580" y="64" text-anchor="middle" fill="#3ecf8e">Recommendation + validation</text>
+  <defs><marker id="a60" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

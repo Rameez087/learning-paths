@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.3 Red teaming &amp; guardrails | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.rt-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.rt-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.rt-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.rt-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · Security &amp; governance</div>
+  <h1>11.3 Red teaming &amp; guardrails</h1>
+  <p class="subtitle">Controlled testing found full compromise of some agentic systems in under two hours. Finding this yourself, deliberately, beats a customer's security team finding it for you.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Red teaming means deliberately attacking your own system before deployment — attempting
+    prompt injection, testing tenant isolation boundaries, trying to trigger excessive agency —
+    to find weaknesses proactively rather than reactively. Guardrails are the runtime defenses
+    that catch what red teaming reveals: input/output filtering, tool permission scoping, and
+    monitoring for anomalous behavior. This closes the loop on everything from 7.2 and 11.1 by
+    making those risks something you actively test for, not just something you're aware exists.
+  </div>
+
+  <h2>Try it: explore the red team testing categories</h2>
+  <div class="rt-box">
+    <div class="rt-tabs">
+      <div class="rt-tab active" data-c="injection">Injection attempts</div>
+      <div class="rt-tab" data-c="isolation">Isolation boundary tests</div>
+      <div class="rt-tab" data-c="agency">Agency boundary tests</div>
+      <div class="rt-tab" data-c="disclosure">Disclosure probing</div>
+    </div>
+    <div id="rt-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why red teaming your own system matters more than a checklist review</h2>
+  <p>
+    A static checklist review ("do you have prompt injection defenses? yes/no") can be answered
+    affirmatively without the defenses actually working under real adversarial pressure. Genuine
+    red teaming — actually attempting the attacks, documenting what succeeded and what didn't —
+    produces evidence rather than assertions, directly serving 7.3's evaluation-as-deliverable
+    principle: showing a skeptical reviewer real, attempted attacks and their outcomes is far more
+    credible than a checkbox confirming a policy exists.
+  </p>
+
+  <div class="figure" id="fig-redteam-cycle"></div>
+
+  <h2>Guardrails: defense that operates at runtime, not just design time</h2>
+  <p>
+    Even a red-teamed, well-designed system needs ongoing runtime defenses, since new attack
+    patterns emerge after launch that testing couldn't have anticipated. Practical guardrail
+    layers: input filtering (detecting known injection patterns before they reach the model),
+    output filtering (catching a response that reveals something it shouldn't before it's
+    returned to the user), and behavioral monitoring (flagging when an agent's actions deviate
+    meaningfully from its normal pattern) — directly connecting to 7.2's six control layers and
+    5.2's observability material.
+  </p>
+
+  <h2>The specific discipline of documenting what you tested, and what you didn't</h2>
+  <p>
+    A genuinely useful red team report is explicit about scope: which attack categories were
+    tested, which specific techniques were attempted, and — critically — what wasn't tested and
+    why. A report that implies comprehensive coverage without stating its actual scope invites the
+    exact kind of overconfidence 11.1's overreliance risk describes, just applied to the security
+    review itself rather than the AI system's output.
+  </p>
+
+  <h2>Continuous red teaming, not a one-time pre-launch exercise</h2>
+  <p>
+    Recall 7.3's continuous evaluation principle: the same logic applies here. Attack techniques
+    evolve, and a system's own behavior can drift as it's updated or as usage patterns change. A
+    mature deployment includes periodic re-testing, not just a single pre-launch red team exercise
+    treated as permanently sufficient.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does genuine red teaming produce more credible evidence than a static checklist review?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Actually attempting attacks and documenting real outcomes produces evidence, while a checklist can be answered affirmatively without the underlying defenses having actually been tested under real pressure</button>
+        <button class="q-option" data-correct="false">Checklists and red teaming produce functionally identical results in every case</button>
+        <button class="q-option" data-correct="false">Red teaming is only useful for systems that have already been publicly attacked</button>
+      </div>
+      <div class="q-explain">This is the core distinction — demonstrated, tested resilience is a fundamentally stronger claim than an unverified assertion that defenses exist.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a system still need runtime guardrails even after being thoroughly red-teamed before launch?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">New attack patterns can emerge after launch that pre-launch testing couldn't have anticipated, so ongoing runtime defenses remain necessary</button>
+        <button class="q-option" data-correct="false">Red teaming makes runtime guardrails completely unnecessary once completed</button>
+        <button class="q-option" data-correct="false">Guardrails and red teaming address exactly the same risks in exactly the same way</button>
+      </div>
+      <div class="q-explain">Pre-launch testing and ongoing runtime defense are complementary, not redundant — the security landscape keeps evolving after any point-in-time test.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is explicitly documenting what was NOT tested just as important as documenting what was tested in a red team report?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A report implying comprehensive coverage without stating its actual scope invites the same kind of overconfidence risk described by 11.1's overreliance category, applied to the security review itself</button>
+        <button class="q-option" data-correct="false">Documenting untested areas is purely a formality with no practical value</button>
+        <button class="q-option" data-correct="false">A red team report should never mention any limitations in its own scope</button>
+      </div>
+      <div class="q-explain">This is a specific honesty discipline — an implicitly overstated scope can mislead a reviewer into more confidence than the actual testing supports, echoing the overreliance risk in a different context.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic synthesizes red teaming and guardrail practices with the risk categories from 7.2 and 11.1, and the evaluation/continuous-monitoring principles from 7.3.</p>
+
+  <div class="pager">
+    <a href="11-2-data-governance-and-compliance.html">&larr; 11.2 Data governance &amp; compliance</a>
+    <a href="../phase-12-capstones/12-1-capstone-full-engagement-simulation.html">Phase 12: Capstone: the FDE engagement &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const RT_INFO = {
+  injection: "Deliberately attempting to override system instructions via crafted user input or indirect content (a document, a webpage the model reads). Document exactly which techniques were tried and whether they succeeded.",
+  isolation: "For multi-tenant systems, deliberately crafting queries designed to pull another tenant's data into the context window — the exact attack pattern described in 7.2's tenant isolation risk, now actively tested rather than just theorized.",
+  agency: "Attempting to get an agent to take an action beyond its intended scope — a refund above the coded limit (8.3), an unauthorized data export — to verify tool-level enforcement actually holds under adversarial pressure, not just under normal use.",
+  disclosure: "Attempting to extract system prompt contents, other users' data, or information the system shouldn't reveal, testing whether 11.1's sensitive information disclosure mitigations actually hold.",
+};
+document.querySelectorAll('.rt-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.rt-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('rt-detail').textContent = RT_INFO[tab.dataset.c];
+  });
+});
+document.getElementById('rt-detail').textContent = RT_INFO['injection'];
+
+document.getElementById('fig-redteam-cycle').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: continuous cycle of red team testing, documenting findings, hardening guardrails, and re-testing periodically after launch">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="140" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="90" y="69" text-anchor="middle" fill="#f2b84b">Attempt attacks</text>
+  <line x1="160" y1="65" x2="200" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a65)"/>
+  <rect x="200" y="45" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="270" y="69" text-anchor="middle" fill="#a9c1ff">Document findings</text>
+  <line x1="340" y1="65" x2="380" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a65)"/>
+  <rect x="380" y="45" width="140" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="450" y="69" text-anchor="middle" fill="#3ecf8e">Harden guardrails</text>
+  <path d="M 520 65 C 580 65, 580 20, 90 20 C 60 20, 60 30, 60 45" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a65p)"/>
+  <text x="330" y="15" text-anchor="middle" fill="#c4b5fd" font-size="8">re-test periodically, not just once</text>
+  <defs><marker id="a65" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker><marker id="a65p" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

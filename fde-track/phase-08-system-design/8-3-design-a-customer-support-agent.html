@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.3 Design: a customer support agent | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-scenario { padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-bottom: 16px; border-left: 3px solid #a78bfa; }
+.cs-node { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.cs-node.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.cs-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · System design for FDE scenarios</div>
+  <h1>8.3 Design: a customer support agent</h1>
+  <p class="subtitle">The agent needs real tool access — to check order status, issue refunds, update account details. That's exactly where 7.2's "excessive agency" risk stops being theoretical.</p>
+
+  <div class="cs-scenario">
+    <strong>The scenario:</strong> An e-commerce company wants an AI agent to handle tier-1 support:
+    answering order status questions, processing straightforward refunds under $50, and updating
+    shipping addresses — escalating anything more complex or higher-value to a human agent. The
+    agent needs access to the order management system, the payment processor, and the customer
+    database.
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This is where 7.2's excessive agency principle becomes a concrete design decision, not an
+    abstract risk. The agent's tool permissions need to be scoped precisely to the stated task —
+    refund authority capped at exactly $50, no access to modify payment methods, no ability to
+    issue refunds above the threshold even if a user's message tries to talk it into one. The
+    escalation path to a human isn't a fallback bolted on afterward — it's a first-class part of
+    the design from the start.
+  </div>
+
+  <h2>Try it: explore the agent's tool boundary design</h2>
+  <div class="cs-box">
+    <div id="cs-nodes"></div>
+    <div class="cs-detail" id="cs-detail">Click a component above.</div>
+  </div>
+
+  <h2>Why the $50 refund cap has to be enforced outside the model, not inside a prompt</h2>
+  <p>
+    A system prompt instruction like "never refund more than $50" is a suggestion the model
+    usually follows — not a guarantee, given 7.2's point that prompt injection can never be fully
+    eliminated. The actual enforcement has to live in the tool itself: the refund tool's API
+    should hard-reject any refund request over $50 at the code level, regardless of what the model
+    asks for. The model's job is deciding whether to call the tool; the tool's job is being
+    genuinely safe to call, even if the model is somehow manipulated into calling it wrongly.
+  </p>
+
+  <div class="figure" id="fig-agent-boundary"></div>
+
+  <h2>Designing the escalation path as a real feature, not an apology</h2>
+  <p>
+    A poorly designed escalation just says "I can't help with that" and leaves the customer
+    stranded. A well-designed one hands off with full context: the human agent receiving the
+    escalation should see the conversation history, what the AI agent already tried, and why it
+    escalated — not start from zero. This connects to 7.3's evaluation principle: a system that
+    fails gracefully and informatively is more trustworthy than one that either fails silently or
+    never admits it needs help.
+  </p>
+
+  <h2>Audit logging every action, especially the ones that touch money</h2>
+  <p>
+    Directly from 7.1 and 7.2: every refund the agent issues, every address change it makes, needs
+    a durable, timestamped log entry — not just for debugging, but because "an AI system moved
+    customer money" is exactly the kind of action a finance or compliance team will want to review
+    after the fact, whether or not anything went wrong.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should the $50 refund cap be enforced in the refund tool's code, rather than only as an instruction in the system prompt?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A system prompt instruction is a suggestion the model usually follows, not a guarantee — given that prompt injection can never be fully eliminated, the tool itself needs to hard-reject requests over the limit regardless of what the model asks</button>
+        <button class="q-option" data-correct="false">System prompts are technically incapable of expressing numeric limits</button>
+        <button class="q-option" data-correct="false">Enforcing limits in code and in the prompt provide identical security guarantees</button>
+      </div>
+      <div class="q-explain">This is 7.2's prompt injection limitation applied directly to a design decision — real enforcement has to live in a layer that can't be talked out of its rules the way a model's behavior sometimes can.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What makes an escalation-to-human design "well-designed" versus poorly designed, according to this material?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The human agent receives full context — conversation history and what the AI already tried — rather than starting from zero, and the customer isn't simply left with "I can't help with that"</button>
+        <button class="q-option" data-correct="false">A well-designed escalation never actually needs to hand off to a human</button>
+        <button class="q-option" data-correct="false">Escalation quality has no bearing on customer trust or experience</button>
+      </div>
+      <div class="q-explain">Treating escalation as a first-class feature (with context handoff) rather than an afterthought is what makes the overall system feel trustworthy even when the AI can't complete the task itself.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does every refund and account change the agent makes need a durable audit log entry?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Actions that move customer money or change account data are exactly the kind a finance or compliance team will want to review after the fact, whether or not anything went wrong</button>
+        <button class="q-option" data-correct="false">Audit logging is only necessary if the agent actually makes a mistake</button>
+        <button class="q-option" data-correct="false">Audit logs are purely a debugging tool with no compliance relevance</button>
+      </div>
+      <div class="q-explain">This connects to 7.1's audit logging requirement — financially consequential actions specifically warrant a durable record regardless of whether an error ever actually occurs.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This worked design applies the excessive agency and prompt injection principles from 7.2, the audit logging requirement from 7.1, and agent architecture concepts from the AI Engineering track's Phase 8.</p>
+
+  <div class="pager">
+    <a href="8-2-design-enterprise-document-search.html">&larr; 8.2 Design: enterprise document search</a>
+    <a href="8-4-design-for-private-network-constraints.html">8.4 Design: private network constraints &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CS_NODES = [
+  { name: "Order status tool", detail: "Read-only access to the order management system. Low risk — no state changes possible, so this tool needs minimal restriction beyond standard authentication." },
+  { name: "Refund tool (capped)", detail: "Hard-coded $50 maximum enforced in the tool's own logic, not just prompted. Any request above this amount is rejected at the code level and automatically escalated, regardless of the model's reasoning." },
+  { name: "Address update tool", detail: "Should verify identity more strictly than a status check — changing a shipping address is a common fraud vector, so this tool might require an additional verification step the order-status tool doesn't." },
+  { name: "Escalation handoff", detail: "Not a fallback bolted on last — a first-class path that hands a human agent full context: conversation history, what was attempted, and why it escalated." },
+];
+document.getElementById('cs-nodes').innerHTML = CS_NODES.map((n,i) =>
+  `<div class="cs-node" data-i="${i}">${n.name}</div>`
+).join('');
+document.querySelectorAll('.cs-node').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.cs-node').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('cs-detail').textContent = CS_NODES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-agent-boundary').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: model decides which tool to call, but each tool enforces its own hard limits independently of what the model requests">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="50" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="90" y="74" text-anchor="middle" fill="#a9c1ff">Agent (model)</text>
+  <line x1="160" y1="60" x2="220" y2="30" stroke="#6b7386" stroke-width="1"/>
+  <line x1="160" y1="70" x2="220" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="160" y1="80" x2="220" y2="110" stroke="#6b7386" stroke-width="1"/>
+  <rect x="220" y="15" width="180" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="310" y="34" text-anchor="middle" fill="#3ecf8e" font-size="8">Order status (read-only)</text>
+  <rect x="220" y="55" width="180" height="30" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="310" y="74" text-anchor="middle" fill="#f2b84b" font-size="8">Refund tool: hard $50 cap</text>
+  <rect x="220" y="95" width="180" height="30" rx="4" fill="#1a2029" stroke="#e5484d"/><text x="310" y="114" text-anchor="middle" fill="#ff8b8f" font-size="8">Over $50 → auto-escalate</text>
+</svg>
+`;
+</script>
+</body>
+</html>

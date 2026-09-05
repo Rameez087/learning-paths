@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.4 Background jobs &amp; webhooks | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.bj-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.bj-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.bj-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.bj-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.bj-metrics { display: flex; gap: 16px; flex-wrap: wrap; }
+.bj-metric { background: var(--surface-2); border-radius: 8px; padding: 12px 18px; text-align: center; }
+.bj-metric .n { font-size: 16px; font-weight: 700; }
+.bj-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Full-stack for FDEs</div>
+  <h1>3.4 Background jobs &amp; webhooks</h1>
+  <p class="subtitle">If a request takes longer than a user is willing to stare at a spinner, it doesn't belong in the request-response cycle anymore.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Anything slow, unreliable, or dependent on an external system — sending an email, processing
+    an uploaded document, calling a rate-limited third-party API — belongs in a background job
+    queue, not the synchronous request path. This keeps the user-facing response fast and lets a
+    failed job retry independently without the user ever seeing an error for something that will
+    resolve itself on retry. Webhooks are the receiving side of this same pattern: reacting to
+    events pushed from an external system rather than blocking on a synchronous call to check for
+    them.
+  </div>
+
+  <h2>Try it: synchronous vs. background, the actual difference it makes</h2>
+  <div class="bj-box">
+    <div class="bj-toggle">
+      <div class="bj-toggle-btn active" data-m="sync">Synchronous (blocking)</div>
+      <div class="bj-toggle-btn" data-m="async">Background job queue</div>
+    </div>
+    <div class="bj-metrics" id="bj-metrics"></div>
+  </div>
+
+  <h2>What actually belongs in a queue</h2>
+  <ul>
+    <li><strong>Anything calling a third-party API</strong> — that API's latency and reliability become your user's problem if it's in the synchronous path.</li>
+    <li><strong>Anything processing a large file</strong> — document parsing, image processing, large data imports.</li>
+    <li><strong>Anything that needs to retry on failure</strong> — a queue with retry logic handles this naturally; a synchronous request either succeeds immediately or the user sees a failure with no automatic second attempt.</li>
+    <li><strong>Anything that can tolerate a delay of seconds to minutes</strong> — if the user genuinely needs the result in the same page load, it can't go in a queue; if they can wait for a notification, it usually should.</li>
+  </ul>
+
+  <div class="figure" id="fig-queue-flow"></div>
+
+  <h2>Webhook receivers need to be idempotent, always</h2>
+  <p>
+    Directly connecting back to 2.2's API integration material: a webhook sender (Stripe, GitHub,
+    a customer's internal event bus) will retry delivery if it doesn't get a fast, successful
+    response — meaning your receiver must handle getting the same event twice without creating a
+    duplicate side effect. The practical pattern: check whether you've already processed an event
+    with this specific ID before acting on it again, and always respond quickly (acknowledge
+    receipt, then process asynchronously) rather than doing slow work inside the webhook handler
+    itself, which risks the sender timing out and retrying unnecessarily.
+  </p>
+
+  <h2>Dead letter queues, one more time — now for webhooks and jobs</h2>
+  <p>
+    Recall the dead letter queue pattern from data pipeline reliability: a job or webhook that
+    fails repeatedly (a malformed payload, a permanently unreachable dependency) shouldn't retry
+    forever or silently vanish. Routing it to a dedicated failure queue after a bounded number of
+    attempts means a human can inspect and resolve it — the same pattern, the same reasoning,
+    applied at the application-integration layer instead of the data-pipeline layer.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the practical test for whether a task belongs in a background job queue rather than the synchronous request path?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Whether the user genuinely needs the result immediately in the same page load, versus being able to tolerate a delay and receive a notification later</button>
+        <button class="q-option" data-correct="false">All tasks should always be processed synchronously for simplicity</button>
+        <button class="q-option" data-correct="false">Only tasks that never fail should be run synchronously</button>
+      </div>
+      <div class="q-explain">This is the core decision criterion — immediacy requirement, not task complexity alone, is what should drive the synchronous-vs-queued choice.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should a webhook handler acknowledge receipt quickly and process the actual work asynchronously, rather than doing slow work inside the handler itself?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A slow response risks the sender timing out and retrying the delivery unnecessarily, on top of whatever slow work was already happening</button>
+        <button class="q-option" data-correct="false">Webhook senders never have any timeout or retry behavior</button>
+        <button class="q-option" data-correct="false">Processing work inside a webhook handler is always faster than doing it asynchronously</button>
+      </div>
+      <div class="q-explain">This connects directly to the idempotency requirement — a slow handler risking a timeout-triggered retry is exactly the scenario that makes duplicate-safe processing necessary in the first place.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why shouldn't a failing background job or webhook retry indefinitely?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A permanently failing job (malformed payload, unreachable dependency) will never succeed no matter how many times it retries, so it should route to a dead letter queue for human review instead</button>
+        <button class="q-option" data-correct="false">Jobs should never be retried under any circumstances</button>
+        <button class="q-option" data-correct="false">Infinite retries always eventually succeed given enough time</button>
+      </div>
+      <div class="q-explain">This is the same dead letter queue reasoning from data pipeline design — a bounded retry count followed by routing to a failure queue is what prevents an unresolvable failure from consuming resources forever or silently disappearing.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic builds on the idempotency and dead letter queue patterns already established in the Data Science &amp; Engineering track's pipeline reliability material (5.5), applied here at the application/webhook integration layer.</p>
+
+  <div class="pager">
+    <a href="3-3-databases-in-integration-contexts.html">&larr; 3.3 Databases in integration contexts</a>
+    <a href="../phase-04-cloud-infrastructure/4-1-cloud-fundamentals-that-transfer.html">Phase 4: Cloud &amp; infrastructure &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const BJ_DATA = {
+  sync: { latency: "User waits full duration", failure: "User sees error immediately, no retry", scale: "Degrades as load increases" },
+  async: { latency: "User gets instant response", failure: "Retries automatically, user unaffected", scale: "Queue absorbs load spikes" },
+};
+function renderBj(key) {
+  const d = BJ_DATA[key];
+  document.getElementById('bj-metrics').innerHTML = `
+    <div class="bj-metric"><div class="n">${d.latency}</div><div class="l">User experience</div></div>
+    <div class="bj-metric"><div class="n">${d.failure}</div><div class="l">On failure</div></div>
+    <div class="bj-metric"><div class="n">${d.scale}</div><div class="l">Under load</div></div>
+  `;
+}
+document.querySelectorAll('.bj-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bj-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderBj(btn.dataset.m);
+  });
+});
+renderBj('sync');
+
+document.getElementById('fig-queue-flow').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: request enqueues a job and returns immediately, worker processes the job separately with retry and dead letter queue on failure">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="45" width="120" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="80" y="69" text-anchor="middle">User request</text>
+  <line x1="140" y1="65" x2="180" y2="65" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a47)"/>
+  <text x="160" y="55" fill="#3ecf8e" font-size="8">instant</text>
+  <rect x="180" y="45" width="120" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="240" y="69" text-anchor="middle" fill="#a9c1ff">Job queue</text>
+  <line x1="300" y1="65" x2="340" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a47)"/>
+  <rect x="340" y="45" width="120" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="400" y="69" text-anchor="middle">Worker</text>
+  <line x1="460" y1="55" x2="510" y2="30" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a47f)"/>
+  <text x="530" y="25" fill="#f2b84b" font-size="8">fail → retry</text>
+  <line x1="460" y1="75" x2="510" y2="100" stroke="#e5484d" stroke-width="1.5" marker-end="url(#a47r)"/>
+  <text x="580" y="115" fill="#ff8b8f" font-size="8">still failing → dead letter queue</text>
+  <defs>
+    <marker id="a47" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="a47f" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+    <marker id="a47r" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.4 Design: private network constraints | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.pc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.pc-scenario { padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-bottom: 16px; border-left: 3px solid #a78bfa; }
+.pc-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pc-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.pc-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · System design for FDE scenarios</div>
+  <h1>8.4 Design: private network constraints</h1>
+  <p class="subtitle">A hospital's patient data legally cannot leave their private network. Your AI system still needs to reason over it.</p>
+
+  <div class="pc-scenario">
+    <strong>The scenario:</strong> A healthcare provider wants an AI system to help clinicians
+    quickly find relevant information in patient records. Regulatory requirements mean patient
+    data must never leave the hospital's private network — not even transiently to a cloud LLM
+    API. The hospital has an internal GPU cluster, but no team experienced in running production
+    ML infrastructure.
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This scenario forces a genuinely hard tradeoff between 8.1's constraint-stacking principle and
+    reality: "data can't leave the network" and "we want frontier-model-quality reasoning" can
+    directly conflict, since the best-performing models are typically only available via cloud
+    API. The design has to resolve this honestly — usually by running a capable open-weight model
+    on the hospital's own infrastructure, accepting a real capability tradeoff in exchange for a
+    non-negotiable compliance requirement, rather than pretending the conflict doesn't exist.
+  </div>
+
+  <h2>Try it: compare deployment topologies against this specific constraint</h2>
+  <div class="pc-box">
+    <div class="pc-toggle">
+      <div class="pc-toggle-btn active" data-t="cloud">Cloud API (frontier model)</div>
+      <div class="pc-toggle-btn" data-t="onprem">On-premise open-weight model</div>
+      <div class="pc-toggle-btn" data-t="hybrid">Hybrid: de-identify then call cloud</div>
+    </div>
+    <div id="pc-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why "de-identify then call cloud" is tempting but genuinely risky here</h2>
+  <p>
+    A hybrid approach — strip identifying information, call a cloud API with the de-identified
+    text, reattach identity afterward — sounds like a clever compromise. The real risk: reliable
+    de-identification of unstructured clinical text is a hard, imperfect problem in its own right,
+    and a compliance team is unlikely to accept "we're pretty confident this removes all identifying
+    information" as sufficient for a legally binding requirement. This is exactly the kind of
+    tradeoff that needs to be surfaced honestly (8.1) rather than presented as a clean solution.
+  </p>
+
+  <div class="figure" id="fig-onprem-arch"></div>
+
+  <h2>The "no experienced ML infrastructure team" constraint changes the design too</h2>
+  <p>
+    An on-premise deployment on a GPU cluster the hospital already owns still needs someone
+    capable of running it reliably — model serving, monitoring (Phase 5), incident response when
+    it degrades. If the hospital genuinely lacks this expertise, the honest design includes a
+    concrete answer to "who operates this after the FDE leaves" (Phase 1.3's Handoff stage) —
+    perhaps a managed on-premise deployment offering, or a deliberate knowledge-transfer plan, not
+    just "here's a working system, good luck."
+  </p>
+
+  <h2>Why this scenario is a genuinely good test of FDE judgment</h2>
+  <p>
+    There's no clean, fully-satisfying answer here — every option gives up something real. A
+    junior response might present the on-premise model as strictly correct without acknowledging
+    the real capability tradeoff being made. A stronger response states plainly: "we're trading
+    some model quality for a non-negotiable compliance requirement, here's specifically what that
+    costs in practice, and here's how we'll monitor whether that tradeoff remains acceptable as the
+    system is used in practice."
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does this scenario create a genuine conflict between two of 8.1's "stacked constraints"?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">"Data must never leave the network" and "we want frontier-model-quality reasoning" can directly conflict, since the best-performing models are typically only available via cloud API</button>
+        <button class="q-option" data-correct="false">There is actually no real conflict between these two requirements in any realistic scenario</button>
+        <button class="q-option" data-correct="false">Data residency requirements never apply to AI systems specifically</button>
+      </div>
+      <div class="q-explain">This is exactly the kind of hard tradeoff 8.1 warns constraints can create — the honest design response acknowledges the conflict rather than pretending both requirements are fully satisfiable at once.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is the "de-identify then call cloud" hybrid approach considered genuinely risky for this specific scenario?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Reliable de-identification of unstructured clinical text is a hard, imperfect problem, and a compliance team is unlikely to accept probabilistic confidence as sufficient for a legally binding data residency requirement</button>
+        <button class="q-option" data-correct="false">De-identification is a fully solved problem with guaranteed accuracy in every case</button>
+        <button class="q-option" data-correct="false">Cloud APIs are always legally acceptable for any type of patient data</button>
+      </div>
+      <div class="q-explain">The gap between "usually works" and "legally guaranteed" matters enormously in a regulated compliance context — this is precisely the kind of risk that needs surfacing honestly rather than glossed over.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What distinguishes a stronger response to this scenario from a weaker one, according to this material?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A stronger response explicitly states the real tradeoff being made (some model quality for compliance) and proposes how to monitor whether that tradeoff remains acceptable, rather than presenting one option as cleanly, unambiguously correct</button>
+        <button class="q-option" data-correct="false">A stronger response always recommends the on-premise option without any further discussion</button>
+        <button class="q-option" data-correct="false">The strength of a response depends entirely on which specific model is chosen</button>
+      </div>
+      <div class="q-explain">This is the core FDE judgment skill this scenario tests — honesty about genuine tradeoffs, not confident-sounding but oversimplified recommendations.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This worked design applies constraint-stacking from 8.1, data governance principles from Phase 11, and the Handoff stage from Phase 1.3.</p>
+
+  <div class="pager">
+    <a href="8-3-design-a-customer-support-agent.html">&larr; 8.3 Design: a customer support agent</a>
+    <a href="../phase-09-customer-consulting/9-1-discovery-and-problem-framing.html">Phase 9: Customer &amp; consulting skills &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const PC_INFO = {
+  cloud: "Best raw model quality, fastest to stand up, no infrastructure to maintain — but violates the hard data residency constraint outright. Not viable here regardless of how attractive it otherwise is.",
+  onprem: "Satisfies the compliance requirement cleanly — data genuinely never leaves the network. Trades away some model capability compared to the best available cloud models, and requires real operational investment (Phase 5) the hospital may not yet have in-house.",
+  hybrid: "Tempting middle ground, but de-identification of unstructured clinical text is imperfect, and 'probably removes all identifying info' is a weak claim against a legally binding requirement. Usually not defensible as the primary design.",
+};
+document.querySelectorAll('.pc-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pc-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pc-detail').textContent = PC_INFO[btn.dataset.t];
+  });
+});
+document.getElementById('pc-detail').textContent = PC_INFO['cloud'];
+
+document.getElementById('fig-onprem-arch').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: hospital private network containing the model, application, and patient data, with no path for patient data to exit the boundary">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="15" y="15" width="650" height="100" rx="8" fill="none" stroke="#262d3a" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="35" y="35" fill="#9aa4b5" font-size="10">Hospital private network (data never exits)</text>
+  <rect x="50" y="50" width="150" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="125" y="74" text-anchor="middle">Patient records</text>
+  <rect x="260" y="50" width="150" height="40" rx="6" fill="#182238" stroke="#a78bfa"/><text x="335" y="74" text-anchor="middle" fill="#c4b5fd">On-prem open-weight model</text>
+  <rect x="470" y="50" width="150" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="545" y="74" text-anchor="middle" fill="#3ecf8e">Clinician application</text>
+  <line x1="200" y1="70" x2="260" y2="70" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="410" y1="70" x2="470" y2="70" stroke="#6b7386" stroke-width="1.5"/>
+</svg>
+`;
+</script>
+</body>
+</html>

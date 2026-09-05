@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.2 Capstone: incident under pressure | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ip-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ip-scenario { padding: 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-bottom: 16px; border-left: 3px solid #e5484d; }
+.ip-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.ip-btn:hover { border-color: #a78bfa; }
+.ip-log { padding: 10px 12px; background: var(--code-bg); border-radius: 6px; margin-bottom: 6px; font-size: 12px; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone: the FDE engagement</div>
+  <h1>12.2 Capstone: incident under pressure</h1>
+  <p class="subtitle">It's the morning of the go-live demo for Meridian's leadership team. The support agent you built starts issuing refunds it shouldn't.</p>
+
+  <div class="ip-scenario">
+    <strong>The situation:</strong> Thirty minutes before the scheduled demo to Meridian's COO and
+    board, a monitoring alert fires: the customer support agent (from Phase 8.3's design) has
+    issued twelve refunds above the coded $50 cap in the last ten minutes. The refund tool's hard
+    limit should have prevented this. The demo is still scheduled to start on time.
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This is 2.4's debugging-under-pressure discipline, at maximum stakes. Apply the method:
+    separate containment from root cause, check what changed recently, narrate your hypothesis
+    out loud, and decide honestly whether the demo should proceed, be delayed, or be modified —
+    a decision Phase 9's stakeholder communication skills need to carry, live, in real time.
+  </div>
+
+  <h2>Work through the incident</h2>
+  <div class="ip-box">
+    <div id="ip-log"></div>
+    <div id="ip-choices"></div>
+    <div id="ip-result" style="display:none; padding:14px 16px; border-radius:8px; font-size:13px; margin-top:10px;"></div>
+  </div>
+
+  <h2>The decision this scenario is really testing</h2>
+  <p>
+    The technical bug is one part of this. The harder, more distinctly FDE-shaped decision:
+    what do you tell the COO thirty minutes before the demo? Recall 9.2's discipline on delivering
+    bad news early and clearly, with a plan attached. A defensible response states plainly what
+    happened, what's already been contained, and offers a real choice — proceed with the demo on
+    a version you can vouch for, or delay briefly for a fix — rather than either hiding the issue
+    or panicking visibly in front of leadership.
+  </p>
+
+  <div class="figure" id="fig-incident-decision"></div>
+
+  <h2>What "genuinely resolved" requires here</h2>
+  <p>
+    Beyond containing the immediate issue (rolling back or disabling the refund tool), a complete
+    response needs the actual root cause identified — was the $50 cap check bypassed by a code
+    path that skipped it, a race condition under concurrent requests, or a configuration that
+    silently reverted during a recent deploy? Recall Phase 5.4's diagnostic discipline: confirming
+    the fix by watching the relevant behavior return to normal, not just assuming a rollback
+    worked, and writing the postmortem honestly once resolved (5.3).
+  </p>
+
+  <p class="sources" style="margin-top:32px">This capstone applies debugging under pressure (2.4), the agent design from 8.3, stakeholder communication (9.2), and the diagnostic and postmortem discipline from Phase 5.</p>
+
+  <div class="pager">
+    <a href="12-1-capstone-full-engagement-simulation.html">&larr; 12.1 Capstone: full engagement simulation</a>
+    <a href="12-3-capstone-portfolio-and-interview-prep.html">12.3 Capstone: portfolio &amp; interview prep &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+const IP_TREE = {
+  start: {
+    log: "🔔 12 refunds over $50 cap issued in the last 10 minutes. Demo starts in 30 minutes.",
+    choices: [
+      { text: "Immediately disable the refund tool entirely (contain first)", next: "contained" },
+    ]
+  },
+  contained: {
+    log: "✅ Refund tool disabled. No further unauthorized refunds possible. Now: what caused this, and what do you tell the COO?",
+    choices: [
+      { text: "Check recent deploys and config changes to the refund tool", next: "diagnose" },
+    ]
+  },
+  diagnose: {
+    log: "🔍 Found it: a config deploy last night reset the refund cap environment variable to its default (unlimited) instead of $50 — the check code was fine, the config value was wrong.",
+    choices: [
+      { text: "Tell the COO honestly: what happened, what's contained, and offer a choice", next: "communicate" },
+    ]
+  },
+  communicate: {
+    log: "📋 You tell the COO: 'A config error last night removed our refund safety limit — we caught it and disabled the refund feature entirely 20 minutes ago, before the demo. The rest of the agent works normally. We can demo everything except live refunds today, with the cap fully restored by end of day.'",
+    choices: [
+      { text: "See the outcome", next: "done" },
+    ]
+  },
+  done: {
+    log: "",
+    choices: []
+  },
+};
+let ipState = 'start';
+function renderIp() {
+  const node = IP_TREE[ipState];
+  const logDiv = document.getElementById('ip-log');
+  if (!logDiv.dataset.entries) logDiv.dataset.entries = '[]';
+  const entries = JSON.parse(logDiv.dataset.entries);
+  if (node.log) entries.push(node.log);
+  logDiv.dataset.entries = JSON.stringify(entries);
+  logDiv.innerHTML = entries.map(e => `<div class="ip-log">${e}</div>`).join('');
+
+  if (ipState === 'done') {
+    document.getElementById('ip-choices').innerHTML = '';
+    const result = document.getElementById('ip-result');
+    result.style.display = 'block';
+    result.style.background = 'rgba(62,207,142,0.1)';
+    result.style.border = '1px solid #3ecf8e';
+    result.innerHTML = `<strong>Why this sequence works:</strong> containment happened before root cause investigation (2.4's discipline), the actual cause was found through checking recent changes rather than guessing, and the COO got an honest, specific update with a real choice rather than either a hidden problem or a panicked cancellation. The demo proceeds on a system the FDE can genuinely vouch for — a stronger outcome than either hiding the issue or canceling entirely.`;
+    return;
+  }
+  document.getElementById('ip-choices').innerHTML = node.choices.map((c,i) =>
+    `<div class="ip-btn" data-i="${i}">${c.text}</div>`
+  ).join('');
+  document.querySelectorAll('.ip-btn').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      ipState = node.choices[i].next;
+      renderIp();
+    });
+  });
+}
+renderIp();
+
+document.getElementById('fig-incident-decision').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: contain first, then diagnose root cause, then communicate honestly to the stakeholder with a real choice">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="140" height="40" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="90" y="64" text-anchor="middle" fill="#ff8b8f">Contain</text>
+  <line x1="160" y1="60" x2="200" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a67)"/>
+  <rect x="200" y="40" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="270" y="64" text-anchor="middle" fill="#a9c1ff">Diagnose root cause</text>
+  <line x1="340" y1="60" x2="380" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a67)"/>
+  <rect x="380" y="40" width="140" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="450" y="64" text-anchor="middle" fill="#f2b84b">Communicate honestly</text>
+  <line x1="520" y1="60" x2="560" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a67)"/>
+  <rect x="560" y="40" width="100" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="610" y="64" text-anchor="middle" fill="#3ecf8e">Demo proceeds</text>
+  <defs><marker id="a67" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

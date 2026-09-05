@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.3 Capstone: portfolio &amp; interview prep | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.pf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.pf-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.pf-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.pf-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.pf-item.checked .pf-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.pf-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+.pf-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.pf-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.pf-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.done-banner { background: linear-gradient(135deg, #201830, #150e26); border: 1px solid #a78bfa; border-radius: var(--radius); padding: 24px; margin-top: 48px; text-align: center; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone: the FDE engagement</div>
+  <h1>12.3 Capstone: portfolio &amp; interview prep</h1>
+  <p class="subtitle">A portfolio that proves outcomes, not tutorials — and interview practice for the specific formats FDE roles actually use.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An FDE portfolio needs to demonstrate the same breadth this track covers: a real integration
+    (not a toy API call), a system design writeup showing tradeoffs stated plainly, and evidence
+    of customer-facing judgment — even if simulated, like this track's own scenarios. FDE interviews
+    typically span technical depth, system design under real constraints, and a case study or
+    role-play testing discovery and communication skills together — not just a coding round.
+  </div>
+
+  <h2>Try it: what a strong portfolio project actually demonstrates</h2>
+  <div class="pf-box">
+    <div class="pf-tabs">
+      <div class="pf-tab active" data-p="project1">Project 1: Integration</div>
+      <div class="pf-tab" data-p="project2">Project 2: System design writeup</div>
+      <div class="pf-tab" data-p="project3">Project 3: Simulated engagement</div>
+    </div>
+    <div id="pf-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Interview format checklist</h2>
+  <div class="pf-box">
+    <div id="pf-items"></div>
+    <div class="pf-progress" id="pf-progress"></div>
+  </div>
+
+  <h2>What makes a portfolio project "prove outcomes, not tutorials"</h2>
+  <p>
+    A tutorial-following project (the fortieth to-do app, a copy-pasted RAG chatbot with no
+    customization) demonstrates that instructions can be followed. A genuinely FDE-relevant
+    project demonstrates judgment: a real integration with a genuinely messy API (6.3's
+    investigation skills, applied to something real), a design writeup showing an actual tradeoff
+    you personally weighed (8.1), or — most powerfully — a written response to one of this
+    track's own capstone scenarios, showing the actual reasoning, not just a final answer.
+  </p>
+
+  <div class="figure" id="fig-interview-formats"></div>
+
+  <h2>The behavioral question this role specifically tests for</h2>
+  <p>
+    Beyond standard behavioral questions, FDE interviews specifically probe for comfort with
+    ambiguity and travel, and genuine customer-facing composure under pressure — closely related
+    to this track's 12.2 capstone. A strong answer to "tell me about a time you had to deliver bad
+    news to a stakeholder" draws on real, specific experience (even a smaller-scale one) rather
+    than a hypothetical, and shows the same honest, plan-attached communication discipline from
+    9.2.
+  </p>
+
+  <div class="done-banner">
+    <h2 style="margin-top:0; border:none; font-size:20px;">🎉 FDE track complete</h2>
+    <p style="margin-bottom:0;">
+      Twelve phases, from what an FDE actually is through enterprise integration, AI deployment
+      security, system design under real constraints, customer consulting skills, and a full
+      simulated engagement — 46 pages, grounded in 2026 research across Palantir, OpenAI,
+      Anthropic, and Google's actual FDE programs, each with a real interactive element and a
+      self-graded quiz. This track cross-links to your AI Engineering and Data Science tracks
+      rather than duplicating them — together, all three now form one connected learning system.
+    </p>
+  </div>
+
+  <div class="pager">
+    <a href="12-2-capstone-incident-under-pressure.html">&larr; 12.2 Capstone: incident under pressure</a>
+    <a href="../index.html">Back to overview</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+const PF_INFO = {
+  project1: "A real integration with a genuinely messy system — a public API with poor documentation, a legacy data source, or a multi-step OAuth flow. Document the investigation process (6.2, 6.3), not just the final working code.",
+  project2: "A written system design response to one of this track's own scenarios (8.2-8.4), or a genuine design decision from a personal project — showing constraints, options considered, and the tradeoff reasoning (8.1), not just the chosen architecture.",
+  project3: "A written response to the 12.1 capstone scenario (or a similar one you construct), showing discovery questions asked, scope decisions made, and design tradeoffs stated plainly for two different audiences (9.1, 9.2, 8.1).",
+};
+function renderPf(key) { document.getElementById('pf-detail').textContent = PF_INFO[key]; }
+document.querySelectorAll('.pf-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.pf-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderPf(tab.dataset.p);
+  });
+});
+renderPf('project1');
+
+const PF_ITEMS = [
+  "Practiced a coding/debugging round under time pressure",
+  "Practiced a system design round with genuine constraints, not a generic 'design X' prompt",
+  "Practiced a discovery/case-study role-play (turning an ambiguous ask into a scoped plan)",
+  "Prepared specific, real examples for behavioral questions about ambiguity and difficult stakeholders",
+  "Portfolio includes at least one project demonstrating messy real-world integration work",
+  "Portfolio includes at least one written design tradeoff, stated plainly",
+  "Comfortable explaining any portfolio project to both a technical and a non-technical interviewer",
+];
+document.getElementById('pf-items').innerHTML = PF_ITEMS.map((it,i) => `
+  <div class="pf-item" data-i="${i}">
+    <div class="pf-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.pf-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updatePfProgress(); });
+});
+function updatePfProgress() {
+  const checked = document.querySelectorAll('.pf-item.checked').length;
+  document.getElementById('pf-progress').textContent = `${checked} / ${PF_ITEMS.length} interview-readiness items checked off`;
+}
+updatePfProgress();
+
+document.getElementById('fig-interview-formats').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: three FDE interview formats - technical depth, system design under constraints, and discovery case study role-play">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="30" width="190" height="60" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/><text x="115" y="55" text-anchor="middle" fill="#a9c1ff">Technical depth</text><text x="115" y="75" text-anchor="middle" fill="#7891c9" font-size="8">coding, debugging</text>
+  <rect x="245" y="30" width="190" height="60" rx="8" fill="#182238" stroke="#f2b84b" stroke-width="1.5"/><text x="340" y="55" text-anchor="middle" fill="#f2b84b">System design</text><text x="340" y="75" text-anchor="middle" fill="#c9a05f" font-size="8">real constraints, tradeoffs</text>
+  <rect x="470" y="30" width="190" height="60" rx="8" fill="#1a2029" stroke="#a78bfa" stroke-width="1.5"/><text x="565" y="55" text-anchor="middle" fill="#c4b5fd">Discovery case study</text><text x="565" y="75" text-anchor="middle" fill="#9d8ac2" font-size="8">ambiguity, communication</text>
+</svg>
+`;
+</script>
+</body>
+</html>

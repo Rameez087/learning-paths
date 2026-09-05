@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.4 Workshops, demos &amp; tradeoffs | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.wd-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.wd-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.wd-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.wd-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Customer &amp; consulting skills</div>
+  <h1>9.4 Workshops, demos &amp; tradeoffs</h1>
+  <p class="subtitle">The demo will break in front of the room eventually. The question isn't whether — it's whether you've prepared for that moment.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A technical workshop and a demo serve different purposes and need different preparation. A
+    workshop is collaborative — the goal is surfacing information and building shared
+    understanding (directly extending 9.1's discovery skills into a group setting). A demo is
+    performative — the goal is building confidence in a specific outcome, which means anticipating
+    failure modes matters as much as showcasing what works.
+  </div>
+
+  <h2>Try it: explore how to run each format well</h2>
+  <div class="wd-box">
+    <div class="wd-tabs">
+      <div class="wd-tab active" data-f="workshop">Running a workshop</div>
+      <div class="wd-tab" data-f="demo">Running a demo</div>
+      <div class="wd-tab" data-f="failure">When the demo breaks live</div>
+    </div>
+    <div id="wd-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why a demo script needs a "plan B" branch, not just a happy path</h2>
+  <p>
+    A live demo depends on a network connection, an API being up, and data behaving as expected —
+    any one of which can fail at the worst possible moment. The specific discipline: have a
+    recorded backup video or screenshot sequence ready, know exactly which parts of the demo are
+    most fragile (usually anything depending on live network calls) and have a graceful verbal
+    fallback ready ("let me show you what this looks like when it's working — here's a recording
+    from this morning's test run") rather than visibly panicking or trying to debug live in front
+    of the room.
+  </p>
+
+  <div class="figure" id="fig-demo-flow"></div>
+
+  <h2>Presenting tradeoffs live, connecting back to 8.1 and 9.2</h2>
+  <p>
+    A workshop or demo is often exactly where 8.1's "state the tradeoff once, plainly" and 9.2's
+    audience-translation skills get used in real time, live, with both technical and business
+    people in the room simultaneously. The preparation that actually pays off: rehearsing how to
+    state the two or three most likely tradeoff questions plainly, in advance, rather than
+    improvising a business-friendly explanation for the first time under pressure.
+  </p>
+
+  <h2>Workshops: getting the room to actually talk, not just listen</h2>
+  <p>
+    A workshop that's really just a presentation with a different name wastes its main advantage —
+    real-time interaction. Specific techniques that actually get a room contributing: asking a
+    direct, answerable question early (not "any questions?" but "what does this process actually
+    look like on your end today?"), deliberately pausing after asking rather than filling silence
+    immediately, and explicitly inviting disagreement ("does this match what you're seeing, or is
+    something different?") rather than presenting conclusions as already settled.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the fundamental difference in purpose between a workshop and a demo?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A workshop is collaborative, aimed at surfacing information and building shared understanding; a demo is performative, aimed at building confidence in a specific outcome</button>
+        <button class="q-option" data-correct="false">Workshops and demos serve identical purposes and require identical preparation</button>
+        <button class="q-option" data-correct="false">A demo is only about entertainment, with no informational value</button>
+      </div>
+      <div class="q-explain">This distinction is why they need genuinely different preparation — a workshop's success depends on drawing out the room's input, while a demo's success depends on confidently showing a specific, prepared outcome.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should a demo's preparation include a "plan B" branch rather than just rehearsing the happy path?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Live demos depend on network connections, live APIs, and data behaving as expected, any of which can fail at the worst moment — having a graceful fallback ready avoids visible panic or live debugging in front of the room</button>
+        <button class="q-option" data-correct="false">Demos never actually fail if the happy path was rehearsed thoroughly enough</button>
+        <button class="q-option" data-correct="false">A plan B is only needed for demos involving AI systems specifically</button>
+      </div>
+      <div class="q-explain">This is a realistic acknowledgment that live technical dependencies can fail regardless of preparation quality — the professionalism is in the recovery, not in avoiding failure entirely.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does asking "what does this process look like on your end today?" work better as a workshop-opening question than "any questions?"</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's a direct, specific, answerable question that invites genuine participation, while a generic "any questions?" is easy to respond to with silence</button>
+        <button class="q-option" data-correct="false">Specific questions always take longer to answer than generic ones</button>
+        <button class="q-option" data-correct="false">The wording of an opening question has no real bearing on whether a room actually participates</button>
+      </div>
+      <div class="q-explain">This is a practical facilitation technique — a concrete, answerable prompt lowers the barrier to speaking up compared to an open-ended invitation that's easy to decline silently.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic synthesizes discovery techniques from 9.1, stakeholder communication from 9.2, and tradeoff presentation principles from Phase 8.1, applied specifically to live workshop and demo settings.</p>
+
+  <div class="pager">
+    <a href="9-3-scope-and-expectation-management.html">&larr; 9.3 Scope &amp; expectation management</a>
+    <a href="../phase-10-business-product/10-1-roi-and-business-impact.html">Phase 10: Business &amp; product thinking &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const WD_INFO = {
+  workshop: "Open with a specific, answerable question rather than 'any questions?' — get the room talking early. Pause deliberately after asking something; resist filling silence. Explicitly invite disagreement rather than presenting conclusions as already settled.",
+  demo: "Rehearse the happy path, but also identify the most fragile dependencies (usually live network calls) and prepare a graceful fallback for each. Know your two or three most likely tradeoff questions and have a plain-language answer ready for each, rather than improvising live.",
+  failure: "Stay calm and narrate honestly: 'looks like the connection dropped — let me show you a recording from this morning's successful run while I check what happened.' Don't try to silently debug live in front of the room; a confident, honest pivot reads far better than a visible scramble.",
+};
+document.querySelectorAll('.wd-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.wd-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('wd-detail').textContent = WD_INFO[tab.dataset.f];
+  });
+});
+document.getElementById('wd-detail').textContent = WD_INFO['workshop'];
+
+document.getElementById('fig-demo-flow').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: demo flow with a happy path and a parallel prepared fallback path for when a live dependency fails">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="20" width="160" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="100" y="42" text-anchor="middle" fill="#3ecf8e">Live demo (happy path)</text>
+  <rect x="20" y="70" width="160" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="100" y="92" text-anchor="middle" fill="#f2b84b">Prepared fallback (recording)</text>
+  <line x1="180" y1="37" x2="240" y2="60" stroke="#6b7386" stroke-width="1"/>
+  <line x1="180" y1="87" x2="240" y2="60" stroke="#6b7386" stroke-width="1"/>
+  <rect x="240" y="42" width="180" height="35" rx="6" fill="#182238" stroke="#a78bfa"/><text x="330" y="64" text-anchor="middle" fill="#c4b5fd">Confident outcome either way</text>
+</svg>
+`;
+</script>
+</body>
+</html>

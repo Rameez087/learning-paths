@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.4 Infrastructure as code &amp; CI/CD | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ic-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ic-btn { padding: 8px 16px; background: rgba(167,139,250,0.15); border: 1px solid #a78bfa; color: #c4b5fd; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; font-family: var(--font-sans); margin-top: 10px; }
+.ic-line { font-family: var(--font-mono); font-size: 12px; padding: 4px 0; opacity: 0; transform: translateY(4px); transition: all 0.2s; }
+.ic-line.shown { opacity: 1; transform: translateY(0); }
+.ic-line.add { color: #3ecf8e; }
+.ic-line.remove { color: #ff8b8f; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Cloud &amp; infrastructure</div>
+  <h1>4.4 Infrastructure as code &amp; CI/CD</h1>
+  <p class="subtitle">Clicking through a console to create a server is fine for learning. It doesn't scale, it isn't repeatable, and it leaves no record of what changed or why.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Terraform (and similar tools) let you define infrastructure in version-controlled files —
+    reviewable like code, roll-back-able, and reproducible from scratch in minutes. This single
+    skill is specifically named as one of the fastest ways to move from "cloud user" to "cloud
+    engineer" in an interviewer's eyes, and it matters even more for an FDE: a customer's security
+    and compliance team can review a Terraform plan before it runs, which is a much easier
+    conversation than trusting that manual console changes were done correctly.
+  </div>
+
+  <h2>Try it: run a Terraform plan, see exactly what would change</h2>
+  <div class="ic-box">
+    <button class="ic-btn" id="ic-run">terraform plan</button>
+    <div id="ic-output" style="margin-top:14px; font-family:var(--font-mono);"></div>
+  </div>
+
+  <h2>Why "plan" before "apply" is the whole safety model</h2>
+  <p>
+    <code>terraform plan</code> computes and displays exactly what would change — resources
+    created, modified, or destroyed — without actually touching anything yet.
+    <code>terraform apply</code> executes that plan. This separation matters enormously in a
+    customer environment: you (and often the customer's own infrastructure team) can review the
+    exact diff before anything real happens, catching a mistake that would otherwise only be
+    discovered after a resource was already deleted.
+  </p>
+
+  <div class="figure" id="fig-cicd"></div>
+
+  <h2>State: the part of IaC that trips up newcomers</h2>
+  <p>
+    Terraform tracks a "state" file recording what it believes currently exists, so it can compute
+    an accurate diff on the next plan. In a customer environment specifically, this state should
+    live in shared, remote storage (not a local file on your laptop) so the whole team — and
+    whoever picks up the engagement after you — is working from the same source of truth about
+    what infrastructure actually exists.
+  </p>
+
+  <h2>CI/CD: the pipeline that turns "it works" into "it's actually deployed, tested, and safe"</h2>
+  <p>
+    A CI/CD pipeline (GitHub Actions, GitLab CI, Azure DevOps) automates build → test → deploy —
+    running your test suite on every change, and only deploying if those tests pass. For FDE work
+    specifically, this replaces "I tested it manually before I left the customer site" with an
+    automated, repeatable gate that keeps protecting the deployment long after you've moved to the
+    next engagement — directly serving Phase 1.3's "Handoff" stage, since a working CI/CD pipeline
+    is part of what makes a system genuinely sustainable without you actively watching it.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does the separation between "terraform plan" and "terraform apply" matter specifically in a customer environment?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets you (and the customer's team) review the exact diff of what would change before anything actually happens, catching mistakes before they become real, potentially destructive actions</button>
+        <button class="q-option" data-correct="false">Plan and apply always produce identical results, so the distinction is purely cosmetic</button>
+        <button class="q-option" data-correct="false">Terraform apply runs automatically without ever needing a plan step first</button>
+      </div>
+      <div class="q-explain">This preview-before-action pattern is exactly the safety model that makes infrastructure changes reviewable — critical when a customer's own team needs confidence in what a change will actually do before it happens.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should Terraform's state file live in shared remote storage rather than a local file on your own laptop during a customer engagement?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">So the whole team — including whoever picks up the engagement after you leave — is working from the same accurate record of what infrastructure actually exists</button>
+        <button class="q-option" data-correct="false">Local state files are always more secure than remote storage</button>
+        <button class="q-option" data-correct="false">Terraform cannot technically function with a local state file under any circumstances</button>
+      </div>
+      <div class="q-explain">This connects directly to Phase 1.3's Handoff stage — a state file trapped on your personal laptop breaks the moment you're no longer the only person managing the infrastructure.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does a CI/CD pipeline support the "Handoff" stage of an FDE engagement specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It replaces manual, one-time testing with an automated, repeatable gate that keeps protecting the deployment even after the FDE has moved on to another engagement</button>
+        <button class="q-option" data-correct="false">CI/CD pipelines are unrelated to how sustainable a deployed system is after handoff</button>
+        <button class="q-option" data-correct="false">CI/CD replaces the need for any human ownership of the system going forward</button>
+      </div>
+      <div class="q-explain">This is a direct link back to Phase 1.3 — a sustainable operating model (part of what "Handoff" actually means) includes automated safeguards that don't depend on the FDE's continued personal attention.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Scaler "Cloud Computing Skills in Demand: AWS, Azure &amp; GCP" (August 2026); Scaler "Cloud Computing Syllabus 2026" (July 2026), citing Terraform + GitHub Actions CI/CD project work.</p>
+
+  <div class="pager">
+    <a href="4-3-containers-and-orchestration.html">&larr; 4.3 Containers &amp; orchestration</a>
+    <a href="../phase-05-devops-sre/5-1-deployment-strategies.html">Phase 5: DevOps, SRE &amp; observability &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('ic-run').addEventListener('click', () => {
+  const lines = [
+    { text: "Refreshing state... [id=vpc-08f2a]", cls: "" },
+    { text: "  # aws_instance.api_server will be created", cls: "add" },
+    { text: "  + resource \"aws_instance\" \"api_server\" {", cls: "add" },
+    { text: "  +   instance_type = \"t3.medium\"", cls: "add" },
+    { text: "  +   subnet_id     = \"subnet-0a1b2c\"", cls: "add" },
+    { text: "  }", cls: "add" },
+    { text: "  # aws_security_group_rule.legacy_open will be destroyed", cls: "remove" },
+    { text: "  -   cidr_blocks = [\"0.0.0.0/0\"]", cls: "remove" },
+    { text: "", cls: "" },
+    { text: "Plan: 1 to add, 0 to change, 1 to destroy.", cls: "" },
+  ];
+  const container = document.getElementById('ic-output');
+  container.innerHTML = '';
+  lines.forEach((l, i) => {
+    const el = document.createElement('div');
+    el.className = 'ic-line ' + l.cls;
+    el.textContent = l.text;
+    container.appendChild(el);
+    setTimeout(() => el.classList.add('shown'), i * 120);
+  });
+});
+
+document.getElementById('fig-cicd').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: CI/CD pipeline flowing from code push through build, test, and deploy stages">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="40" width="130" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="85" y="64" text-anchor="middle">Code push</text>
+  <line x1="150" y1="60" x2="190" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a50)"/>
+  <rect x="190" y="40" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="245" y="64" text-anchor="middle">Build</text>
+  <line x1="300" y1="60" x2="340" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a50)"/>
+  <rect x="340" y="40" width="110" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="395" y="64" text-anchor="middle" fill="#a9c1ff">Test</text>
+  <line x1="450" y1="60" x2="490" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a50)"/>
+  <rect x="490" y="40" width="130" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="555" y="64" text-anchor="middle" fill="#3ecf8e">Deploy (if tests pass)</text>
+  <defs><marker id="a50" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

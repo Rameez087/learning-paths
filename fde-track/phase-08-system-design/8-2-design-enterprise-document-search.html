@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.2 Design: enterprise document search | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.eq-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.eq-scenario { padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-bottom: 16px; border-left: 3px solid #a78bfa; }
+.eq-toggle { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.eq-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.eq-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · System design for FDE scenarios</div>
+  <h1>8.2 Design: enterprise document search</h1>
+  <p class="subtitle">The customer's 40,000 internal documents live across SharePoint, a legacy DMS, and a shared drive nobody's cleaned up since 2019.</p>
+
+  <div class="eq-scenario">
+    <strong>The scenario:</strong> A professional services firm wants employees to search across
+    all internal documents (contracts, past project reports, internal policy documents) using
+    natural language, with answers grounded in the actual source documents — not hallucinated. The
+    documents are scattered across three different systems with different access permissions per
+    document. Some documents are highly confidential and restricted to specific teams.
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This is fundamentally a RAG system — the AI Engineering track's Phase 6 covers RAG
+    architecture in full technical depth. What's specifically FDE work here: the ingestion
+    pipeline has to pull from three different source systems with different APIs and permission
+    models (Phase 6.3's legacy investigation skills), and critically, <strong>permissions must be
+    enforced at retrieval time, not just at the UI layer</strong> — a document a user isn't
+    authorized to see must never enter their retrieved context, connecting directly to 7.2's
+    tenant isolation principle applied to per-user permissions instead of per-tenant.
+  </div>
+
+  <h2>Try it: pick where permission enforcement actually happens</h2>
+  <div class="eq-box">
+    <div class="eq-toggle">
+      <div class="eq-toggle-btn active" data-o="uilayer">Filter at the UI layer only</div>
+      <div class="eq-toggle-btn" data-o="retrieval">Filter at the retrieval layer</div>
+    </div>
+    <div id="eq-result" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why permission-aware retrieval is the design's hardest real constraint</h2>
+  <p>
+    The naive design retrieves the most relevant chunks first, then checks if the user can see
+    each one, hiding unauthorized results from the response. This has the same flaw as 7.2's
+    tenant isolation anti-pattern: the restricted content was already pulled into the retrieval
+    pipeline and potentially into the context sent to the model, even if it's hidden from the
+    final displayed answer. The correct design filters the vector search itself by the requesting
+    user's actual permissions, so unauthorized documents are never retrieved into context at all.
+  </p>
+
+  <div class="figure" id="fig-permission-aware-rag"></div>
+
+  <h2>The ingestion pipeline: where 6.3's investigation skills apply directly</h2>
+  <p>
+    Three source systems means three different ingestion connectors, each needing to correctly
+    capture that document's specific permission metadata alongside its content — not just the
+    text. This is exactly 6.3's legacy investigation work: understanding each system's actual
+    permission model (is it role-based? per-document ACLs? group membership?) well enough to
+    translate it correctly into your search index's permission filter, rather than guessing or
+    oversimplifying.
+  </p>
+
+  <h2>What "grounded, not hallucinated" requires architecturally</h2>
+  <p>
+    Beyond a good RAG pipeline (AI Engineering track), the deliverable this customer actually
+    cares about is trust: every answer needs a visible citation back to the specific source
+    document and section it came from, letting a skeptical user verify the answer themselves
+    rather than trusting the system blindly. This is a direct product requirement flowing from
+    7.3's "evaluation as a deliverable" mindset — the system needs to be verifiably trustworthy,
+    not just accurate in aggregate.
+  </p>
+
+  <h2>Stale content: the operational problem after launch</h2>
+  <p>
+    A contract that gets superseded, a policy document that gets updated — if the search index
+    doesn't reflect these changes, employees can be confidently shown outdated information. The
+    design needs an ongoing re-indexing strategy synced to each source system's actual update
+    events (Phase 6.5's webhook/event integration pattern), not just a one-time ingestion at
+    launch.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is filtering permissions only at the UI/display layer an insufficient design for this system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Restricted content would already be retrieved into the pipeline and potentially into the model's context before being hidden, mirroring the same flaw as 7.2's tenant isolation anti-pattern</button>
+        <button class="q-option" data-correct="false">UI-layer filtering is always technically impossible to implement</button>
+        <button class="q-option" data-correct="false">UI-layer filtering and retrieval-layer filtering provide identical security guarantees</button>
+      </div>
+      <div class="q-explain">The timing of the filter matters just as much here as it did in 7.2 — hiding something after it's already been fetched into context is a fundamentally weaker guarantee than never fetching it at all.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does ingesting from three different source systems require applying Phase 6.3's legacy investigation skills specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each system likely has a different permission model that needs to be genuinely understood and correctly translated into the search index's permission filter, not guessed or oversimplified</button>
+        <button class="q-option" data-correct="false">Legacy investigation skills are irrelevant to any system with modern APIs</button>
+        <button class="q-option" data-correct="false">All document management systems use identical permission models by default</button>
+      </div>
+      <div class="q-explain">This is a direct application of the schema/system archaeology discipline — getting permission metadata wrong here doesn't just cause a bug, it causes an actual data access violation.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does this system specifically need visible citations back to source documents, beyond just being accurate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The deliverable users actually need is trust — letting them verify an answer themselves against the cited source, connecting to 7.3's emphasis on evaluation and trust as first-class deliverables</button>
+        <button class="q-option" data-correct="false">Citations are only a legal requirement with no bearing on user trust</button>
+        <button class="q-option" data-correct="false">An accurate system never needs to show its sources under any circumstances</button>
+      </div>
+      <div class="q-explain">Aggregate accuracy isn't the same as verifiable trust for any individual answer — citations let a skeptical user check the specific claim in front of them, which is a distinct and important product requirement.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This worked design applies RAG architecture from the AI Engineering track's Phase 6, permission/tenant-isolation principles from 7.2, and legacy system investigation from 6.3.</p>
+
+  <div class="pager">
+    <a href="8-1-the-fde-system-design-method.html">&larr; 8.1 The FDE system design method</a>
+    <a href="8-3-design-a-customer-support-agent.html">8.3 Design: a customer support agent &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const EQ_RESULTS = {
+  uilayer: "→ Risky. The restricted document's content was still retrieved and potentially sent to the model as context before being hidden from display — an attacker or a bug in the UI layer could expose it. This repeats 7.2's shared-vector-database anti-pattern.",
+  retrieval: "→ Correct. The vector search itself is filtered by the requesting user's permissions before anything is retrieved — an unauthorized document is never fetched into context in the first place, closing the gap entirely rather than hiding it after the fact.",
+};
+document.querySelectorAll('.eq-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.eq-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('eq-result').textContent = EQ_RESULTS[btn.dataset.o];
+  });
+});
+document.getElementById('eq-result').textContent = EQ_RESULTS['uilayer'];
+
+document.getElementById('fig-permission-aware-rag').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: permission-aware retrieval filters the vector search itself by user permissions before results reach the model, versus filtering displayed results after the fact">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="42" text-anchor="middle">User query</text>
+  <line x1="160" y1="37" x2="220" y2="37" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a61)"/>
+  <rect x="220" y="20" width="200" height="35" rx="6" fill="#182238" stroke="#3ecf8e"/><text x="320" y="42" text-anchor="middle" fill="#3ecf8e">Vector search, filtered by user perms</text>
+  <line x1="420" y1="37" x2="470" y2="37" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a61)"/>
+  <rect x="470" y="20" width="180" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="560" y="42" text-anchor="middle" fill="#3ecf8e">Model sees only authorized docs</text>
+
+  <text x="320" y="90" text-anchor="middle" fill="#e5484d" font-size="9">vs. the risky pattern:</text>
+  <rect x="220" y="100" width="200" height="30" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="320" y="119" text-anchor="middle" fill="#ff8b8f" font-size="8">Retrieve everything → filter display</text>
+  <defs><marker id="a61" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

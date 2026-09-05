@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 Authentication &amp; authorization | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.au-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.au-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.au-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.au-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · Software engineering foundations</div>
+  <h1>2.3 Authentication &amp; authorization</h1>
+  <p class="subtitle">"OAuth is for delegated access, OIDC is for logging users in, and SAML is for logging users in via XML federation." One sentence, and most of the confusion disappears.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Authentication</strong> answers "who are you?" — <strong>authorization</strong>
+    answers "what can you do?" They're separate concerns solved by separate protocols. OAuth 2.0
+    is <em>not</em> an authentication protocol — it's for delegated access. OIDC and SAML both
+    handle authentication; OIDC builds on OAuth for modern, mobile-native apps, while SAML is an
+    older XML-based standard many large enterprises still require. Production enterprise SSO is a
+    three-legged stool: SAML or OIDC for login, <strong>SCIM</strong> for user lifecycle
+    management, and MFA/audit logging for compliance. Most 2026 enterprise procurement checklists
+    require all three — shipping SSO without SCIM still fails security reviews.
+  </div>
+
+  <h2>Try it: which protocol does the customer's IdP actually need?</h2>
+  <div class="au-box">
+    <div class="au-toggle">
+      <div class="au-toggle-btn active" data-c="modern">Modern app, mobile client or CLI involved</div>
+      <div class="au-toggle-btn" data-c="legacy">Legacy enterprise IdP, browser-only</div>
+    </div>
+    <div id="au-result" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why OIDC is called "mobile-native" and SAML isn't</h2>
+  <p>
+    OIDC and OAuth 2.0 assume REST + JSON over HTTPS, with Authorization Code + PKCE as the
+    recommended flow for every client type — web apps, single-page apps, mobile, desktop, CLIs.
+    For machine-to-machine calls, OAuth's Client Credentials grant has no SAML equivalent at all.
+    The practical consequence for an FDE: if the customer's product has a mobile app, a CLI, or
+    any non-browser client, SAML alone genuinely can't cover it — you'll need OIDC there
+    regardless of what the customer's identity provider prefers for their browser-based tools.
+  </p>
+
+  <div class="figure" id="fig-auth-stool"></div>
+
+  <h2>Why SAML still shows up constantly despite the friction</h2>
+  <p>
+    There's a real, non-nostalgic reason regulated enterprises still demand SAML in 2026:
+    procurement and compliance, not technical preference. Many large customers' identity
+    infrastructure was built around SAML years ago, and migrating it is a genuine undertaking a
+    single vendor integration can't force. This is exactly the kind of "customer's environment is
+    not clean" reality Phase 6 covers directly — the FDE has to support what the customer actually
+    runs, not what's cleanest to implement.
+  </p>
+
+  <h2>SCIM: the lifecycle piece that's easy to forget</h2>
+  <p>
+    SSO alone answers "can this person log in." SCIM (System for Cross-domain Identity
+    Management) is a separate REST API the customer's identity provider calls to create, update,
+    and — critically — deactivate users in your application automatically, in near real time. A
+    common, costly gap: an employee leaves the customer's company, IT deactivates them centrally,
+    but without SCIM they can still log into your specific application because nothing told it to
+    revoke access. This offboarding gap is exactly what most 2026 enterprise security reviews now
+    specifically check for.
+  </p>
+
+  <h2>RBAC vs. ABAC: two different authorization models</h2>
+  <p>
+    Once someone's authenticated, authorization decides what they can actually do. RBAC
+    (Role-Based Access Control) assigns permissions to roles — "Admin," "Editor," "Viewer" — and
+    users inherit permissions from their assigned role, simple and sufficient for most
+    applications. ABAC (Attribute-Based Access Control) evaluates permissions dynamically against
+    attributes — department, data sensitivity, time of day, request context — needed for more
+    complex permission models than a fixed set of roles can express. Both must be validated
+    server-side; a client claiming "I'm an admin" is never sufficient on its own.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is OAuth 2.0 not itself an authentication protocol, despite being central to modern login flows?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">OAuth is designed for delegated access (authorization) — OIDC is built on top of it specifically to add the "who is this user" authentication layer</button>
+        <button class="q-option" data-correct="false">OAuth and OIDC are simply two different names for the exact same protocol</button>
+        <button class="q-option" data-correct="false">OAuth predates the concept of user login entirely</button>
+      </div>
+      <div class="q-explain">This distinction matters practically — OAuth alone tells you a client has permission to access something on a user's behalf, but doesn't itself establish who that user is; OIDC adds that identity layer.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can SAML alone be insufficient for a product with a mobile app or CLI client?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">SAML doesn't have an equivalent to OAuth's Client Credentials grant for machine-to-machine calls, and OIDC's REST+JSON design is built for non-browser clients in a way SAML's XML federation isn't</button>
+        <button class="q-option" data-correct="false">SAML cannot technically be used by any application built after 2020</button>
+        <button class="q-option" data-correct="false">Mobile apps are incapable of making HTTPS requests</button>
+      </div>
+      <div class="q-explain">This is a genuine architectural gap, not a preference — SAML's browser-redirect-based flow doesn't map cleanly onto mobile, CLI, or service-to-service authentication the way OIDC's modern flows do.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What specific problem does SCIM solve that SSO alone does not?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Automatic, near-real-time user lifecycle management — specifically deactivating access when someone leaves the customer's organization, which SSO alone doesn't handle</button>
+        <button class="q-option" data-correct="false">SCIM and SSO solve identical problems and are interchangeable</button>
+        <button class="q-option" data-correct="false">SCIM replaces the need for any login mechanism entirely</button>
+      </div>
+      <div class="q-explain">This offboarding gap — someone leaves the company but retains access to a specific application because nothing told it to revoke access — is exactly the security review failure SCIM is built to prevent.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Clerk "OIDC vs SAML for Enterprise SSO: A 2026 Decision Guide" (June 2026); SSOJet "SAML vs OIDC vs OAuth 2.0: 12 Differences Every B2B Engineering Team Should Know" (April 2026); Security Boulevard, same title (April 2026); Authgear "OIDC vs SAML: When to Use Each for Modern SSO" (May 2026); guptadeepak.com "Enterprise SSO: SAML, OAuth/OIDC, and SCIM Explained" (May 2026).</p>
+
+  <div class="pager">
+    <a href="2-2-api-design-integration-patterns.html">&larr; 2.2 API design &amp; integration patterns</a>
+    <a href="2-4-debugging-under-pressure.html">2.4 Debugging under pressure &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const AU_RESULTS = {
+  modern: "→ OIDC. Its REST+JSON design and Authorization Code + PKCE flow work natively across web, mobile, desktop, and CLI clients — SAML's browser-redirect XML flow doesn't cover this cleanly.",
+  legacy: "→ Likely SAML, if that's genuinely what their existing identity infrastructure runs. Many large enterprises standardized on SAML years ago — supporting it isn't nostalgia, it's meeting the customer where their real infrastructure already is. Support both when you can afford to.",
+};
+document.querySelectorAll('.au-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.au-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('au-result').textContent = AU_RESULTS[btn.dataset.c];
+  });
+});
+document.getElementById('au-result').textContent = AU_RESULTS['modern'];
+
+document.getElementById('fig-auth-stool').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: three-legged stool of enterprise SSO - SAML/OIDC for login, SCIM for lifecycle, MFA and audit logging for compliance">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:11px; font-weight:600; } </style>
+  <rect x="250" y="10" width="180" height="40" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+  <text x="340" y="35" text-anchor="middle" fill="#a9c1ff">Enterprise SSO (complete)</text>
+  <line x1="300" y1="50" x2="150" y2="90" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="340" y1="50" x2="340" y2="90" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="380" y1="50" x2="530" y2="90" stroke="#6b7386" stroke-width="1.5"/>
+  <rect x="60" y="90" width="180" height="50" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="150" y="112" text-anchor="middle" fill="#f2b84b">SAML/OIDC</text><text x="150" y="128" text-anchor="middle" fill="#c9a05f" font-size="9">login-time auth</text>
+  <rect x="250" y="90" width="180" height="50" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="112" text-anchor="middle" fill="#3ecf8e">SCIM</text><text x="340" y="128" text-anchor="middle" fill="#5fb98a" font-size="9">user lifecycle</text>
+  <rect x="440" y="90" width="180" height="50" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="530" y="112" text-anchor="middle" fill="#ff8b8f">MFA + audit log</text><text x="530" y="128" text-anchor="middle" fill="#d98f92" font-size="9">compliance</text>
+</svg>
+`;
+</script>
+</body>
+</html>

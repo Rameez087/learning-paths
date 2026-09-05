@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.2 API design &amp; integration patterns | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ap-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ap-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ap-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ap-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.ap-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; }
+.ap-metric { background: var(--surface-2); border-radius: 8px; padding: 12px; text-align: center; }
+.ap-metric .n { font-size: 13px; font-weight: 700; }
+.ap-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · Software engineering foundations</div>
+  <h1>2.2 API design &amp; integration patterns</h1>
+  <p class="subtitle">REST is 89% of enterprise API usage — but the customer's ancient SOAP finance system doesn't care what's popular.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Most production systems mix protocols, and the FDE's job is picking the right one per
+    integration point, not having a single favorite. REST remains the foundation for public and
+    web-facing APIs. GraphQL fits complex, client-driven queries. gRPC dominates high-performance
+    internal microservices. Webhooks handle event-driven notifications without polling. SOAP is
+    "still relevant in enterprise and financial sectors" — which for an FDE means: expect to
+    integrate with it, whether or not you'd choose it yourself.
+  </div>
+
+  <h2>Try it: which protocol fits which integration point?</h2>
+  <div class="ap-box">
+    <div class="ap-tabs">
+      <div class="ap-tab active" data-p="rest">REST</div>
+      <div class="ap-tab" data-p="graphql">GraphQL</div>
+      <div class="ap-tab" data-p="grpc">gRPC</div>
+      <div class="ap-tab" data-p="webhook">Webhooks</div>
+      <div class="ap-tab" data-p="soap">SOAP (legacy)</div>
+    </div>
+    <div class="ap-metrics" id="ap-metrics"></div>
+  </div>
+
+  <h2>The decision that actually matters: who gets to call the API?</h2>
+  <p>
+    Before picking a protocol, decide the access level — public, partner, or internal — since each
+    carries distinct tradeoffs around documentation, security, and versioning. A public developer
+    API and an internal microservice call have almost nothing in common in terms of what "good API
+    design" means for each. This ordering (access level first, protocol second) is specifically
+    flagged as the right starting point, not the reverse.
+  </p>
+
+  <div class="figure" id="fig-protocols"></div>
+
+  <h2>2026's mandatory security baseline, regardless of protocol</h2>
+  <ul>
+    <li><strong>Authentication</strong> — OAuth 2.0 + JWT for user-facing APIs, API keys for service-to-service, mTLS for high-security microservices. Never basic auth in production.</li>
+    <li><strong>Authorization</strong> — RBAC for most applications, ABAC for complex permission models, and always validated server-side — never trust the client's claim about its own permissions.</li>
+    <li><strong>Rate limiting</strong> — per-user and per-IP limits with progressive throttling, returning 429 with a Retry-After header rather than silently dropping requests.</li>
+    <li><strong>Monitoring</strong> — logging every request with timestamp, user, endpoint, and response time, alerting on elevated 5xx rates, and tracking p50/p95/p99 latency per endpoint.</li>
+  </ul>
+
+  <h2>Webhooks: the pattern that quietly powers most integrations</h2>
+  <p>
+    Rather than polling a system repeatedly asking "did anything change yet," a webhook lets the
+    source system push a notification the moment something happens. This is efficient and
+    low-latency, but introduces a real FDE-relevant risk: your endpoint needs to handle receiving
+    the same webhook more than once (network retries are common) — which is exactly why the
+    idempotency concepts covered in the Data Science track's pipeline reliability material apply
+    here too, just at the API layer instead of the data layer.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What should be decided before choosing which API protocol to use for an integration?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The access level — public, partner, or internal — since this shapes the tradeoffs around documentation, security, and versioning that protocol choice should serve</button>
+        <button class="q-option" data-correct="false">Which protocol is most popular industry-wide, regardless of the specific integration's needs</button>
+        <button class="q-option" data-correct="false">The programming language the client application is written in</button>
+      </div>
+      <div class="q-explain">Access level fundamentally changes what "correct" design looks like — a public API and an internal microservice call have almost nothing in common in their actual requirements.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why must a webhook receiver be built to handle receiving the same event more than once?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Network retries are common in webhook delivery, so a receiver that isn't idempotent can process the same event twice and cause duplicate side effects</button>
+        <button class="q-option" data-correct="false">Webhooks are always delivered exactly once with no possibility of duplication</button>
+        <button class="q-option" data-correct="false">Duplicate webhook delivery only happens due to receiver-side bugs, never sender-side retries</button>
+      </div>
+      <div class="q-explain">This is the same idempotency principle from data pipeline reliability, applied at the API integration layer — a webhook consumer needs to be safe against re-delivery, not just correct on the happy path.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does 2026 guidance specifically say "never basic auth in production," even though it's simple to implement?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It sends credentials with weaker protection than token-based approaches and lacks the expiration, scoping, and revocation properties production systems need</button>
+        <button class="q-option" data-correct="false">Basic auth is technically incompatible with the HTTP protocol</button>
+        <button class="q-option" data-correct="false">Basic auth is only a concern for GraphQL APIs, not REST or gRPC</button>
+      </div>
+      <div class="q-explain">Modern auth guidance favors tokens (JWT, OAuth) specifically because they support expiration, scoping, and revocation in ways that a static username/password pair sent on every request does not.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Fern "API design best practices guide" (March 2026) and "Different types of APIs guide" (April 2026); Optimum Web "API Development Services 2026: REST vs GraphQL vs gRPC"; Decipherzone "Types of APIs Explained" (April 2026); Medium (Sizan Mahmud) "The Complete Guide to API Types in 2026" (January 2026).</p>
+
+  <div class="pager">
+    <a href="2-1-git-cli-linux-for-field-work.html">&larr; 2.1 Git, CLI &amp; Linux for field work</a>
+    <a href="2-3-authentication-and-authorization.html">2.3 Authentication &amp; authorization &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const AP_DATA = {
+  rest: { format: "JSON/XML", realtime: "No", caching: "Easy (HTTP-native)", bestFor: "Public/partner APIs, CRUD" },
+  graphql: { format: "JSON", realtime: "Yes (subscriptions)", caching: "Complex", bestFor: "Flexible frontend data needs" },
+  grpc: { format: "Protobuf (binary)", realtime: "Yes (streaming)", caching: "Complex", bestFor: "High-performance internal microservices" },
+  webhook: { format: "JSON", realtime: "Yes (push)", caching: "N/A", bestFor: "Event-driven notifications, no polling" },
+  soap: { format: "XML", realtime: "No", caching: "Limited", bestFor: "Legacy enterprise/financial systems you must integrate with" },
+};
+function renderAp(key) {
+  const d = AP_DATA[key];
+  document.getElementById('ap-metrics').innerHTML = `
+    <div class="ap-metric"><div class="n">${d.format}</div><div class="l">Format</div></div>
+    <div class="ap-metric"><div class="n">${d.realtime}</div><div class="l">Real-time</div></div>
+    <div class="ap-metric"><div class="n">${d.caching}</div><div class="l">Caching</div></div>
+    <div class="ap-metric"><div class="n">${d.bestFor}</div><div class="l">Best for</div></div>
+  `;
+}
+document.querySelectorAll('.ap-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ap-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderAp(tab.dataset.p);
+  });
+});
+renderAp('rest');
+
+document.getElementById('fig-protocols').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: access level decision (public, partner, internal) made before protocol choice">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="250" y="15" width="180" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="340" y="37" text-anchor="middle" fill="#a9c1ff">Who gets to call this API?</text>
+  <line x1="300" y1="50" x2="150" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="50" x2="340" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="380" y1="50" x2="530" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <rect x="70" y="85" width="160" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="150" y="107" text-anchor="middle">Public → REST</text>
+  <rect x="260" y="85" width="160" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="340" y="107" text-anchor="middle">Partner → REST/GraphQL</text>
+  <rect x="450" y="85" width="160" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="530" y="107" text-anchor="middle">Internal → gRPC</text>
+</svg>
+`;
+</script>
+</body>
+</html>

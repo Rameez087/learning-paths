@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.2 AI security for customer deployments | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sc-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.sc-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.sc-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.sc-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; }
+.sc-metric { background: var(--surface-2); border-radius: 8px; padding: 12px; text-align: center; }
+.sc-metric .n { font-size: 15px; font-weight: 700; }
+.sc-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · AI/LLM deployment for FDEs</div>
+  <h1>7.2 AI security for customer deployments</h1>
+  <p class="subtitle">"In 2026, the attack doesn't happen at the model. It happens at the tool call." Most security teams are still only inspecting the wrong layer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Only 14.4% of organizations send AI agents to production with full security or IT approval,
+    while 82% of executives believe their existing policies already protect against unauthorized
+    agent actions — a real, documented confidence gap. <strong>Prompt injection</strong> remains
+    the #1 OWASP LLM risk, affecting roughly 34% of deployed agents; <strong>excessive
+    agency</strong> jumped from 6th to 3rd place in the 2026 rankings specifically as agentic
+    systems gained real tool access. For an FDE, this isn't abstract security theory — it's the
+    specific set of risks that determine whether a customer's security team approves your
+    deployment at all.
+  </div>
+
+  <h2>Try it: explore the top enterprise-relevant AI risks</h2>
+  <div class="sc-box">
+    <div class="sc-tabs">
+      <div class="sc-tab active" data-r="injection">Prompt injection</div>
+      <div class="sc-tab" data-r="agency">Excessive agency</div>
+      <div class="sc-tab" data-r="tenant">Tenant isolation</div>
+      <div class="sc-tab" data-r="poisoning">RAG data poisoning</div>
+    </div>
+    <div id="sc-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why prompt injection resists a clean technical fix</h2>
+  <p>
+    The architectural reason prompt injection remains #1: instructions and data share one channel
+    — the context window — and no equivalent of a parameterized query exists to separate them, so
+    every mitigation lowers probability without ever reaching zero. This is a genuinely honest,
+    important thing to tell a customer directly: defense-in-depth reduces risk meaningfully, but
+    no vendor can credibly promise the risk is eliminated. Overpromising here is exactly the kind
+    of claim that damages trust once it's inevitably tested.
+  </p>
+
+  <div class="figure" id="fig-attack-surface"></div>
+
+  <h2>The real numbers behind why this matters for deployment approval</h2>
+  <div class="sc-metrics" style="margin-bottom:20px;">
+    <div class="sc-metric"><div class="n">$4.7M</div><div class="l">Avg. AI agent breach cost</div></div>
+    <div class="sc-metric"><div class="n">34%</div><div class="l">Deployed agents affected by injection</div></div>
+    <div class="sc-metric"><div class="n">14.4%</div><div class="l">Agents shipped with full security approval</div></div>
+    <div class="sc-metric"><div class="n">&lt;2hrs</div><div class="l">Time to full compromise in controlled tests</div></div>
+  </div>
+  <p>
+    These numbers are exactly why a customer's security team will scrutinize an agentic AI
+    deployment far more than a typical software integration — and why an FDE walking in with a
+    genuine, specific answer to "how do you handle prompt injection and excessive agency" earns
+    real credibility that a vague "we take security seriously" answer doesn't.
+  </p>
+
+  <h2>Six control layers, the practical checklist</h2>
+  <p>
+    Complete AI agent security requires six layers working together: <strong>identity</strong>
+    (who is this agent acting as), <strong>least-privilege access</strong> (can it only do what
+    it genuinely needs to), <strong>runtime enforcement</strong> (checks applied while it's
+    actually running, not just at design time), <strong>behavioral monitoring</strong> (does its
+    current behavior look normal), <strong>audit logging</strong> (a durable record of every
+    action, connecting directly to 7.1's audit requirement), and <strong>supply chain
+    security</strong> (are the tools and packages it depends on genuinely trustworthy).
+  </p>
+
+  <h2>Tenant isolation: the specific failure mode multi-customer deployments must prevent</h2>
+  <p>
+    A specifically risky, documented pattern: a shared vector database where tenant data is only
+    filtered at the application layer <em>after</em> retrieval — an attacker can craft a targeted
+    embedding query that pulls another tenant's data into the context window before the filter
+    ever applies. The safer pattern filters at the retrieval layer itself, or uses genuinely
+    separate indexes per tenant, so cross-tenant data is never even fetched in the first place,
+    not just hidden after the fact.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't prompt injection be fully "solved" the way a SQL injection vulnerability can be with parameterized queries?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Instructions and data share the same channel (the context window) in an LLM, and no equivalent separation mechanism exists — every mitigation reduces probability without reaching zero</button>
+        <button class="q-option" data-correct="false">Prompt injection has already been completely solved by current LLM providers</button>
+        <button class="q-option" data-correct="false">Prompt injection only affects poorly-coded applications, never well-architected ones</button>
+      </div>
+      <div class="q-explain">This is a genuinely architectural limitation, not a solvable engineering bug — being honest about this with customers is more credible than overpromising a complete fix.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is a shared vector database with tenant filtering applied only at the application layer, after retrieval, considered a risky implementation?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An attacker can craft a query that pulls another tenant's data into the context window before the after-the-fact filter is ever applied</button>
+        <button class="q-option" data-correct="false">Application-layer filtering is always more secure than filtering at retrieval time</button>
+        <button class="q-option" data-correct="false">Shared vector databases cannot technically support multiple tenants under any configuration</button>
+      </div>
+      <div class="q-explain">The timing of the filter matters enormously — filtering after data has already been fetched into context is a fundamentally weaker guarantee than preventing the cross-tenant fetch from happening at all.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why did "excessive agency" specifically jump from 6th to 3rd place in the OWASP 2026 rankings?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">As agentic systems gained real tool access and autonomy, the risk of an AI system being given more permissions than it actually needs became a more concrete, urgent threat</button>
+        <button class="q-option" data-correct="false">Excessive agency was a new risk category invented in 2026 with no prior history</button>
+        <button class="q-option" data-correct="false">The ranking change reflects a decrease in how seriously this risk is taken</button>
+      </div>
+      <div class="q-explain">This ranking shift directly tracks the real-world shift toward agentic systems with genuine tool-calling capability — the risk became more pressing as the underlying technology's capabilities grew.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: NeuralTrust "The Complete Guide to AI Agent Security for Enterprises" (July 2026), citing HiddenLayer's 2026 AI Threat Landscape Report and Gravitee.io (April 2026); ReversingLabs "OWASP Top 10 for LLM Apps 2026: Excessive agency risk on the rise"; blog.alexewerlof.com "OWASP Top 10 Agents &amp; AI Vulnerabilities (2026 Cheat Sheet)" (March 2026).</p>
+
+  <div class="pager">
+    <a href="7-1-from-api-to-enterprise-application.html">&larr; 7.1 From API to enterprise application</a>
+    <a href="7-3-evaluation-as-a-deliverable.html">7.3 Evaluation as a deliverable &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SC_INFO = {
+  injection: "The #1 OWASP LLM risk. Attacker-supplied content (direct user input, or indirect via a document/webpage the model reads) overrides intended instructions. Mitigation is defense-in-depth: isolate system prompts, treat all external content as untrusted, never fully eliminable.",
+  agency: "Giving an AI system more permissions or autonomy than it genuinely needs for its task. Jumped from 6th to 3rd place in 2026 rankings as agentic systems gained real tool-calling access. Mitigation: least-privilege access, just-in-time ephemeral tokens, human-in-the-loop for high-risk actions.",
+  tenant: "In multi-customer deployments, one tenant's data must never leak into another's context or retrieval results. Risky pattern: shared vector database filtered only after retrieval. Safer: filter at retrieval time or use genuinely separate indexes per tenant.",
+  poisoning: "If an attacker can insert malicious content into a knowledge base (an uploaded document, a synced data source), a RAG system retrieves and treats it as ground truth. Mitigation: verify document provenance, apply zero-trust assumptions to any externally-sourced retrieval content.",
+};
+document.querySelectorAll('.sc-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sc-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('sc-detail').textContent = SC_INFO[tab.dataset.r];
+  });
+});
+document.getElementById('sc-detail').textContent = SC_INFO['injection'];
+
+document.getElementById('fig-attack-surface').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: old security model inspects only the model input and output, new security model must also inspect the tool call layer where real actions happen">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <text x="150" y="20" text-anchor="middle" font-size="12">What most teams secure</text>
+  <rect x="40" y="35" width="100" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="57" text-anchor="middle" font-size="8">Prompt in</text>
+  <line x1="140" y1="52" x2="180" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a59)"/>
+  <rect x="180" y="35" width="100" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="230" y="57" text-anchor="middle" fill="#3ecf8e" font-size="8">Model</text>
+  <line x1="280" y1="52" x2="320" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a59)"/>
+  <rect x="320" y="35" width="100" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="370" y="57" text-anchor="middle" font-size="8">Response out</text>
+
+  <text x="550" y="90" text-anchor="middle" fill="#e5484d" font-size="11">↓ real attack surface: the tool call</text>
+  <rect x="460" y="95" width="180" height="30" rx="6" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/><text x="550" y="115" text-anchor="middle" fill="#ff8b8f" font-size="9">Agent executes a tool call</text>
+</svg>
+`;
+</script>
+</body>
+</html>

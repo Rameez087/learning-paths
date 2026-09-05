@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.3 Evaluation as a deliverable | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ev-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ev-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ev-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ev-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · AI/LLM deployment for FDEs</div>
+  <h1>7.3 Evaluation as a deliverable</h1>
+  <p class="subtitle">"It seems to work well" is not something a bank's compliance team, or a hospital's clinical review board, can approve.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The AI Engineering track covers evaluation methodology in depth — this topic is about a
+    different question: how evaluation results become a genuine deliverable a skeptical,
+    often non-technical stakeholder can actually trust and approve. The evaluation dataset,
+    methodology, and results need to be presented as evidence for a specific decision ("should we
+    approve this for production use with real customer data"), not just as an internal engineering
+    artifact.
+  </div>
+
+  <h2>Try it: what different stakeholders actually need from an evaluation</h2>
+  <div class="ev-box">
+    <div class="ev-tabs">
+      <div class="ev-tab active" data-s="engineer">Engineering counterpart</div>
+      <div class="ev-tab" data-s="compliance">Compliance/security reviewer</div>
+      <div class="ev-tab" data-s="executive">Business executive</div>
+    </div>
+    <div id="ev-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why the evaluation dataset itself needs to be defensible</h2>
+  <p>
+    A skeptical reviewer's first real question is often "how do I know these test cases
+    represent what will actually happen in production, not just easy examples you picked." The
+    defensible answer: build the evaluation set from real, representative production-like data
+    (with appropriate anonymization), include known edge cases and adversarial examples
+    deliberately, and be transparent about what the evaluation set does and doesn't cover — rather
+    than presenting a curated, flattering sample as if it were comprehensive.
+  </p>
+
+  <div class="figure" id="fig-eval-audience"></div>
+
+  <h2>Showing failure cases, not just success rates</h2>
+  <p>
+    A specifically credibility-building move: proactively show a handful of cases where the system
+    got something wrong, alongside your analysis of why and what mitigates it. A 100%-success
+    presentation reads as either an easy test set or an incomplete one to anyone experienced enough
+    to ask hard questions — showing genuine failure modes, honestly characterized, demonstrates a
+    level of rigor that a clean success-only report can't.
+  </p>
+
+  <h2>Connecting evaluation to the specific risks from 7.2</h2>
+  <p>
+    A genuinely strong evaluation deliverable doesn't just report task accuracy — it specifically
+    tests against the risk categories a security reviewer will ask about: does the evaluation set
+    include adversarial prompt injection attempts? Does it test tenant isolation with deliberately
+    crafted cross-tenant queries? Does it verify the system correctly refuses out-of-scope
+    requests rather than attempting them with excessive agency? Answering these proactively, before
+    being asked, is what separates a genuinely deployment-ready evaluation from a purely
+    functional one.
+  </p>
+
+  <h2>Continuous evaluation after deployment, not just before</h2>
+  <p>
+    A one-time pre-launch evaluation answers "did this work at the time we tested it." A
+    genuinely mature deployment includes ongoing evaluation sampling of real production traffic —
+    connecting directly to 5.3's SLI/SLO material, treating evaluation metrics as a form of
+    service-level indicator worth monitoring continuously, not just proving once at launch and
+    then forgetting.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should an evaluation dataset be built from representative, production-like data rather than a curated, easy sample?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A skeptical reviewer's key question is whether the test cases genuinely represent what will happen in production — a curated, flattering sample fails to answer that credibly</button>
+        <button class="q-option" data-correct="false">Production-like data is always easier to obtain than curated test cases</button>
+        <button class="q-option" data-correct="false">Evaluation datasets have no bearing on whether a stakeholder trusts the results</button>
+      </div>
+      <div class="q-explain">The defensibility of the dataset itself is often scrutinized as closely as the results — an unrepresentative dataset undermines even genuinely good performance numbers.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does proactively showing failure cases build more credibility than presenting only success rates?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A 100%-success presentation reads as either an easy or incomplete test set to an experienced reviewer, while honestly characterized failures demonstrate genuine rigor</button>
+        <button class="q-option" data-correct="false">Showing failure cases is required by law in every regulated industry</button>
+        <button class="q-option" data-correct="false">Failure cases are irrelevant to a stakeholder's actual approval decision</button>
+      </div>
+      <div class="q-explain">This is a specific credibility-building technique — demonstrating awareness of where a system falls short (and why it's mitigated) is more persuasive than an implausibly clean record.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should an evaluation deliverable specifically test against the security risk categories from 7.2, not just task accuracy?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A security reviewer will specifically ask about prompt injection resistance, tenant isolation, and excessive agency — proactively testing and reporting on these makes the evaluation genuinely deployment-ready rather than purely functional</button>
+        <button class="q-option" data-correct="false">Security risks and evaluation methodology are entirely separate concerns with no overlap</button>
+        <button class="q-option" data-correct="false">Task accuracy metrics automatically guarantee security properties are also satisfied</button>
+      </div>
+      <div class="q-explain">This connects the two topics directly — a functionally accurate system that hasn't been evaluated against the specific risks a reviewer cares about hasn't actually answered the question that matters most for approval.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic builds on evaluation methodology from the AI Engineering track (Phase 9) and the security risk categories from 7.2, focusing specifically on how evaluation becomes a credible stakeholder-facing deliverable.</p>
+
+  <div class="pager">
+    <a href="7-2-ai-security-for-customer-deployments.html">&larr; 7.2 AI security for customer deployments</a>
+    <a href="7-4-mcp-and-enterprise-tool-integration.html">7.4 MCP &amp; enterprise tool integration &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const EV_INFO = {
+  engineer: "Wants the actual methodology: how the eval set was built, what metrics were used, per-category breakdowns, and access to the raw failure cases to reason about root causes independently.",
+  compliance: "Wants to know the eval set covers realistic and adversarial scenarios, that security risk categories (7.2) were specifically tested, and that there's an ongoing monitoring plan post-launch — not just a one-time check.",
+  executive: "Wants a small number of clear, business-relevant numbers (accuracy on the tasks that matter to them, cost per interaction, time saved) and honest framing of remaining risk — not a wall of technical metrics they can't interpret.",
+};
+document.querySelectorAll('.ev-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ev-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('ev-detail').textContent = EV_INFO[tab.dataset.s];
+  });
+});
+document.getElementById('ev-detail').textContent = EV_INFO['engineer'];
+
+document.getElementById('fig-eval-audience').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: one evaluation result set presented in three different tailored forms to engineering, compliance, and executive audiences">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="270" y="20" width="140" height="40" rx="8" fill="#182238" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="340" y="45" text-anchor="middle" fill="#c4b5fd">Evaluation results</text>
+  <line x1="300" y1="60" x2="140" y2="90" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="60" x2="340" y2="90" stroke="#6b7386" stroke-width="1"/>
+  <line x1="380" y1="60" x2="540" y2="90" stroke="#6b7386" stroke-width="1"/>
+  <rect x="60" y="90" width="160" height="35" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="140" y="112" text-anchor="middle" fill="#a9c1ff" font-size="9">Engineering: full detail</text>
+  <rect x="260" y="90" width="160" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="340" y="112" text-anchor="middle" fill="#f2b84b" font-size="9">Compliance: risk coverage</text>
+  <rect x="460" y="90" width="160" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="540" y="112" text-anchor="middle" fill="#3ecf8e" font-size="9">Executive: outcomes</text>
+</svg>
+`;
+</script>
+</body>
+</html>

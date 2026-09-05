@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.3 Containers &amp; orchestration | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.co-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.co-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.co-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.co-toggle-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Cloud &amp; infrastructure</div>
+  <h1>4.3 Containers &amp; orchestration</h1>
+  <p class="subtitle">"It works on my machine" stops being a valid excuse the moment your machine and the customer's production server can be made to run literally the same environment.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Docker packages an application with everything it needs to run — dependencies, runtime,
+    configuration — so it behaves identically on your laptop and in production. Kubernetes
+    orchestrates containers at scale: scheduling them across machines, restarting failed ones,
+    and scaling up or down based on load. For an FDE, the practical bar is writing a working
+    Dockerfile and debugging a container that won't start — not deep Kubernetes cluster
+    administration, which is usually a specialized platform team's job even at companies that run
+    Kubernetes extensively.
+  </div>
+
+  <h2>Try it: Docker vs. Kubernetes, what each actually solves</h2>
+  <div class="co-box">
+    <div class="co-toggle">
+      <div class="co-toggle-btn active" data-t="docker">Docker</div>
+      <div class="co-toggle-btn" data-t="k8s">Kubernetes</div>
+    </div>
+    <div id="co-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>A minimal Dockerfile, and what each line actually does</h2>
+  <pre><code>FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+  <p>
+    <code>FROM</code> picks a known-good base image rather than building an OS from scratch.
+    <code>WORKDIR</code> and <code>COPY</code> get your code into the image. Ordering matters for
+    build speed: copying <code>requirements.txt</code> and installing dependencies <em>before</em>
+    copying the rest of the code means Docker can cache that expensive install step — it only
+    re-runs when dependencies actually change, not on every single code edit.
+  </p>
+
+  <div class="figure" id="fig-multistage"></div>
+
+  <h2>Multi-stage builds: the detail that keeps images small and secure</h2>
+  <p>
+    A multi-stage build uses one stage to compile or build the application (with all the heavy
+    build tools that entails) and a second, much slimmer stage that copies only the final built
+    artifact — leaving compilers, build caches, and dev dependencies behind entirely. This directly
+    matters for an FDE: a smaller final image deploys faster into a customer's environment and has
+    a meaningfully smaller attack surface for their security team to review.
+  </p>
+
+  <h2>Why Kubernetes cluster administration usually isn't the FDE's job</h2>
+  <p>
+    Most organizations running Kubernetes at any real scale have a dedicated platform or
+    infrastructure team managing the cluster itself — node provisioning, cluster upgrades, network
+    policy at the cluster level. The FDE's practical Kubernetes skill is usually one layer up:
+    understanding pods, deployments, and services well enough to deploy an application onto an
+    <em>existing</em> cluster and debug why a pod won't start, rather than standing up or
+    administering the cluster infrastructure itself.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does the order of COPY and RUN commands in a Dockerfile matter for build speed?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Copying dependency files and installing them before copying the rest of the code lets Docker cache the expensive install step, which only re-runs when dependencies actually change</button>
+        <button class="q-option" data-correct="false">Dockerfile command order has no effect on build speed or caching behavior</button>
+        <button class="q-option" data-correct="false">Docker always rebuilds every layer from scratch regardless of what changed</button>
+      </div>
+      <div class="q-explain">Docker's layer caching is order-dependent — putting the rarely-changing dependency install before the frequently-changing application code maximizes how often the cache can be reused.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does a multi-stage Docker build achieve that a single-stage build doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It leaves build tools, compilers, and dev dependencies out of the final image, producing a smaller image with a reduced attack surface</button>
+        <button class="q-option" data-correct="false">Multi-stage builds make the container run the application faster at runtime</button>
+        <button class="q-option" data-correct="false">Multi-stage builds are required for any Dockerfile to function at all</button>
+      </div>
+      <div class="q-explain">The value is specifically in what gets left behind — a slim final stage copies only the built artifact, not the entire toolchain used to build it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is deep Kubernetes cluster administration usually not part of the FDE's practical skill bar?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Most organizations running Kubernetes have a dedicated platform team managing cluster-level concerns, while the FDE typically works one layer up — deploying onto and debugging within an existing cluster</button>
+        <button class="q-option" data-correct="false">Kubernetes is never used in any FDE engagement</button>
+        <button class="q-option" data-correct="false">Cluster administration is simpler than writing a Dockerfile, so it's covered earlier in this track</button>
+      </div>
+      <div class="q-explain">This mirrors the calibration principle from Phase 3 — matching depth to what the role actually requires, rather than mastering every adjacent specialization to its fullest extent.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Scaler "Cloud Computing Skills in Demand: AWS, Azure &amp; GCP" (August 2026); Cloud Technology Experts "Cloud Engineer Roadmap 2026"; Scaler "Cloud Computing Syllabus 2026" (July 2026).</p>
+
+  <div class="pager">
+    <a href="4-2-networking-for-enterprise-environments.html">&larr; 4.2 Networking for enterprise environments</a>
+    <a href="4-4-infrastructure-as-code-and-cicd.html">4.4 Infrastructure as code &amp; CI/CD &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CO_INFO = {
+  docker: "Packages one application with its exact dependencies and runtime into a portable image — solves 'works on my machine' by making 'my machine' and 'production' run the literal same environment. The FDE-relevant skill: write a working Dockerfile, debug why a container fails to start (check logs with `docker logs`, check the exposed port matches what's actually listening).",
+  k8s: "Orchestrates many containers across many machines — scheduling, restarting failed containers automatically, scaling based on load, routing traffic between services. The FDE-relevant skill: understand pods, deployments, and services well enough to deploy onto an existing cluster and read `kubectl describe pod` output to diagnose why something won't start — not administering the cluster itself.",
+};
+document.querySelectorAll('.co-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.co-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('co-detail').textContent = CO_INFO[btn.dataset.t];
+  });
+});
+document.getElementById('co-detail').textContent = CO_INFO['docker'];
+
+document.getElementById('fig-multistage').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: multi-stage build with a heavy build stage producing an artifact copied into a slim final stage">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="30" y="30" width="220" height="70" rx="8" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="140" y="55" text-anchor="middle" fill="#f2b84b">Build stage</text>
+  <text x="140" y="75" text-anchor="middle" fill="#c9a05f" font-size="9">compilers, dev deps, full toolchain</text>
+  <line x1="250" y1="65" x2="330" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a49)"/>
+  <text x="290" y="55" fill="#6b7386" font-size="8">copy artifact only</text>
+  <rect x="330" y="30" width="220" height="70" rx="8" fill="#182238" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="440" y="55" text-anchor="middle" fill="#3ecf8e">Final stage</text>
+  <text x="440" y="75" text-anchor="middle" fill="#5fb98a" font-size="9">just the built app, minimal size</text>
+  <defs><marker id="a49" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

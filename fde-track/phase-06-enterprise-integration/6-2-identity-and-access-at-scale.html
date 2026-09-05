@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 Identity &amp; access at scale | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ia-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ia-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ia-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ia-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Enterprise integration</div>
+  <h1>6.2 Identity &amp; access at scale</h1>
+  <p class="subtitle">The average enterprise manages over 1,000 applications, with employees accessing 67+ tools daily. Identity is the layer that has to hold all of that together.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Building on 2.3's OAuth/OIDC/SAML/SCIM foundations: at real enterprise scale, identity
+    infrastructure is centered on a directory (Active Directory or LDAP, often for decades of
+    accumulated on-premise accounts) federated out to cloud applications via an identity provider
+    (Okta, Entra ID, Ping). The specific FDE-relevant skill: understanding how a new application
+    gets connected into this existing structure — not designed from scratch, but integrated into
+    infrastructure that predates your engagement by years, sometimes decades.
+  </div>
+
+  <h2>Try it: how a new app actually gets provisioned into existing enterprise identity</h2>
+  <div class="ia-box">
+    <div class="ia-tabs">
+      <div class="ia-tab active" data-s="directory">1. Directory (AD/LDAP)</div>
+      <div class="ia-tab" data-s="idp">2. Identity provider</div>
+      <div class="ia-tab" data-s="scim">3. SCIM provisioning</div>
+      <div class="ia-tab" data-s="app">4. Your application</div>
+    </div>
+    <div id="ia-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Active Directory and LDAP: still the foundation underneath everything</h2>
+  <p>
+    A large share of enterprise identity infrastructure still runs on Active Directory (Microsoft's
+    directory service) or LDAP more generally — the accumulated record of every employee account,
+    often going back decades. Modern cloud identity providers don't replace this; they sync with
+    it. Microsoft's own guidance for hybrid environments is specific: define directory
+    synchronization (via Entra Connect Sync or Cloud Sync) and the sign-in method deliberately,
+    rather than assuming a clean cloud-only setup — because for most real enterprises, it isn't
+    clean or cloud-only.
+  </p>
+
+  <div class="figure" id="fig-identity-stack"></div>
+
+  <h2>The specific problem SCIM solves at scale, again</h2>
+  <p>
+    Recall 2.3's SCIM lifecycle point — now consider it at the scale of 1,000+ applications and
+    thousands of employees. Without automated provisioning, every new hire, role change, and
+    departure requires someone manually touching every affected application — a process that
+    doesn't scale and reliably produces exactly the security gap 2.3 described (departed employees
+    retaining access somewhere nobody remembered to check). SCIM automates the "joiner, mover,
+    leaver" lifecycle across every connected application at once.
+  </p>
+
+  <h2>When a legacy system can't support modern protocols</h2>
+  <p>
+    Not every system in a real enterprise supports SAML, OIDC, or SCIM natively — some genuinely
+    can't be upgraded easily. The practical pattern: a gateway or proxy layer that translates
+    between the modern protocol your new application speaks and whatever legacy interface the old
+    system actually exposes, rather than either forcing the legacy system to change or abandoning
+    standard protocols for your new work. This is a real, common piece of FDE integration work,
+    not a hypothetical edge case.
+  </p>
+
+  <h2>Application Proxy: exposing internal apps without a permanent VPN</h2>
+  <p>
+    A specific modern pattern worth knowing: rather than requiring every user to be on a VPN to
+    reach an internal application, an application proxy (like Entra Application Proxy) can publish
+    that internal app externally while still enforcing the customer's existing access controls —
+    letting remote and external access work without the operational overhead of managing VPN
+    access for every single internal tool.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do modern cloud identity providers typically sync with Active Directory or LDAP rather than replacing them?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A large share of enterprise identity infrastructure still runs on these decades-old directories, holding the accumulated record of employee accounts that predates any cloud migration</button>
+        <button class="q-option" data-correct="false">Active Directory and LDAP are technically incompatible with any cloud identity provider</button>
+        <button class="q-option" data-correct="false">Cloud identity providers have fully replaced on-premise directories in all enterprises as of 2026</button>
+      </div>
+      <div class="q-explain">This connects directly to 6.1's mindset — the customer's real infrastructure has real history, and identity systems are exactly where that history is most durably encoded.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does SCIM's value increase specifically at the scale of a large enterprise, compared to a small application?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Manually provisioning and deprovisioning access across 1,000+ applications for every hire, role change, and departure doesn't scale, and reliably produces security gaps without automation</button>
+        <button class="q-option" data-correct="false">SCIM only functions correctly once an organization exceeds a specific application count</button>
+        <button class="q-option" data-correct="false">Small applications never need any user lifecycle management at all</button>
+      </div>
+      <div class="q-explain">The underlying problem (access not being revoked promptly) exists at any scale, but the sheer volume of applications and personnel changes at enterprise scale makes manual handling genuinely infeasible.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does an application proxy pattern solve that a traditional VPN-only approach doesn't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets remote and external users access internal applications without requiring VPN access to be managed for every single internal tool individually</button>
+        <button class="q-option" data-correct="false">Application proxies eliminate the need for any access control on internal applications</button>
+        <button class="q-option" data-correct="false">VPNs and application proxies solve completely unrelated problems with no overlap</button>
+      </div>
+      <div class="q-explain">This is specifically an operational-overhead reduction — publishing individual apps through a proxy avoids the administrative burden of granting and managing VPN access as the standard path to every internal tool.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Okta "Integration Patterns for Legacy Applications" (2026); msadvance.com "Azure AD (Entra ID) Integration: SSO, OAuth, SAML &amp; On-Prem Apps" (February 2026); guptadeepak.com "Enterprise SSO: SAML, OAuth/OIDC, and SCIM Explained" (May 2026); GitHub "scimgateway" project documentation.</p>
+
+  <div class="pager">
+    <a href="6-1-the-enterprise-environment-mindset.html">&larr; 6.1 The enterprise environment mindset</a>
+    <a href="6-3-legacy-systems-and-investigation.html">6.3 Legacy systems &amp; investigation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const IA_INFO = {
+  directory: "Active Directory or LDAP — the foundational, often decades-old record of every employee account. Even fully cloud-forward enterprises usually have this underneath, synced rather than replaced.",
+  idp: "Okta, Entra ID, Ping, or similar — federates the directory's identities out to cloud applications via SAML/OIDC, acting as the single point applications actually authenticate against rather than each app talking to the directory directly.",
+  scim: "The identity provider pushes SCIM requests to your application whenever a user is created, updated, or deactivated — automating the lifecycle so access changes propagate without manual per-app work.",
+  app: "Your application receives SCIM provisioning calls and SAML/OIDC login requests — it doesn't need to know anything about the customer's directory structure, only how to speak these two standard protocols.",
+};
+document.querySelectorAll('.ia-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ia-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('ia-detail').textContent = IA_INFO[tab.dataset.s];
+  });
+});
+document.getElementById('ia-detail').textContent = IA_INFO['directory'];
+
+document.getElementById('fig-identity-stack').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: Active Directory syncs to identity provider, which federates via SAML/OIDC and provisions via SCIM to the new application">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="140" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="69" text-anchor="middle">AD / LDAP</text>
+  <line x1="160" y1="65" x2="210" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a54)"/>
+  <text x="185" y="55" fill="#6b7386" font-size="8">sync</text>
+  <rect x="210" y="45" width="150" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="285" y="69" text-anchor="middle" fill="#a9c1ff">Identity provider</text>
+  <line x1="360" y1="65" x2="410" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a54)"/>
+  <text x="385" y="55" fill="#6b7386" font-size="8">SAML/OIDC + SCIM</text>
+  <rect x="410" y="45" width="160" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="490" y="69" text-anchor="middle" fill="#3ecf8e">Your new application</text>
+  <defs><marker id="a54" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.1 Discovery &amp; problem framing | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.dv-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.dv-item-btn { display: block; width: 100%; text-align: left; padding: 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+.dv-item-btn.good { border-color: #3ecf8e; }
+.dv-item-btn.weak { border-color: #e5484d; }
+.dv-feedback { display: none; padding: 10px 12px; background: var(--code-bg); border-radius: 6px; margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.dv-feedback.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · Customer &amp; consulting skills</div>
+  <h1>9.1 Discovery &amp; problem framing</h1>
+  <p class="subtitle">Only 27% of professionals feel equipped to deliver actionable customer insight — yet it's rated the single most crucial skill in complex technical sales.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    "We need AI" is not a requirement — it's a starting point. Discovery's job is turning that
+    starting point into: actual problem, measurable outcome, real constraints, available data,
+    and who actually decides success. Recall Phase 1.3: discovery is engineering work, done by
+    the person who will build the thing, precisely because technical feasibility questions need
+    to surface immediately, not after a scope is already committed to on the sales side.
+  </div>
+
+  <h2>Try it: spot the stronger discovery question in each pair</h2>
+  <div class="dv-box">
+    <div id="dv-items"></div>
+  </div>
+
+  <h2>The five-layer translation discovery actually performs</h2>
+  <p>
+    "We need AI" → <strong>actual problem</strong> (what specifically is slow, expensive, or
+    error-prone today?) → <strong>measurable outcome</strong> (what number would prove this
+    worked?) → <strong>constraints</strong> (budget, timeline, data sensitivity, existing
+    infrastructure) → <strong>data</strong> (does the data needed to solve this actually exist,
+    and in what condition?) → <strong>architecture</strong> (only now, once the previous four
+    layers are genuinely understood). Skipping straight to architecture from "we need AI" is
+    exactly the trap that produces technically impressive systems nobody actually needed.
+  </p>
+
+  <div class="figure" id="fig-discovery-funnel"></div>
+
+  <h2>Multi-threading: talking to more than one stakeholder, deliberately</h2>
+  <p>
+    A documented pattern in complex B2B deals: contacting multiple decision-makers on the same
+    account measurably improves outcomes compared to relying on a single internal champion —
+    because a complex decision genuinely involves multiple people, and depending on one person's
+    availability, influence, and continued employment at the company is a real risk. For an FDE
+    specifically, this matters beyond closing a deal: different stakeholders often have
+    genuinely different, sometimes conflicting views of what the "real" problem is, and discovery
+    is where those differences need to surface, not after the build has started.
+  </p>
+
+  <h2>Active listening as a discovery technique, not just a soft skill</h2>
+  <p>
+    Consultative selling and active listening are specifically named among the traits separating
+    top performers from average ones in technical sales and consulting contexts. The practical
+    version for an FDE: resist the urge to start solutioning while the customer is still
+    describing their problem. An idea forming mid-explanation is often a premature pattern-match
+    to a familiar solution — one that may miss whatever's actually different about this specific
+    customer's situation.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is "we need AI" treated as a starting point rather than an actual requirement?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It doesn't yet specify the actual problem, a measurable outcome, real constraints, or the data available — discovery's job is translating it into those concrete elements</button>
+        <button class="q-option" data-correct="false">Customers who say "we need AI" never actually have a real problem to solve</button>
+        <button class="q-option" data-correct="false">This phrase should always be taken literally and built exactly as stated</button>
+      </div>
+      <div class="q-explain">This is the five-layer translation the whole topic is built around — a vague initial statement needs genuine discovery work before it becomes something buildable.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does talking to multiple stakeholders during discovery matter beyond just improving deal-closing odds?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Different stakeholders can have genuinely different, sometimes conflicting views of what the real problem is, and discovery is the right time for those differences to surface — not after the build has already started</button>
+        <button class="q-option" data-correct="false">Multiple stakeholders always agree completely on every aspect of a problem</button>
+        <button class="q-option" data-correct="false">Talking to more people is only relevant to the sales process, never the actual technical scoping</button>
+      </div>
+      <div class="q-explain">This connects discovery directly to avoiding a scope built on an incomplete or single-perspective understanding of the actual problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why should an FDE resist forming a solution idea while the customer is still mid-explanation during discovery?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A solution forming early is often a premature pattern-match to a familiar problem, which may miss what's actually different about this specific customer's situation</button>
+        <button class="q-option" data-correct="false">Forming ideas quickly during discovery always produces better solutions than waiting</button>
+        <button class="q-option" data-correct="false">Active listening has no practical bearing on the quality of discovery outcomes</button>
+      </div>
+      <div class="q-explain">This is the practical application of active listening as a discovery discipline — genuinely hearing out the full problem before pattern-matching to a known solution avoids missing a customer-specific nuance.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Apollo.io "Essential Skills for Sales Success in 2026," citing Mercuri International's Future State of Sales research; Zeliq "Sales Skills 2026," citing Highspot 2026 and Demandbase 2026 studies.</p>
+
+  <div class="pager">
+    <a href="../phase-08-system-design/8-4-design-for-private-network-constraints.html">&larr; 8.4 Design: private network constraints</a>
+    <a href="9-2-stakeholder-communication.html">9.2 Stakeholder communication &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DV_PAIRS = [
+  { weak: "\"So you want an AI chatbot, right?\"", good: "\"Walk me through what happens today when a customer has this kind of issue — where does it usually get stuck?\"", explain: "The second question surfaces the actual process and bottleneck, rather than assuming the solution (a chatbot) before the problem is understood." },
+  { weak: "\"What's your budget for this project?\"", good: "\"What would it be worth to your team if this problem were fully solved — in hours saved, or revenue, or risk avoided?\"", explain: "The second question gets at measurable value first, which then makes a budget conversation grounded in actual impact rather than an arbitrary number." },
+  { weak: "\"Do you have clean data for this?\"", good: "\"Where does this data currently live, who owns it, and has anyone actually looked at a sample of it recently?\"", explain: "The second question gets specific enough to actually find out the real state of the data, rather than accepting an optimistic 'yes' that may not hold up." },
+];
+document.getElementById('dv-items').innerHTML = DV_PAIRS.map((p,i) => `
+  <button class="dv-item-btn weak" data-i="${i}" data-pick="weak">${p.weak}</button>
+  <button class="dv-item-btn good" data-i="${i}" data-pick="good">${p.good}</button>
+  <div class="dv-feedback" id="dv-feedback-${i}">${p.explain}</div>
+`).join('');
+document.querySelectorAll('.dv-item-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('dv-feedback-' + btn.dataset.i).classList.add('show');
+  });
+});
+
+document.getElementById('fig-discovery-funnel').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: vague statement we need AI narrows through actual problem, measurable outcome, constraints, and data before architecture is even considered">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="10" y="45" width="100" height="40" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="60" y="69" text-anchor="middle" fill="#ff8b8f" font-size="8">"We need AI"</text>
+  <line x1="110" y1="65" x2="140" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a62)"/>
+  <rect x="140" y="45" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="195" y="69" text-anchor="middle" font-size="8">Actual problem</text>
+  <line x1="250" y1="65" x2="280" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a62)"/>
+  <rect x="280" y="45" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="335" y="69" text-anchor="middle" font-size="8">Measurable outcome</text>
+  <line x1="390" y1="65" x2="420" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a62)"/>
+  <rect x="420" y="45" width="110" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="475" y="69" text-anchor="middle" font-size="8">Constraints + data</text>
+  <line x1="530" y1="65" x2="560" y2="65" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a62g)"/>
+  <rect x="560" y="45" width="110" height="40" rx="6" fill="#182238" stroke="#3ecf8e"/><text x="615" y="69" text-anchor="middle" fill="#3ecf8e" font-size="8">Now: architecture</text>
+  <defs><marker id="a62" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker><marker id="a62g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

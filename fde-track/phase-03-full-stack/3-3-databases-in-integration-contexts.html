@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.3 Databases in integration contexts | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.di-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.di-step-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 6px; font-size: 13px; }
+.di-step-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.di-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Full-stack for FDEs</div>
+  <h1>3.3 Databases in integration contexts</h1>
+  <p class="subtitle">You will almost never design a database from scratch as an FDE. You will constantly have to understand one someone else designed, years ago, with no documentation.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The database skill that actually matters most in FDE work isn't schema design from a blank
+    slate — it's <strong>schema archaeology</strong>: walking into an unfamiliar customer
+    database with no documentation and figuring out what it actually represents, where the
+    real business logic is hiding (often in constraints, triggers, or stored procedures nobody
+    remembers writing), and where it's safe to add something new without breaking what's already
+    there.
+  </div>
+
+  <h2>Try it: walk through investigating an unfamiliar schema</h2>
+  <div class="di-box">
+    <div id="di-steps"></div>
+    <div class="di-detail" id="di-detail"></div>
+  </div>
+
+  <h2>Read-only first, always</h2>
+  <p>
+    Before writing a single integration query against a customer's production database, connect
+    with read-only credentials and explore. Query the information schema
+    (<code>information_schema.columns</code>, <code>information_schema.table_constraints</code> in
+    Postgres/MySQL-family databases) to see actual column types, nullability, and foreign key
+    relationships — this is more reliable than any stale documentation, since the schema itself
+    can't lie about what it currently contains.
+  </p>
+
+  <div class="figure" id="fig-schema-investigation"></div>
+
+  <h2>Signs a table is more load-bearing than it looks</h2>
+  <ul>
+    <li><strong>Foreign keys pointing into it from many other tables</strong> — a heavily-referenced table is one where a change ripples widely; check this before touching its structure.</li>
+    <li><strong>Triggers or stored procedures attached to it</strong> — business logic embedded in the database itself, invisible if you only read application code.</li>
+    <li><strong>A column that's clearly overloaded</strong> — a generic "status" or "type" column with values that don't match any obvious enum, often a sign of years of ad-hoc extensions nobody refactored.</li>
+    <li><strong>No foreign key constraints at all, despite an obvious relationship</strong> — sometimes deliberate (performance), sometimes a sign referential integrity is only enforced in application code you haven't seen yet.</li>
+  </ul>
+
+  <h2>Connection pooling: the detail that breaks integrations at scale</h2>
+  <p>
+    A database has a finite number of connections it can hold open. An integration that opens a
+    new connection per request, rather than using a pool, can silently work fine in testing and
+    then exhaust the customer's connection limit the moment real traffic hits it — a specific,
+    common way a demo-quality integration fails in production without any code being "wrong" in
+    isolation.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is querying the information schema more reliable than existing documentation when investigating an unfamiliar customer database?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The schema itself reflects the database's actual current structure — it can't be stale or out of date the way written documentation often is</button>
+        <button class="q-option" data-correct="false">Documentation is always more accurate than querying the live schema</button>
+        <button class="q-option" data-correct="false">Information schema queries are only available in NoSQL databases</button>
+      </div>
+      <div class="q-explain">Documentation drifts out of sync with reality over time; the live schema, by definition, cannot — it's exactly what the database currently is.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might a table with many foreign keys pointing into it be riskier to modify than one with few or none?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A heavily-referenced table means changes to its structure can ripple widely across many other parts of the system that depend on it</button>
+        <button class="q-option" data-correct="false">Foreign keys have no bearing on how risky a schema change is</button>
+        <button class="q-option" data-correct="false">Tables with many foreign keys pointing into them are always safe to modify freely</button>
+      </div>
+      <div class="q-explain">This is a direct signal of how load-bearing a table is — the more things depend on its current shape, the more careful an integration needs to be before touching it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why can an integration that opens a new database connection per request work fine in testing but fail in production?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The database has a finite connection limit, and real production traffic volume can exhaust it in a way low-volume testing never revealed</button>
+        <button class="q-option" data-correct="false">Database connections are unlimited, so this pattern never causes any real problems</button>
+        <button class="q-option" data-correct="false">Connection pooling only matters for NoSQL databases, not relational ones</button>
+      </div>
+      <div class="q-explain">This is a classic scale-revealed failure — the code isn't wrong in isolation, but the pattern doesn't survive the jump from light testing traffic to real production load.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic reflects durable database-integration practice — connection pooling limits, schema investigation via information_schema, and the load-bearing-table heuristics here are stable, cross-database concepts rather than fast-changing tooling.</p>
+
+  <div class="pager">
+    <a href="3-2-backend-essentials.html">&larr; 3.2 Backend essentials</a>
+    <a href="3-4-background-jobs-and-webhooks.html">3.4 Background jobs &amp; webhooks &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DI_STEPS = [
+  { name: "1. Connect read-only", detail: "Never start with write access to a customer's production database. Read-only credentials let you explore safely while you're still learning what you're looking at." },
+  { name: "2. Query the information schema", detail: "See actual tables, columns, types, and foreign key relationships directly — this is ground truth, unlike documentation that may not have been updated in years." },
+  { name: "3. Look for load-bearing signals", detail: "Which tables have the most foreign keys pointing in? Which have triggers or stored procedures attached? These are the ones to treat carefully." },
+  { name: "4. Sample real data, not just structure", detail: "A column named 'status' with values like 'A', 'P', 'X' tells you the schema alone isn't enough — you need to see what's actually stored to understand what it means." },
+  { name: "5. Ask a human to confirm your model", detail: "Once you have a working theory of how the schema fits together, verify it with someone who actually knows the system, rather than proceeding on inference alone." },
+];
+let diIdx = 0;
+function renderDi() {
+  document.getElementById('di-steps').innerHTML = DI_STEPS.map((s,i) =>
+    `<div class="di-step-btn${i===diIdx?' active':''}" data-i="${i}">${s.name}</div>`
+  ).join('');
+  document.getElementById('di-detail').textContent = DI_STEPS[diIdx].detail;
+  document.querySelectorAll('.di-step-btn').forEach(btn => {
+    btn.addEventListener('click', () => { diIdx = parseInt(btn.dataset.i,10); renderDi(); });
+  });
+}
+renderDi();
+
+document.getElementById('fig-schema-investigation').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: unfamiliar schema investigated via read-only connection and information schema queries before any write access is used">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="45" width="150" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="95" y="69" text-anchor="middle">Unfamiliar DB</text>
+  <line x1="170" y1="65" x2="220" y2="65" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#a46)"/>
+  <text x="195" y="55" fill="#3ecf8e" font-size="8">read-only</text>
+  <rect x="220" y="45" width="180" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="310" y="69" text-anchor="middle" fill="#a9c1ff">Information schema queries</text>
+  <line x1="400" y1="65" x2="450" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a46)"/>
+  <rect x="450" y="45" width="200" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="550" y="69" text-anchor="middle" fill="#f2b84b">Verified mental model</text>
+  <defs><marker id="a46" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 Backend essentials | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.be-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.be-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.be-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.be-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Full-stack for FDEs</div>
+  <h1>3.2 Backend essentials</h1>
+  <p class="subtitle">"A useful engineer can define API boundaries, choose storage based on access patterns, and identify where latency, concurrency, and failure handling affect product quality."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Backend depth for an FDE means being able to stand up a real service — routes, request
+    validation, database access, error handling — using whatever the customer's stack already is,
+    not just your personal favorite framework. FastAPI (Python), Express (Node), or a similar
+    equivalent in the customer's chosen language are all fair game; the transferable skill is the
+    underlying pattern, not the specific syntax. Knowing how software behaves after it leaves your
+    local machine — deployment, observability, failure modes — is now considered core to the role,
+    not a separate specialty.
+  </div>
+
+  <h2>Try it: what a backend service actually needs</h2>
+  <div class="be-box">
+    <div class="be-tabs">
+      <div class="be-tab active" data-c="routes">Routes &amp; validation</div>
+      <div class="be-tab" data-c="data">Data access layer</div>
+      <div class="be-tab" data-c="errors">Error handling</div>
+      <div class="be-tab" data-c="config">Config &amp; secrets</div>
+    </div>
+    <div id="be-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>A minimal service, in the shape that transfers across languages</h2>
+  <pre><code># FastAPI example — the shape is what matters, not the syntax
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class OrderRequest(BaseModel):
+    customer_id: str
+    amount: float
+
+@app.post("/orders")
+def create_order(req: OrderRequest):
+    if req.amount <= 0:
+        raise HTTPException(status_code=400, detail="amount must be positive")
+    # ... write to database, return confirmation
+    return {"status": "created", "customer_id": req.customer_id}</code></pre>
+  <p>
+    The exact same shape — route, request validation, explicit error responses, a clear success
+    path — reappears whether it's written in Express/Node, Spring/Java, or Gin/Go. Learning this
+    pattern once and recognizing it everywhere is more valuable than deep mastery of one
+    framework's specific idioms.
+  </p>
+
+  <div class="figure" id="fig-backend-layers"></div>
+
+  <h2>Choosing storage based on access patterns, not habit</h2>
+  <p>
+    A useful backend engineer picks between relational and non-relational storage based on how
+    the data will actually be queried, not by defaulting to whatever they used last time.
+    Relational (PostgreSQL) fits structured data with real relationships and transactional
+    guarantees. Document/NoSQL stores fit flexible, evolving schemas or extremely high write
+    throughput where strict relational consistency isn't the priority. An FDE frequently doesn't
+    get to choose at all — the customer's existing systems dictate storage — which is exactly why
+    understanding tradeoffs conceptually matters more than deep specialization in any one database
+    product.
+  </p>
+
+  <h2>The 2026 expectation: DevOps basics are now inside "backend," not separate</h2>
+  <p>
+    The scope of "backend developer" has genuinely absorbed containerization and CI/CD basics —
+    writing a working Dockerfile, understanding multi-stage builds, debugging a container that
+    won't start, and having basic CI/CD fluency (build → test → deploy automation) are now
+    considered baseline backend skill, not a separate DevOps specialty. This directly sets up
+    Phase 4's cloud and infrastructure material.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does the specific backend framework (FastAPI vs. Express vs. Spring) matter less than the underlying pattern?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The same shape — routes, validation, explicit error handling, a clear success path — reappears across frameworks and languages, so recognizing the pattern transfers better than memorizing one framework's syntax</button>
+        <button class="q-option" data-correct="false">All backend frameworks are functionally and syntactically identical</button>
+        <button class="q-option" data-correct="false">Framework choice has no impact on how a service actually behaves</button>
+      </div>
+      <div class="q-explain">This is the core "durable vs. framework-specific knowledge" principle from earlier tracks, applied here — the conceptual pattern is what transfers when you land in a customer's unfamiliar codebase.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should storage choice (relational vs. non-relational) be based on access patterns rather than habit?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Different storage types have genuinely different strengths — structured relational data with transactional needs fits differently than flexible, high-throughput, evolving-schema data</button>
+        <button class="q-option" data-correct="false">All storage types perform identically regardless of the data's actual shape or access pattern</button>
+        <button class="q-option" data-correct="false">Relational databases should always be avoided in favor of NoSQL</button>
+      </div>
+      <div class="q-explain">This is a real engineering tradeoff, not a stylistic preference — and an FDE often doesn't even get to choose, since the customer's existing infrastructure frequently dictates it anyway.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why have containerization and CI/CD basics become part of the expected "backend" skill set in 2026, rather than a separate specialty?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Understanding how software runs after it leaves a local machine — deployment, packaging, automation — is now considered core to shipping real backend work, not an optional add-on</button>
+        <button class="q-option" data-correct="false">DevOps skills have completely replaced the need for backend development skills</button>
+        <button class="q-option" data-correct="false">Containerization is only relevant to frontend development</button>
+      </div>
+      <div class="q-explain">This scope expansion reflects a genuine shift in what "shipping working software" requires — code that works locally but was never packaged or deployed correctly doesn't actually solve the customer's problem.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Coderio "Full-Stack Developer Skills &amp; Trends in 2026"; Kunal Ganglani "Full-Stack Developer Roadmap [2026]"; CV-BY-JD "Skills for Full-Stack Developers (2026)".</p>
+
+  <div class="pager">
+    <a href="3-1-frontend-essentials.html">&larr; 3.1 Frontend essentials</a>
+    <a href="3-3-databases-in-integration-contexts.html">3.3 Databases in integration contexts &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const BE_INFO = {
+  routes: "Define clear API boundaries with explicit request/response shapes. Validate input at the boundary (Pydantic, Joi, Zod) so bad data fails fast with a clear error, rather than causing a confusing failure three layers deeper in the code.",
+  data: "A clean separation between your route logic and your actual data access (queries, ORM calls) makes the system testable and lets you swap or mock the data layer without rewriting business logic.",
+  errors: "Explicit, typed error responses (400 for bad input, 401/403 for auth issues, 404 for missing resources, 500 for genuine server errors) with clear messages — vague 'something went wrong' errors are exactly what turns a 10-minute customer debugging session into an hour.",
+  config: "Environment-specific configuration (dev/staging/prod) and secrets (API keys, database credentials) must never be hardcoded — use environment variables or a secrets manager, especially critical in a customer's environment where you don't own the security posture.",
+};
+function renderBe(key) { document.getElementById('be-detail').textContent = BE_INFO[key]; }
+document.querySelectorAll('.be-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.be-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderBe(tab.dataset.c);
+  });
+});
+renderBe('routes');
+
+document.getElementById('fig-backend-layers').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: request flows through routes and validation, business logic, data access layer, then to the database">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="50" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="90" y="74" text-anchor="middle" fill="#a9c1ff">Routes + validation</text>
+  <line x1="160" y1="70" x2="200" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a45)"/>
+  <rect x="200" y="50" width="140" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="270" y="74" text-anchor="middle">Business logic</text>
+  <line x1="340" y1="70" x2="380" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a45)"/>
+  <rect x="380" y="50" width="140" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="450" y="74" text-anchor="middle">Data access layer</text>
+  <line x1="520" y1="70" x2="560" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a45)"/>
+  <rect x="560" y="50" width="100" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="610" y="74" text-anchor="middle" fill="#3ecf8e">Database</text>
+  <defs><marker id="a45" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

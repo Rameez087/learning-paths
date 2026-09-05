@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 Cloud fundamentals that transfer | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cf-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cf-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.cf-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.cf-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+.cf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cf-table th, .cf-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+.cf-table th { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Cloud &amp; infrastructure</div>
+  <h1>4.1 Cloud fundamentals that transfer</h1>
+  <p class="subtitle">The large majority of enterprises now run more than one cloud provider at once. Learning "AWS" instead of "cloud compute" is learning the wrong layer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Every major cloud provider offers the same underlying primitives with different names:
+    virtual compute, object storage, managed relational databases, identity and access management,
+    virtual networking. An FDE who understands the <em>concept</em> of IAM, or object storage, or
+    a managed database can pick up a customer's specific provider's console in days — an FDE who
+    only memorized AWS's specific button layout has to relearn everything from scratch the moment
+    a customer runs Azure or GCP instead.
+  </div>
+
+  <h2>Try it: the same concept, three different names</h2>
+  <div class="cf-box">
+    <div class="cf-tabs">
+      <div class="cf-tab active" data-c="compute">Compute</div>
+      <div class="cf-tab" data-c="storage">Object storage</div>
+      <div class="cf-tab" data-c="db">Managed database</div>
+      <div class="cf-tab" data-c="iam">Identity &amp; access</div>
+      <div class="cf-tab" data-c="serverless">Serverless functions</div>
+    </div>
+    <table class="cf-table">
+      <thead><tr><th>Provider</th><th>Service name</th></tr></thead>
+      <tbody id="cf-rows"></tbody>
+    </table>
+  </div>
+
+  <h2>Go deep on one, but learn the concept layer first</h2>
+  <p>
+    Current guidance is specific: go deep on one platform rather than shallow across three for
+    your daily working fluency — but learn the underlying concepts (compute, storage, networking,
+    IAM, cost models) in a way that isn't tied to any single provider's terminology. This is
+    exactly why this topic exists before any provider-specific material: the concept transfers
+    immediately once you understand it once, properly.
+  </p>
+
+  <div class="figure" id="fig-cloud-concepts"></div>
+
+  <h2>Why "which cloud should I learn" is the wrong first question for an FDE</h2>
+  <p>
+    A dedicated cloud engineer might reasonably specialize deeply in one provider. An FDE doesn't
+    get to choose — the customer's existing infrastructure choice dictates which provider you're
+    actually working in in any given engagement. This is precisely why understanding transferable
+    concepts matters more here than it would in a role where you pick your own stack: you need to
+    be productive in whichever cloud the customer already runs, on day one of the engagement.
+  </p>
+
+  <h2>The mandatory security baseline, regardless of provider</h2>
+  <ul>
+    <li><strong>Never use the root/owner account for daily work</strong> — create scoped accounts or roles instead.</li>
+    <li><strong>Enforce MFA</strong> on every account with meaningful access.</li>
+    <li><strong>Use IAM roles, not long-lived static keys</strong>, wherever the provider supports it.</li>
+    <li><strong>Keep sensitive resources in private subnets</strong>, not directly internet-facing.</li>
+    <li><strong>Enable audit logging</strong> (CloudTrail, Azure Activity Log, GCP Audit Logs) — you'll need this the first time something goes wrong and someone asks "what changed."</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does understanding cloud concepts transfer better than memorizing one provider's specific console and terminology?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The underlying primitives (compute, storage, IAM, networking) are the same across providers — only the names and specific console layouts differ, so conceptual understanding carries over immediately</button>
+        <button class="q-option" data-correct="false">All cloud providers have identical consoles and terminology, so there's nothing to transfer</button>
+        <button class="q-option" data-correct="false">Cloud concepts are entirely provider-specific and never transfer between platforms</button>
+      </div>
+      <div class="q-explain">This is exactly why the topic is framed around concept-first learning — an FDE who understands "managed relational database" as a concept adapts quickly to RDS, Azure SQL, or Cloud SQL, while someone who only learned button locations has to start over.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does the standard "go deep on one platform" cloud-learning advice apply differently to an FDE than to a dedicated cloud engineer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An FDE doesn't choose their own stack — the customer's existing infrastructure dictates which provider they work in, so transferable conceptual fluency matters more than deep single-provider specialization</button>
+        <button class="q-option" data-correct="false">FDEs never actually need to work with cloud infrastructure at all</button>
+        <button class="q-option" data-correct="false">The advice applies identically regardless of role, with no meaningful difference</button>
+      </div>
+      <div class="q-explain">This is a direct consequence of the embedded, customer-driven nature of FDE work — you go where the engagement takes you, which is exactly why the concept layer (not one provider's specifics) is the priority here.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is enabling audit logging (CloudTrail, Activity Log, etc.) specifically called out as a mandatory baseline, not an optional nicety?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Without it, there's no record of what changed when something goes wrong, which is precisely the moment you need that information most</button>
+        <button class="q-option" data-correct="false">Audit logging is purely a cosmetic compliance checkbox with no practical value</button>
+        <button class="q-option" data-correct="false">Audit logs are only useful for billing purposes, not incident investigation</button>
+      </div>
+      <div class="q-explain">This connects directly to Phase 2.4's debugging-under-pressure material — having a reliable record of changes is exactly what lets you correlate an incident with its actual cause quickly.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Scaler "Cloud Computing Skills in Demand: AWS, Azure &amp; GCP" (August 2026), citing Flexera's 2026 State of the Cloud Report; TutorialSearch.io "Where Should You Actually Learn Cloud Platforms in 2026?" (March 2026); Scaler "Cloud Computing Syllabus 2026" (July 2026).</p>
+
+  <div class="pager">
+    <a href="../phase-03-full-stack/3-4-background-jobs-and-webhooks.html">&larr; 3.4 Background jobs &amp; webhooks</a>
+    <a href="4-2-networking-for-enterprise-environments.html">4.2 Networking for enterprise environments &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CF_DATA = {
+  compute: [["AWS","EC2"],["Azure","Virtual Machines"],["GCP","Compute Engine"]],
+  storage: [["AWS","S3"],["Azure","Blob Storage"],["GCP","Cloud Storage"]],
+  db: [["AWS","RDS"],["Azure","Azure SQL Database"],["GCP","Cloud SQL"]],
+  iam: [["AWS","IAM"],["Azure","Entra ID (formerly Azure AD)"],["GCP","Cloud IAM"]],
+  serverless: [["AWS","Lambda"],["Azure","Azure Functions"],["GCP","Cloud Functions"]],
+};
+function renderCf(key) {
+  document.getElementById('cf-rows').innerHTML = CF_DATA[key].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+}
+document.querySelectorAll('.cf-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.cf-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderCf(tab.dataset.c);
+  });
+});
+renderCf('compute');
+
+document.getElementById('fig-cloud-concepts').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: one shared concept layer of compute, storage, IAM, networking underneath three different provider-specific implementations">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="180" y="15" width="320" height="40" rx="8" fill="#182238" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="340" y="40" text-anchor="middle" fill="#c4b5fd">Shared concept layer (learn once)</text>
+  <line x1="250" y1="55" x2="180" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="55" x2="340" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="430" y1="55" x2="500" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <rect x="80" y="90" width="200" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="180" y="112" text-anchor="middle" fill="#f2b84b">AWS terminology</text>
+  <rect x="240" y="90" width="200" height="35" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="340" y="112" text-anchor="middle" fill="#a9c1ff">Azure terminology</text>
+  <rect x="400" y="90" width="200" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="500" y="112" text-anchor="middle" fill="#3ecf8e">GCP terminology</text>
+</svg>
+`;
+</script>
+</body>
+</html>

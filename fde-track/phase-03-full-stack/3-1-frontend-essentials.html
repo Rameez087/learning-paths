@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 Frontend essentials | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fe-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fe-item { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border-strong); background: var(--surface-2); cursor: pointer; }
+.fe-item.expanded { background: rgba(167,139,250,0.1); border-color: #a78bfa; }
+.fe-item-detail { display: none; margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+.fe-item.expanded .fe-item-detail { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · Full-stack for FDEs</div>
+  <h1>3.1 Frontend essentials</h1>
+  <p class="subtitle">You don't need to be the best React developer in the building. You need to never be the reason a deployment stalls because "the frontend person isn't here today."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Current OpenAI FDE role descriptions explicitly include full-stack building as core work, not
+    an occasional extra. The calibration that matters: enough React and TypeScript fluency to
+    build a working internal tool or customer-facing interface without help, comfort with modern
+    state management and API integration — but not the deep specialization a dedicated senior
+    frontend engineer would have in animation, accessibility auditing, or design systems. The test
+    is "can you unblock a deployment," not "could you pass a frontend-specialist interview."
+  </div>
+
+  <h2>Try it: what depth actually matters, by area</h2>
+  <div class="fe-box">
+    <div class="fe-item" data-i="0">
+      <strong>React component architecture</strong>
+      <div class="fe-item-detail">Must-have. You need to build functional components, manage props/state cleanly, and structure a page into sensible pieces — enough to build a working internal dashboard or customer-facing form without architectural help.</div>
+    </div>
+    <div class="fe-item" data-i="1">
+      <strong>State management (useState/useEffect, or a library)</strong>
+      <div class="fe-item-detail">Must-have for anything beyond a static page. You don't need to have opinions on every state library's tradeoffs — you need to competently use whichever one the customer's existing codebase already uses.</div>
+    </div>
+    <div class="fe-item" data-i="2">
+      <strong>API integration (fetch/axios, error handling, loading states)</strong>
+      <div class="fe-item-detail">Must-have — this is where frontend meets everything else you're building. Handling a slow or failed API call gracefully in the UI is a real, common failure point in customer demos.</div>
+    </div>
+    <div class="fe-item" data-i="3">
+      <strong>CSS/design systems mastery</strong>
+      <div class="fe-item-detail">Basic awareness only. You need a page to look acceptable and functional — you don't need deep CSS specialist skills. Use an existing component library (the customer's, or a well-known one) rather than building visual polish from scratch.</div>
+    </div>
+    <div class="fe-item" data-i="4">
+      <strong>Accessibility auditing, animation, performance profiling</strong>
+      <div class="fe-item-detail">Optional/skip for now, unless the specific engagement demands it. This is genuine specialist depth a dedicated frontend engineer would own — not the FDE's job to master unless nobody else on the team can.</div>
+    </div>
+  </div>
+
+  <h2>Why "breadth over narrow depth" is the actual hiring signal</h2>
+  <p>
+    A senior backend engineer with eight years of distributed systems experience is not
+    interchangeable with a full-stack generalist who knows a bit of everything — depth genuinely
+    pays at senior, specialized roles. But FDE work specifically rewards the opposite trade: being
+    unintimidated moving between a database schema one day and a frontend component the next,
+    because a deployment blocker in a real customer engagement could be anywhere in the stack, and
+    there often isn't a specialist on-site to hand it to.
+  </p>
+
+  <div class="figure" id="fig-fe-depth"></div>
+
+  <h2>What full-stack development alone doesn't teach</h2>
+  <p>
+    Full-stack technical range is necessary but not sufficient. What it doesn't cover on its own:
+    customer discovery (Phase 9), production ownership inside an <em>external</em> organization's
+    constraints rather than your own company's (Phase 6), and the AI-specific evaluation skills
+    most 2026-era FDE roles now require (Phase 7). The technical overlap with a strong full-stack
+    background is real and substantial — but it's not the whole job.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the practical calibration test for how much frontend depth an FDE needs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Whether you can unblock a deployment yourself — not whether you could pass a frontend-specialist interview</button>
+        <button class="q-option" data-correct="false">Whether you know every CSS animation technique available</button>
+        <button class="q-option" data-correct="false">FDEs should never write any frontend code themselves</button>
+      </div>
+      <div class="q-explain">This is a deliberately practical bar — real fluency for the common blocking cases, not comprehensive specialist mastery of every frontend subdiscipline.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does FDE work specifically reward breadth across the stack rather than deep specialization in one layer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A deployment blocker in a real customer engagement could be anywhere in the stack, and there often isn't a specialist on-site to hand a problem off to</button>
+        <button class="q-option" data-correct="false">Depth is never valuable in any engineering role</button>
+        <button class="q-option" data-correct="false">Breadth and depth are mutually exclusive and cannot coexist in one engineer</button>
+      </div>
+      <div class="q-explain">This is specific to the embedded, often-solo nature of field engagements — the practical need to move across boundaries without a specialist backup is what makes breadth the higher-leverage trait here.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does full-stack technical range NOT teach on its own, according to this material?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Customer discovery, production ownership inside an external organization's constraints, and AI-specific evaluation skills</button>
+        <button class="q-option" data-correct="false">Full-stack development teaches every skill an FDE needs with no gaps</button>
+        <button class="q-option" data-correct="false">Full-stack development only covers frontend work, never backend</button>
+      </div>
+      <div class="q-explain">This is the honest gap-naming point — strong technical range is a real head start, but the customer-facing and external-ownership dimensions of the role are genuinely different skills layered on top.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: FDE Academy "Can a Full Stack Developer Become a FDE?" (August 2026); AiOps School "How to Become a Forward Deployed Engineer in 2026" (July 2026), citing current OpenAI role descriptions; Meritshot "Frontend vs Backend vs Full Stack Developer" (June 2026).</p>
+
+  <div class="pager">
+    <a href="../phase-02-software-engineering/2-4-debugging-under-pressure.html">&larr; 2.4 Debugging under pressure</a>
+    <a href="3-2-backend-essentials.html">3.2 Backend essentials &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.querySelectorAll('.fe-item').forEach(el => {
+  el.addEventListener('click', () => el.classList.toggle('expanded'));
+});
+
+document.getElementById('fig-fe-depth').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: FDE skill profile is wide and moderate depth across frontend, backend, cloud, and AI, versus a specialist's narrow deep profile">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <text x="170" y="20" text-anchor="middle" font-size="12">FDE profile: wide, moderate depth</text>
+  <rect x="20" y="40" width="60" height="50" fill="#182238" stroke="#a78bfa"/><text x="50" y="100" text-anchor="middle" font-size="8">Frontend</text>
+  <rect x="90" y="40" width="60" height="50" fill="#182238" stroke="#a78bfa"/><text x="120" y="100" text-anchor="middle" font-size="8">Backend</text>
+  <rect x="160" y="40" width="60" height="50" fill="#182238" stroke="#a78bfa"/><text x="190" y="100" text-anchor="middle" font-size="8">Cloud</text>
+  <rect x="230" y="40" width="60" height="50" fill="#182238" stroke="#a78bfa"/><text x="260" y="100" text-anchor="middle" font-size="8">AI/LLM</text>
+  <rect x="300" y="40" width="60" height="50" fill="#182238" stroke="#a78bfa"/><text x="330" y="100" text-anchor="middle" font-size="8">Integration</text>
+
+  <text x="530" y="20" text-anchor="middle" font-size="12">Specialist: narrow, deep</text>
+  <rect x="480" y="15" width="100" height="105" fill="#1a2029" stroke="#5b8cff"/><text x="530" y="72" text-anchor="middle" font-size="9">One area,</text><text x="530" y="86" text-anchor="middle" font-size="9">full depth</text>
+</svg>
+`;
+</script>
+</body>
+</html>

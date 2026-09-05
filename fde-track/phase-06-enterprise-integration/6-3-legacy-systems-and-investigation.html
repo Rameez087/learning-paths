@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.3 Legacy systems &amp; investigation | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.lg-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.lg-step-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 6px; font-size: 13px; }
+.lg-step-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.lg-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · Enterprise integration</div>
+  <h1>6.3 Legacy systems &amp; investigation</h1>
+  <p class="subtitle">There's a 20-year-old system nobody fully understands, and you have two weeks to integrate with it. This is not a hypothetical.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A legacy system is one where the original builders are gone, the documentation is stale or
+    missing, and the actual behavior lives in the code itself — not in anyone's memory.
+    Investigating one safely means the same schema-archaeology discipline from 3.3, extended to
+    the whole system: observe before touching, find the actual behavior through logs and traffic
+    rather than assumptions, and identify which parts are load-bearing before changing anything
+    near them.
+  </div>
+
+  <h2>Try it: work through investigating an unfamiliar legacy system</h2>
+  <div class="lg-box">
+    <div id="lg-steps"></div>
+    <div class="lg-detail" id="lg-detail"></div>
+  </div>
+
+  <h2>SOAP, WSDL, and other things you'll meet that aren't in most tutorials</h2>
+  <p>
+    SOAP remains genuinely common in enterprise and financial sectors specifically — a real,
+    current fact, not a historical footnote. A WSDL (Web Services Description Language) file
+    describes a SOAP service's available operations and message formats; reading one is closer to
+    reading a formal contract than exploring a REST API's documentation. The practical skill isn't
+    loving SOAP — it's being able to work with it competently when a customer's finance or
+    logistics system speaks nothing else.
+  </p>
+
+  <div class="figure" id="fig-legacy-investigation"></div>
+
+  <h2>Batch files, scheduled jobs, and undocumented cron entries</h2>
+  <p>
+    Many legacy integrations aren't APIs at all — they're a scheduled job that drops a file in a
+    specific directory at 2am, which another system picks up and processes. Before assuming a
+    modern API-based integration is the way forward, check what's actually already running:
+    <code>crontab -l</code>, scheduled task lists, or a review of any existing batch/ETL tooling.
+    Replacing or working alongside an existing batch process well often matters more than the
+    elegance of your new integration's design.
+  </p>
+
+  <h2>The "nobody knows why this exists" rule</h2>
+  <p>
+    A specific, disciplined habit: when you find something that seems clearly wrong or pointless
+    — a redundant field, a check that seems unnecessary, a weird conditional — resist the urge to
+    "clean it up" immediately. It may be handling an edge case from years ago that isn't
+    documented anywhere but is still actively protecting against a real failure mode. Ask before
+    removing; Chesterton's Fence applies with particular force in systems this old.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does SOAP still matter as a practical FDE skill in 2026, rather than being purely historical knowledge?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">SOAP remains genuinely common in enterprise and financial sector systems, meaning an FDE will realistically encounter it in real customer environments</button>
+        <button class="q-option" data-correct="false">SOAP has been fully replaced by REST in every industry as of 2026</button>
+        <button class="q-option" data-correct="false">SOAP is only relevant for academic study, never for real integration work</button>
+      </div>
+      <div class="q-explain">This is a current, practical fact rather than a legacy footnote — specific industries genuinely still run on it, which is exactly why it belongs in a skill set built around working with real customer infrastructure.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should an FDE check for existing scheduled jobs or batch processes before assuming a new API-based integration is the right approach?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Many legacy integrations already work via scheduled file drops or batch jobs rather than APIs, and working alongside or replacing that existing process well often matters more than a new integration's elegance</button>
+        <button class="q-option" data-correct="false">Batch jobs and scheduled tasks are always technically incompatible with modern API integrations</button>
+        <button class="q-option" data-correct="false">API-based integrations should always be built regardless of what already exists</button>
+      </div>
+      <div class="q-explain">This connects directly to 6.1's mindset — understanding what already exists and works (even if unglamorous) takes priority over defaulting to a preferred modern pattern.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does the "nobody knows why this exists" rule specifically caution against immediately removing seemingly pointless code in a legacy system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The seemingly unnecessary code may be handling an undocumented edge case that's still actively protecting against a real failure mode, even if the reasoning was never written down</button>
+        <button class="q-option" data-correct="false">All code in legacy systems is always necessary and correct by definition</button>
+        <button class="q-option" data-correct="false">Removing any code from a legacy system is always safe as long as tests pass</button>
+      </div>
+      <div class="q-explain">This is Chesterton's Fence applied to legacy systems specifically — the absence of documentation for why something exists is not evidence that it's safe to remove, especially in systems this old and undocumented.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic builds on the schema-investigation discipline from Phase 3.3, extended to whole-system legacy investigation, alongside the enterprise integration debt patterns from 6.1.</p>
+
+  <div class="pager">
+    <a href="6-2-identity-and-access-at-scale.html">&larr; 6.2 Identity &amp; access at scale</a>
+    <a href="6-4-private-networking-and-hybrid-cloud.html">6.4 Private networking &amp; hybrid cloud &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const LG_STEPS = [
+  { name: "1. Find who still knows anything", detail: "Even a departed employee's old ticket comments or commit messages are worth more than guessing. Ask around before assuming nobody knows — often someone adjacent to the system knows a fragment." },
+  { name: "2. Observe real traffic/behavior first", detail: "Watch actual logs, actual API calls, actual batch job output before touching anything. The system's real behavior, not its documentation, is ground truth." },
+  { name: "3. Map the actual dependencies", detail: "What calls this system? What does it call? A dependency graph built from observation, not from an org chart or an outdated architecture diagram." },
+  { name: "4. Identify the load-bearing parts", detail: "Which specific functions, tables, or endpoints does the most traffic or the most critical business process actually depend on? Handle these with the most care." },
+  { name: "5. Make the smallest safe change first", detail: "A small, reversible, well-tested first change builds confidence and reveals unknown unknowns before you commit to a larger integration design." },
+];
+let lgIdx = 0;
+function renderLg() {
+  document.getElementById('lg-steps').innerHTML = LG_STEPS.map((s,i) =>
+    `<div class="lg-step-btn${i===lgIdx?' active':''}" data-i="${i}">${s.name}</div>`
+  ).join('');
+  document.getElementById('lg-detail').textContent = LG_STEPS[lgIdx].detail;
+  document.querySelectorAll('.lg-step-btn').forEach(btn => {
+    btn.addEventListener('click', () => { lgIdx = parseInt(btn.dataset.i,10); renderLg(); });
+  });
+}
+renderLg();
+
+document.getElementById('fig-legacy-investigation').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: legacy system investigation moves from asking people to observing real traffic to mapping dependencies before making any change">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="40" width="140" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="64" text-anchor="middle">Ask around</text>
+  <line x1="160" y1="60" x2="200" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a55)"/>
+  <rect x="200" y="40" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="270" y="64" text-anchor="middle" fill="#a9c1ff">Observe real behavior</text>
+  <line x1="340" y1="60" x2="380" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a55)"/>
+  <rect x="380" y="40" width="140" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="450" y="64" text-anchor="middle">Map dependencies</text>
+  <line x1="520" y1="60" x2="560" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a55)"/>
+  <rect x="560" y="40" width="100" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="610" y="64" text-anchor="middle" fill="#3ecf8e">Small safe change</text>
+  <defs><marker id="a55" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

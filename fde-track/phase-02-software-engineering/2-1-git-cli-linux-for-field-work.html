@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 Git, CLI &amp; Linux for field work | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.gc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.gc-scenario-btn { display: block; width: 100%; text-align: left; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px; }
+.gc-result { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 8px; display: none; }
+.gc-result.show { display: block; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · Software engineering foundations</div>
+  <h1>2.1 Git, CLI &amp; Linux for field work</h1>
+  <p class="subtitle">You won't have your usual IDE setup, your usual permissions, or a helpful Slack channel. You will have a terminal.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Field engagements strip away comfort tooling fast: a jump box with no GUI, a locked-down
+    environment where you can't install your preferred editor, a git history left in a confusing
+    state by whoever touched the repo before you. The bar for this phase isn't "know every git
+    flag" — it's being able to diagnose and recover from an unfamiliar Linux environment and a
+    messy git history without needing to ask someone else to do it for you.
+  </div>
+
+  <h2>Try it: pick the right move for each field scenario</h2>
+  <div class="gc-box">
+    <button class="gc-scenario-btn" data-s="detached">"git log shows my last 3 commits are gone after I checked out an old tag to test something."</button>
+    <button class="gc-scenario-btn" data-s="permission">"I SSH into the customer's jump box and can't write to /var/log or install anything with apt."</button>
+    <button class="gc-scenario-btn" data-s="merge">"Someone force-pushed over main while I had local changes based on the old main."</button>
+    <button class="gc-scenario-btn" data-s="diskfull">"A script suddenly fails with 'No space left on device' on a box that was fine yesterday."</button>
+    <div class="gc-result" id="gc-result"></div>
+  </div>
+
+  <h2>Why "detached HEAD" trips people up specifically in the field</h2>
+  <p>
+    Checking out a tag or a specific commit (common when reproducing a customer-reported bug
+    against an old release) puts you in a detached HEAD state — commits you make there aren't on
+    any branch, and they can look "lost" the moment you check out something else. They're not
+    actually gone: <code>git reflog</code> keeps a local record of every place HEAD has pointed,
+    letting you recover commits that look lost but aren't garbage-collected yet.
+  </p>
+
+  <div class="figure" id="fig-cli"></div>
+
+  <h2>The Linux skills that actually matter under field conditions</h2>
+  <ul>
+    <li><strong>Reading, not just running</strong> — <code>ps aux</code>, <code>df -h</code>, <code>du -sh *</code>, <code>journalctl</code>, and <code>tail -f</code> for logs are what you reach for when something's wrong and nobody can explain why yet.</li>
+    <li><strong>Permissions literacy</strong> — understanding <code>chmod</code>/<code>chown</code>, sudo policies, and why a customer's security team locked down exactly what they locked down, rather than fighting it blindly.</li>
+    <li><strong>Piping and text processing</strong> — <code>grep</code>, <code>awk</code>, <code>sed</code>, and <code>jq</code> for parsing logs and JSON output on a box with no fancy tooling installed.</li>
+    <li><strong>tmux or screen</strong> — a long-running process on a remote box needs to survive your SSH session dropping, which it will, at the worst possible moment.</li>
+  </ul>
+
+  <h2>Git operations worth being fluent in, not just aware of</h2>
+  <p>
+    Beyond commit/push/pull: <code>git bisect</code> for finding which commit introduced a
+    regression in an unfamiliar codebase, <code>git stash</code> for quickly parking uncommitted
+    work when you need to switch context fast, <code>git cherry-pick</code> for pulling one
+    specific fix across branches without a full merge, and <code>git reflog</code> as the general
+    safety net for "I thought I lost work" moments.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do commits made in a "detached HEAD" state appear to disappear when you check out something else?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Those commits aren't attached to any branch, so nothing keeps pointing to them once you move HEAD elsewhere — though git reflog still tracks where HEAD has been</button>
+        <button class="q-option" data-correct="false">Git permanently and immediately deletes any commit made outside a named branch</button>
+        <button class="q-option" data-correct="false">Detached HEAD commits are stored in a separate repository entirely</button>
+      </div>
+      <div class="q-explain">The commits still exist in git's object database until garbage collected — reflog is specifically what lets you find and recover them before that happens.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does tmux or screen matter specifically for field work on remote customer boxes?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A long-running process needs to survive an SSH session dropping, which happens unpredictably on customer networks</button>
+        <button class="q-option" data-correct="false">tmux makes Linux commands run faster</button>
+        <button class="q-option" data-correct="false">tmux is required for any git operation to function</button>
+      </div>
+      <div class="q-explain">Terminal multiplexers decouple a running process from the specific SSH connection that started it — critical when working over unreliable or restricted customer network connections.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is understanding permissions and sudo policy framed as "literacy" rather than something to fight against?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A customer's security team locked things down deliberately, and understanding why is more productive than repeatedly trying workarounds that violate their actual security requirements</button>
+        <button class="q-option" data-correct="false">Permission restrictions in customer environments are always mistakes that should be immediately escalated</button>
+        <button class="q-option" data-correct="false">FDEs should always request root access to bypass any restriction they encounter</button>
+      </div>
+      <div class="q-explain">This connects directly to Phase 6's "the customer's environment is not clean" mindset — working within real constraints, understanding their reasons, is part of the actual job, not an obstacle to route around.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic draws on established, durable Linux/git practices rather than fast-changing tooling — the specific commands here have been stable for years and are unlikely to become obsolete.</p>
+
+  <div class="pager">
+    <a href="../phase-01-foundations/1-4-the-2026-fde-landscape.html">&larr; 1.4 The 2026 FDE landscape</a>
+    <a href="2-2-api-design-integration-patterns.html">2.2 API design &amp; integration patterns &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const GC_ANSWERS = {
+  detached: "→ Run `git reflog` to find the commit hashes, then `git branch recovery-branch <hash>` to reattach them to a real branch. They were never actually deleted — just unreferenced.",
+  permission: "→ Work within the constraint, don't fight it. Use `$HOME` or `/tmp` for scratch space, request specific package installs through the customer's approved channel, and use portable tools (a static binary, a Python venv) that don't need system-wide install rights.",
+  merge: "→ Don't force-push back. Run `git fetch`, then `git rebase origin/main` (or merge) to replay your local changes on top of the new history, resolving conflicts explicitly rather than overwriting a teammate's work.",
+  diskfull: "→ `df -h` to confirm which volume is full, then `du -sh /* 2>/dev/null | sort -rh | head` to find what's actually consuming space — often log files or old build artifacts nobody's rotated, not the application itself.",
+};
+document.querySelectorAll('.gc-scenario-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const r = document.getElementById('gc-result');
+    r.className = 'gc-result show';
+    r.textContent = GC_ANSWERS[btn.dataset.s];
+  });
+});
+
+document.getElementById('fig-cli').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: detached HEAD commits still exist in git's object database and can be recovered via reflog even after checking out elsewhere">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="30" y="50" width="140" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="100" y="74" text-anchor="middle" fill="#a9c1ff">main branch</text>
+  <rect x="220" y="50" width="140" height="40" rx="6" fill="#1a2029" stroke="#f2b84b" stroke-dasharray="4,3"/><text x="290" y="68" text-anchor="middle" fill="#f2b84b" font-size="9">detached HEAD</text><text x="290" y="80" text-anchor="middle" fill="#c9a05f" font-size="8">commits (unreferenced)</text>
+  <rect x="440" y="50" width="200" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="540" y="74" text-anchor="middle" fill="#3ecf8e">git reflog → recovery-branch</text>
+  <line x1="360" y1="70" x2="440" y2="70" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a43)"/>
+  <defs><marker id="a43" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

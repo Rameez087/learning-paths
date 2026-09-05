@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.2 Monitoring, logging &amp; tracing | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.mo-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.mo-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.mo-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.mo-tab.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; color: #c4b5fd; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · DevOps, SRE &amp; observability</div>
+  <h1>5.2 Monitoring, logging &amp; tracing</h1>
+  <p class="subtitle">"A system is observable if its internal state can be inferred from its outputs." You will not always be there to look inside it directly.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Observability rests on three pillars: <strong>metrics</strong> (numeric measurements over
+    time — request rate, latency, error rate), <strong>logs</strong> (discrete, timestamped
+    records of specific events), and <strong>traces</strong> (the path a single request takes
+    across multiple services). <strong>OpenTelemetry (OTel)</strong> has become the vendor-neutral
+    standard for instrumenting all three — one SDK, one wire protocol, meaning you can switch
+    observability backends later without touching application code, which matters directly when a
+    customer already has a preferred vendor you need to integrate with.
+  </div>
+
+  <h2>Try it: explore each pillar</h2>
+  <div class="mo-box">
+    <div class="mo-tabs">
+      <div class="mo-tab active" data-p="metrics">Metrics</div>
+      <div class="mo-tab" data-p="logs">Logs</div>
+      <div class="mo-tab" data-p="traces">Traces</div>
+    </div>
+    <div id="mo-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why OTel's vendor neutrality matters specifically for FDE work</h2>
+  <p>
+    Instrumentation is the expensive, sticky part of observability — once your code is wired to
+    call a specific vendor's SDK directly, switching later means re-touching every instrumented
+    location. OpenTelemetry standardizes the instrumentation layer itself, turning vendor selection
+    into a reversible decision made independently of application code. For an FDE walking into a
+    customer who already runs Datadog, or New Relic, or a self-hosted Grafana stack, OTel-based
+    instrumentation means your code doesn't need to know or care which backend the customer
+    prefers.
+  </p>
+
+  <div class="figure" id="fig-otel"></div>
+
+  <h2>Traces: the pillar that answers "which service actually caused this?"</h2>
+  <p>
+    In a system made of multiple services calling each other, a single slow user request might
+    pass through five different services before returning a response. Metrics can tell you overall
+    latency went up. Logs can tell you individual events. Only a trace — the connected record of
+    that one specific request's full path — can show you exactly which one of those five services
+    added the delay, which is precisely the question Phase 5.4's slowdown diagnosis needs answered.
+  </p>
+
+  <h2>Structured logging: a small habit with a big debugging payoff</h2>
+  <p>
+    A log line that reads plain text ("order failed") is far harder to search and correlate than a
+    structured log line (JSON with fields like <code>order_id</code>, <code>customer_id</code>,
+    <code>error_code</code>). Structured logs let you query "show me every log line for this
+    specific order_id across every service" instantly — exactly the query you need most during a
+    live incident, and exactly the one unstructured text logs make painfully slow.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What question can a distributed trace answer that metrics and logs alone typically cannot?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Exactly which specific service in a multi-service request path added the delay for one particular slow request</button>
+        <button class="q-option" data-correct="false">The total number of requests a system received in the last hour</button>
+        <button class="q-option" data-correct="false">Whether a specific error message appeared anywhere in the system's logs</button>
+      </div>
+      <div class="q-explain">Traces are specifically built to follow one request's full journey across service boundaries — metrics show aggregate trends, logs show individual events, but only traces connect the dots for a single request's path.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does OpenTelemetry's vendor neutrality matter specifically for an FDE moving between different customer engagements?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It decouples instrumentation from any specific backend, so code written once works regardless of which observability vendor a particular customer already uses</button>
+        <button class="q-option" data-correct="false">OpenTelemetry only works with one specific observability vendor</button>
+        <button class="q-option" data-correct="false">Vendor choice has no bearing on how instrumentation code is written</button>
+      </div>
+      <div class="q-explain">Since different customers run different observability stacks, standardized instrumentation avoids having to rewrite telemetry code for every new engagement's specific vendor preference.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does structured (JSON-field) logging make incident response faster than plain-text logging?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets you query for all log lines matching a specific field value (like a particular order_id) instantly, which is exactly the kind of correlation needed during a live incident</button>
+        <button class="q-option" data-correct="false">Structured logs take up less storage space than plain-text logs</button>
+        <button class="q-option" data-correct="false">Plain-text logs cannot technically be searched at all</button>
+      </div>
+      <div class="q-explain">The searchability difference is the practical payoff — during a live incident, being able to instantly filter to one specific entity's full activity trail across services is exactly the query structured logging makes fast.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Guance Learn "Observability Fundamentals: The 2026 Guide" (July 2026); Medium (Alok Rahul) "Day 109 — SLIs and SLOs with OpenTelemetry for AI Workloads" (April 2026).</p>
+
+  <div class="pager">
+    <a href="5-1-deployment-strategies.html">&larr; 5.1 Deployment strategies</a>
+    <a href="5-3-slis-slos-and-incident-response.html">5.3 SLIs, SLOs &amp; incident response &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const MO_INFO = {
+  metrics: "Numeric measurements aggregated over time — request rate, error rate, p50/p95/p99 latency. Cheap to store, great for dashboards and alerting on trends, but can't tell you the story behind any single request.",
+  logs: "Discrete, timestamped records of specific events. Rich detail per event, but expensive to store at scale and hard to correlate across services unless structured consistently.",
+  traces: "The connected record of one request's journey across multiple services, showing exactly where time was spent at each hop. The pillar most directly useful for 'why was this one specific request slow.'",
+};
+document.querySelectorAll('.mo-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.mo-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('mo-detail').textContent = MO_INFO[tab.dataset.p];
+  });
+});
+document.getElementById('mo-detail').textContent = MO_INFO['metrics'];
+
+document.getElementById('fig-otel').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: application instrumented once with OpenTelemetry SDK, exportable to any of several different observability backends">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="45" width="160" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="100" y="69" text-anchor="middle">Your application</text>
+  <line x1="180" y1="65" x2="230" y2="65" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a52)"/>
+  <rect x="230" y="45" width="160" height="40" rx="6" fill="#182238" stroke="#a78bfa"/><text x="310" y="69" text-anchor="middle" fill="#c4b5fd">OpenTelemetry SDK</text>
+  <line x1="390" y1="55" x2="440" y2="20" stroke="#6b7386" stroke-width="1"/>
+  <line x1="390" y1="65" x2="440" y2="65" stroke="#6b7386" stroke-width="1"/>
+  <line x1="390" y1="75" x2="440" y2="110" stroke="#6b7386" stroke-width="1"/>
+  <rect x="440" y="5" width="120" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="500" y="24" text-anchor="middle" font-size="9">Datadog</text>
+  <rect x="440" y="50" width="120" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="500" y="69" text-anchor="middle" font-size="9">Grafana</text>
+  <rect x="440" y="95" width="120" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="500" y="114" text-anchor="middle" font-size="9">New Relic</text>
+  <defs><marker id="a52" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

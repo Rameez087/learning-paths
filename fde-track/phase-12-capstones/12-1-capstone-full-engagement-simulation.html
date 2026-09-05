@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.1 Capstone: full engagement simulation | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.cs-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.cs-scenario { padding: 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-bottom: 16px; border-left: 3px solid #a78bfa; }
+.cs-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: var(--surface-2); cursor: pointer; }
+.cs-item.checked { background: rgba(62,207,142,0.1); border: 1px solid var(--success); }
+.cs-check { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.cs-item.checked .cs-check { background: var(--success); border-color: var(--success); color: #0b0e14; }
+.cs-progress { margin-top: 12px; padding: 12px; background: var(--code-bg); border-radius: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · Capstone: the FDE engagement</div>
+  <h1>12.1 Capstone: full engagement simulation</h1>
+  <p class="subtitle">One fictional customer. Every phase of this track, applied in sequence. No solution given upfront — you behave like an actual FDE.</p>
+
+  <div class="cs-scenario">
+    <strong>The customer:</strong> Meridian Freight, a regional logistics company with 40 years of
+    history. They run a 15-year-old on-premise warehouse management system, a newer cloud-based
+    dispatch platform (acquired via a 2023 acquisition, still not fully integrated), and a
+    customer-facing tracking portal built by a contractor who's no longer reachable. Leadership
+    wants "an AI system to help reduce shipping delays." The COO, the head of warehouse
+    operations, and the customer support lead each have a different idea of what's actually
+    causing delays. Data privacy requirements mean customer shipping addresses can't leave their
+    private cloud environment. Budget is fixed. Go-live is expected within one quarter.
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Run the full lifecycle from Phase 1.3 against this scenario: Discover → Understand → Scope →
+    Design → Prototype → Integrate → Build → Deploy → Observe → Iterate → Prove Impact → Scale →
+    Handoff. This capstone deliberately doesn't hand you the answer — the checklist below tracks
+    your progress through genuinely doing the work, not through reading a solution.
+  </div>
+
+  <h2>Work through the engagement</h2>
+  <div class="cs-box">
+    <div id="cs-items"></div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <h2>What genuine completion looks like at each stage</h2>
+  <ul>
+    <li><strong>Discovery</strong> — you've identified that three stakeholders have three different theories about the delay's cause, and you have a plan to reconcile or test them (9.1).</li>
+    <li><strong>Scope</strong> — you've turned "reduce shipping delays" into a specific, measurable target, with an explicit statement of what's out of scope for this quarter (9.3).</li>
+    <li><strong>Design</strong> — your architecture accounts for the private-cloud data residency constraint (8.4's pattern), the two disconnected systems (6.1, 6.3), and states its tradeoffs plainly for both the COO and the warehouse operations lead (8.1, 9.2).</li>
+    <li><strong>Integration</strong> — you've investigated both the legacy warehouse system and the dispatch platform's actual APIs (6.2, 6.3) rather than assuming a clean integration path.</li>
+    <li><strong>Deployment &amp; observability</strong> — you have a rollback plan and real monitoring in place before go-live (5.1, 5.2).</li>
+    <li><strong>Prove impact</strong> — you have a specific, defensible ROI story ready for the COO, not just "the system works" (10.1).</li>
+    <li><strong>Handoff</strong> — documentation and a runbook exist for whoever operates this after you (1.3, 9.2).</li>
+  </ul>
+
+  <div class="figure" id="fig-capstone-lifecycle"></div>
+
+  <h2>The honest self-assessment question</h2>
+  <p>
+    Before considering this capstone complete, ask: could you defend every design decision above
+    to a skeptical stakeholder in the room, in plain language, with the actual tradeoff stated
+    honestly? If any answer is "I'd need to think about that," that's a genuine signal for which
+    phase of this track to revisit — this capstone is diagnostic as much as it is a deliverable.
+  </p>
+
+  <p class="sources" style="margin-top:32px">This capstone synthesizes the full 12-phase track — the engagement lifecycle (1.3), enterprise integration (Phase 6), system design method (8.1), consulting skills (Phase 9), and business impact (10.1) applied together against one scenario.</p>
+
+  <div class="pager">
+    <a href="../phase-11-security-governance/11-3-red-teaming-and-guardrails.html">&larr; 11.3 Red teaming &amp; guardrails</a>
+    <a href="12-2-capstone-incident-under-pressure.html">12.2 Capstone: incident under pressure &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+const ITEMS = [
+  "Discovery: identified each stakeholder's distinct theory of the problem",
+  "Understand: translated 'reduce shipping delays' into the actual underlying issue(s)",
+  "Scope: defined a specific, measurable target and explicit out-of-scope items for this quarter",
+  "Design: architecture respects the data residency constraint and states tradeoffs plainly",
+  "Prototype: smallest testable version built to validate the core assumption",
+  "Integrate: legacy warehouse system and dispatch platform investigated, not assumed",
+  "Build: production-grade implementation, not prototype shortcuts",
+  "Deploy: rollback plan defined and ready before go-live",
+  "Observe: real monitoring and alerting in place from day one",
+  "Iterate: at least one real adjustment made based on observed behavior, not assumption",
+  "Prove impact: a specific, defensible ROI story ready for the COO",
+  "Scale: a plan for expanding beyond the initial deployment scope",
+  "Handoff: documentation and a runbook exist for whoever operates this next",
+];
+document.getElementById('cs-items').innerHTML = ITEMS.map((it,i) => `
+  <div class="cs-item" data-i="${i}">
+    <div class="cs-check">✓</div>
+    <div>${it}</div>
+  </div>
+`).join('');
+document.querySelectorAll('.cs-item').forEach(el => {
+  el.addEventListener('click', () => { el.classList.toggle('checked'); updateProgress(); });
+});
+function updateProgress() {
+  const checked = document.querySelectorAll('.cs-item.checked').length;
+  document.getElementById('cs-progress').textContent = `${checked} / ${ITEMS.length} lifecycle stages genuinely completed`;
+}
+updateProgress();
+
+document.getElementById('fig-capstone-lifecycle').innerHTML = `
+<svg viewBox="0 0 680 100" width="100%" role="img" aria-label="Diagram: the full 13-stage engagement lifecycle from Phase 1.3 applied end to end against the Meridian Freight scenario">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="10" y="35" width="90" height="30" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="55" y="54" text-anchor="middle" fill="#f2b84b">Discover→Scope</text>
+  <line x1="100" y1="50" x2="130" y2="50" stroke="#6b7386" stroke-width="1" marker-end="url(#a66)"/>
+  <rect x="130" y="35" width="120" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="190" y="54" text-anchor="middle" fill="#a9c1ff">Design→Integrate→Build</text>
+  <line x1="250" y1="50" x2="280" y2="50" stroke="#6b7386" stroke-width="1" marker-end="url(#a66)"/>
+  <rect x="280" y="35" width="120" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="54" text-anchor="middle" fill="#3ecf8e">Deploy→Observe→Iterate</text>
+  <line x1="400" y1="50" x2="430" y2="50" stroke="#6b7386" stroke-width="1" marker-end="url(#a66)"/>
+  <rect x="430" y="35" width="230" height="30" rx="4" fill="#1a2029" stroke="#a78bfa"/><text x="545" y="54" text-anchor="middle" fill="#c4b5fd">Prove Impact→Scale→Handoff</text>
+  <defs><marker id="a66" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

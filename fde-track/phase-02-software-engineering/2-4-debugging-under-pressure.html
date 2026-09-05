@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.4 Debugging under pressure | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.db-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.db-step-btn { display: block; width: 100%; text-align: left; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; margin-bottom: 6px; font-size: 13px; }
+.db-step-btn.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.db-detail { padding: 14px 16px; background: var(--code-bg); border-radius: 8px; font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · Software engineering foundations</div>
+  <h1>2.4 Debugging under pressure</h1>
+  <p class="subtitle">A VP is watching. The system is down. Panic is the natural response — and the exact thing that makes debugging take longer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Debugging under customer pressure needs a method that survives adrenaline, because your normal
+    unhurried debugging instincts degrade under stress. The core discipline: separate
+    <strong>containment</strong> (stop the bleeding) from <strong>root cause analysis</strong>
+    (understand why) — don't let the pressure to explain "why" delay the actions that limit
+    damage right now. This exact sequencing shows up again in Phase 5's incident response material,
+    because it's the same underlying skill applied at a bigger scale.
+  </div>
+
+  <h2>Try it: work through a live incident, step by step</h2>
+  <div class="db-box">
+    <div id="db-steps"></div>
+    <div class="db-detail" id="db-detail"></div>
+  </div>
+
+  <h2>Why "reproduce it locally first" is often the wrong instinct under pressure</h2>
+  <p>
+    Your default instinct — pull the code down, try to reproduce it on your own machine — can
+    burn twenty minutes while the customer's system stays broken. Under real time pressure, look
+    first at what changed most recently (a deploy, a config change, a data update) and what the
+    actual error output says, rather than starting from "let me recreate this from scratch."
+    Recent-change correlation solves a large share of production incidents faster than full
+    reproduction does.
+  </p>
+
+  <div class="figure" id="fig-debug-flow"></div>
+
+  <h2>Narrating out loud: a genuinely useful habit, not just for show</h2>
+  <p>
+    Saying your hypothesis out loud as you test it — "I think this is a connection pool exhaustion
+    issue, checking pool metrics now" — does two things at once: it keeps the customer informed
+    (which reduces their own panic and lets them course-correct if you're chasing the wrong
+    thing), and it forces you to actually articulate your reasoning, which catches faulty logic
+    faster than silent debugging does. This becomes a core skill again in Phase 9's stakeholder
+    communication material, but it starts here, at the terminal.
+  </p>
+
+  <h2>The specific trap: fixing the symptom instead of the cause under time pressure</h2>
+  <p>
+    Restarting a hung service makes the immediate symptom disappear — and is often the right first
+    move for containment. But if that's where the incident response stops, the same failure
+    returns, usually at a worse time. A disciplined process explicitly separates "what did we do
+    to stop the bleeding" from "what did we determine actually caused it, and did we fix that
+    root cause too" — treating a restart as containment, not resolution.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why should containment be separated from root cause analysis during a live incident?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Waiting to fully understand the cause before taking any action to limit damage lets the impact keep growing while you investigate</button>
+        <button class="q-option" data-correct="false">Root cause analysis should always happen before any containment action is taken</button>
+        <button class="q-option" data-correct="false">Containment and root cause analysis are the same activity performed in a different order</button>
+      </div>
+      <div class="q-explain">This sequencing — stop the bleeding first, understand why second — prevents the search for a full explanation from delaying action that could limit ongoing damage.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why might checking recent changes be faster than attempting to reproduce an issue locally under time pressure?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A large share of production incidents correlate directly with something that changed recently — checking that first can shortcut the debugging process compared to full reproduction from scratch</button>
+        <button class="q-option" data-correct="false">Local reproduction is never a valid debugging technique under any circumstances</button>
+        <button class="q-option" data-correct="false">Recent changes are never relevant to production incidents</button>
+      </div>
+      <div class="q-explain">This isn't a claim that reproduction is worthless — it's a time-pressure prioritization: correlating with recent changes often gets to an answer faster when minutes matter.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is restarting a hung service considered containment rather than resolution?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It removes the immediate symptom without addressing whatever actually caused the service to hang, so the same failure is likely to recur</button>
+        <button class="q-option" data-correct="false">Restarting a service is never an appropriate action during an incident</button>
+        <button class="q-option" data-correct="false">A restart always simultaneously fixes both the symptom and the underlying cause</button>
+      </div>
+      <div class="q-explain">This distinction matters practically — treating a restart as "done" skips the root-cause step, setting up a repeat incident later unless the actual cause gets investigated separately.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic reflects durable incident-response and debugging discipline established across software engineering practice — the specific technique (separating containment from root cause) recurs in Phase 5's SRE material at greater depth and scale.</p>
+
+  <div class="pager">
+    <a href="2-3-authentication-and-authorization.html">&larr; 2.3 Authentication &amp; authorization</a>
+    <a href="../phase-03-full-stack/3-1-frontend-essentials.html">Phase 3: Full-stack for FDEs &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DB_STEPS = [
+  { name: "1. Acknowledge & narrate", detail: "Tell the customer you're on it, and start narrating your hypothesis out loud as you test it. This calms the room and forces clearer thinking simultaneously." },
+  { name: "2. Check what changed recently", detail: "A deploy, a config change, a data migration, a traffic spike. Correlate the incident's start time against recent changes before attempting full reproduction." },
+  { name: "3. Contain first", detail: "If there's a safe rollback, feature flag, or restart available, use it to stop the immediate damage — even before you fully understand why it's happening." },
+  { name: "4. Investigate root cause separately", detail: "Once contained, dig into logs, metrics, and traces to actually understand what happened — this is a distinct activity from step 3, not the same one." },
+  { name: "5. Fix the actual cause, not just the symptom", detail: "A restart or rollback bought you time. Confirm the underlying issue is addressed before considering the incident closed." },
+  { name: "6. Document what happened", detail: "Write it down while it's fresh — what broke, what you tried, what actually fixed it. This becomes the postmortem material in Phase 5." },
+];
+let dbIdx = 0;
+function renderDb() {
+  document.getElementById('db-steps').innerHTML = DB_STEPS.map((s,i) =>
+    `<div class="db-step-btn${i===dbIdx?' active':''}" data-i="${i}">${s.name}</div>`
+  ).join('');
+  document.getElementById('db-detail').textContent = DB_STEPS[dbIdx].detail;
+  document.querySelectorAll('.db-step-btn').forEach(btn => {
+    btn.addEventListener('click', () => { dbIdx = parseInt(btn.dataset.i,10); renderDb(); });
+  });
+}
+renderDb();
+
+document.getElementById('fig-debug-flow').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: incident response splits into a fast containment path and a parallel root cause investigation path">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="45" width="140" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="90" y="69" text-anchor="middle">Incident starts</text>
+  <line x1="160" y1="55" x2="220" y2="30" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#a44)"/>
+  <rect x="220" y="10" width="180" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="310" y="35" text-anchor="middle" fill="#f2b84b">Contain (fast)</text>
+  <line x1="160" y1="75" x2="220" y2="100" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#a44b)"/>
+  <rect x="220" y="85" width="180" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="310" y="110" text-anchor="middle" fill="#a9c1ff">Investigate root cause</text>
+  <line x1="400" y1="30" x2="460" y2="65" stroke="#6b7386" stroke-width="1.5"/>
+  <line x1="400" y1="105" x2="460" y2="65" stroke="#6b7386" stroke-width="1.5"/>
+  <rect x="460" y="45" width="180" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="550" y="69" text-anchor="middle" fill="#3ecf8e">Resolved + documented</text>
+  <defs><marker id="a44" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker><marker id="a44b" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5b8cff"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 Networking for enterprise environments | FDE Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.nw-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.nw-node { padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface-2); }
+.nw-node.active { background: rgba(167,139,250,0.15); border-color: #a78bfa; }
+.nw-detail { margin-top: 12px; padding: 14px; background: var(--code-bg); border-radius: 8px; font-size: 13px; min-height: 50px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">FDE <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · Cloud &amp; infrastructure</div>
+  <h1>4.2 Networking for enterprise environments</h1>
+  <p class="subtitle">Your integration works perfectly on your laptop. It will not work the same way once it has to cross the customer's firewall.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A VPC (Virtual Private Cloud) is an isolated network boundary — the container everything else
+    lives inside. Subnets divide that boundary into public (internet-facing) and private
+    (internal-only) zones. A load balancer distributes traffic across multiple instances. Firewalls
+    and security groups control exactly what traffic is allowed in or out, at a granularity down
+    to specific ports and IP ranges. For an FDE, the practical skill isn't designing this
+    architecture from scratch — it's reading an unfamiliar customer's existing network diagram and
+    correctly predicting where your integration will get blocked before you find out the hard way.
+  </div>
+
+  <h2>Try it: explore each networking component</h2>
+  <div class="nw-box">
+    <div id="nw-nodes"></div>
+    <div class="nw-detail" id="nw-detail">Click a component above.</div>
+  </div>
+
+  <h2>Public subnet vs. private subnet: the distinction that determines your entire architecture</h2>
+  <p>
+    A public subnet has a route to the internet gateway — resources here can be reached directly
+    from outside (a load balancer, a bastion host). A private subnet has no direct internet route
+    — resources here (application servers, databases) are only reachable from inside the VPC or
+    through a controlled path like a NAT gateway. The standard, security-conscious pattern:
+    public-facing components sit in public subnets, everything else — especially databases — sits
+    private, reachable only through the application layer in front of it.
+  </p>
+
+  <div class="figure" id="fig-vpc"></div>
+
+  <h2>DNS: the layer that quietly breaks integrations</h2>
+  <p>
+    A surprising share of "the integration doesn't work" tickets trace back to DNS — an internal
+    hostname that only resolves inside the customer's network, a stale DNS cache, or a service
+    that's actually reachable but only by an IP address nobody documented. When debugging a
+    connectivity issue, checking whether DNS resolution itself is succeeding (before assuming the
+    actual service is down) is a fast, frequently-skipped diagnostic step.
+  </p>
+
+  <h2>Reverse proxies and TLS termination</h2>
+  <p>
+    A reverse proxy (nginx, an API gateway, a cloud load balancer) sits in front of your
+    application, often handling TLS termination — decrypting HTTPS traffic once at the edge so
+    your application doesn't have to manage certificates itself. This matters for an FDE
+    specifically because customer environments frequently have their own reverse proxy or WAF
+    (Web Application Firewall) layer in front of anything you deploy — understanding that this
+    layer exists and what it might be rewriting or blocking is often the missing piece when
+    something works locally but not once deployed inside the customer's network.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the key difference between a public and private subnet?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A public subnet has a route to the internet gateway and can be reached from outside; a private subnet has no direct internet route and is only reachable from inside the network or through a controlled path</button>
+        <button class="q-option" data-correct="false">Public and private subnets differ only in naming, with no functional difference</button>
+        <button class="q-option" data-correct="false">Private subnets can never communicate with any other part of the network</button>
+      </div>
+      <div class="q-explain">This routing difference is exactly why sensitive components (databases) are placed in private subnets — there's no direct path in from the internet to attack, only through the controlled application layer in front.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why should DNS resolution be checked early when debugging a connectivity issue, rather than assuming a service is actually down?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A surprising share of connectivity failures trace back to DNS issues — an internal hostname not resolving, a stale cache — rather than the service itself being unreachable</button>
+        <button class="q-option" data-correct="false">DNS is never a factor in connectivity problems within enterprise networks</button>
+        <button class="q-option" data-correct="false">Checking DNS resolution always takes longer than checking the actual service directly</button>
+      </div>
+      <div class="q-explain">This is a fast, frequently-skipped diagnostic step — ruling out DNS early can save significant time compared to investigating the application layer when the actual problem is name resolution.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does understanding a customer's existing reverse proxy or WAF layer matter for an FDE specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Something that works locally can behave differently once deployed behind the customer's own proxy/WAF layer, which might rewrite requests or block traffic in ways not obvious from your own environment</button>
+        <button class="q-option" data-correct="false">Reverse proxies are only relevant to frontend development, never backend integration</button>
+        <button class="q-option" data-correct="false">Customer environments never have any proxy or firewall layers to account for</button>
+      </div>
+      <div class="q-explain">This is exactly the "customer's environment is not clean" reality (Phase 6) — an integration that's technically correct can still fail once it has to pass through infrastructure layers you didn't design and may not initially know exist.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This topic reflects durable, cross-provider networking concepts (VPCs, subnets, load balancers, DNS, reverse proxies) that are stable across AWS, Azure, and GCP despite differing service names — the underlying architecture patterns transfer directly.</p>
+
+  <div class="pager">
+    <a href="4-1-cloud-fundamentals-that-transfer.html">&larr; 4.1 Cloud fundamentals that transfer</a>
+    <a href="4-3-containers-and-orchestration.html">4.3 Containers &amp; orchestration &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const NW_NODES = [
+  { name: "VPC", detail: "The isolated network boundary — everything else (subnets, gateways, instances) lives inside one. Think of it as the customer's private slice of the cloud provider's network." },
+  { name: "Public / private subnets", detail: "Public subnets route to the internet gateway and can be reached externally. Private subnets have no direct internet route — the standard pattern keeps databases and internal services private." },
+  { name: "Load balancer", detail: "Distributes incoming traffic across multiple instances of your application, and often handles TLS termination and health checks to route around unhealthy instances automatically." },
+  { name: "Firewall / security groups", detail: "Granular rules controlling exactly which traffic is allowed in or out, down to specific ports and IP ranges — this is usually the first thing to check when 'the connection times out.'" },
+  { name: "NAT gateway", detail: "Lets resources in a private subnet reach the internet outbound (to call an external API, for instance) without being directly reachable from the internet inbound." },
+];
+document.getElementById('nw-nodes').innerHTML = NW_NODES.map((n,i) =>
+  `<div class="nw-node" data-i="${i}">${n.name}</div>`
+).join('');
+document.querySelectorAll('.nw-node').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.nw-node').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('nw-detail').textContent = NW_NODES[el.dataset.i].detail;
+  });
+});
+
+document.getElementById('fig-vpc').innerHTML = `
+<svg viewBox="0 0 680 160" width="100%" role="img" aria-label="Diagram: VPC containing a public subnet with load balancer and a private subnet with application servers and database, connected via NAT gateway">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="15" y="15" width="650" height="130" rx="8" fill="none" stroke="#262d3a" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="35" y="35" fill="#9aa4b5" font-size="10">VPC</text>
+  <rect x="40" y="45" width="220" height="80" rx="6" fill="#1a2029" stroke="#f2b84b"/>
+  <text x="150" y="60" text-anchor="middle" fill="#f2b84b" font-size="9">Public subnet</text>
+  <rect x="60" y="75" width="180" height="35" rx="4" fill="#182238" stroke="#5b8cff"/><text x="150" y="97" text-anchor="middle" fill="#a9c1ff" font-size="9">Load balancer</text>
+  <rect x="420" y="45" width="220" height="80" rx="6" fill="#1a2029" stroke="#3ecf8e"/>
+  <text x="530" y="60" text-anchor="middle" fill="#3ecf8e" font-size="9">Private subnet</text>
+  <rect x="440" y="70" width="90" height="30" rx="4" fill="#182238" stroke="#262d3a"/><text x="485" y="89" text-anchor="middle" font-size="8">App server</text>
+  <rect x="540" y="70" width="90" height="30" rx="4" fill="#182238" stroke="#262d3a"/><text x="585" y="89" text-anchor="middle" font-size="8">Database</text>
+  <line x1="260" y1="90" x2="420" y2="90" stroke="#6b7386" stroke-width="1.5" marker-end="url(#a48)"/>
+  <defs><marker id="a48" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>
