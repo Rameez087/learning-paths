@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 The bottleneck: one machine, two jobs | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · First Growing Pains &middot; ~5,000-20,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>2.1 The bottleneck: one machine, two jobs</h1>
+  <p class="subtitle">Chirp crossed 8,000 users this week. The app feels sluggish — not down, just slow, in a way that gets worse every day.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    p95 response time has climbed from 80ms to 640ms over the last two weeks, with no single deploy that explains it. CPU usage on the server sits at 91% during peak hours.
+  </div>
+
+  <div class="chirp-quote">
+    "Feed is taking almost a full second to load for some users. Nothing changed in the code. I think we're just... out of room?" — you, in the team Slack
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The Chirp application and its Postgres database are still running on the same server, and
+    they're now genuinely fighting over the same finite resources — CPU cycles, RAM, and disk
+    I/O. Every incoming request needs the application to do work <em>and</em> the database to do
+    work, on hardware that has to split its attention between both. This wasn't a problem at 500
+    users because there was plenty of slack in the system. At 8,000 users, that slack is gone.
+  </div>
+
+  <h2>Try it: watch resource contention grow with users</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:120px;">Concurrent users</label>
+      <input type="range" id="rc-users" min="500" max="12000" value="500" step="500" style="flex:1;">
+      <span id="rc-users-val" style="font-weight:700; min-width:60px;">500</span>
+    </div>
+    <div class="metric-row"><span class="metric-label">CPU usage</span><div class="metric-bar-track"><div class="metric-bar-fill" id="rc-cpu" style="background:#3ecf8e;"></div></div><span id="rc-cpu-val" style="min-width:50px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+    <div class="metric-row"><span class="metric-label">p95 response time</span><div class="metric-bar-track"><div class="metric-bar-fill" id="rc-latency" style="background:#5b8cff;"></div></div><span id="rc-latency-val" style="min-width:50px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+
+  <h2>Why this specific failure mode, and not a crash</h2>
+  <p>
+    Nothing is actually broken in the sense of throwing errors. Every request the application
+    handles needs to run its own logic (parsing, validation, business rules) <em>and</em> wait for
+    the database to read or write data — and both of those are now competing for the same CPU
+    cores and the same limited RAM. When the application process is busy handling a spike of
+    incoming requests, the database gets less CPU time to execute queries. When the database is
+    mid-query on a large read, the application has less room to process the next request. Neither
+    side is "wrong" — they're both doing exactly what they should, on hardware that can't give
+    either of them full attention anymore.
+  </p>
+
+  <div class="figure" id="fig-contention"></div>
+
+  <h2>Why this specific number — 8,000 users — isn't a magic threshold</h2>
+  <p>
+    There's nothing special about 8,000 as a universal number; it's specific to Chirp's server
+    size, its query patterns, and how much work each request actually does. A more
+    write-heavy app, or one running on a smaller server, would hit this same contention wall at a
+    much lower user count. A read-light app on a beefier server could push well past 8,000 before
+    feeling it. What matters is the underlying mechanism — two resource-hungry processes sharing
+    one finite machine — not the specific number at which any particular app hits it.
+  </p>
+
+  <h2>The diagnostic habit worth building here</h2>
+  <p>
+    Before reaching for any fix, the useful question is always "what resource is actually
+    saturated, and by what." Watching CPU usage climb toward 90%+ while response times degrade is
+    a specific, legible signal — it's not "the app is slow" in some vague sense, it's "the machine
+    is out of CPU headroom, and both processes need CPU." That specificity is exactly what points
+    toward the right fix rather than a guess.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does response time degrade gradually here rather than the server simply crashing?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The application and database are both functioning correctly but competing for the same finite CPU and memory — neither is broken, they're just increasingly starved of resources</button>
+        <button class="q-option" data-correct="false">The gradual slowdown means there's a memory leak in the application code</button>
+        <button class="q-option" data-correct="false">Response times only degrade gradually when a server is about to crash entirely</button>
+      </div>
+      <div class="q-explain">This is the key diagnostic distinction — resource contention produces gradual degradation under load, not a hard failure, which is exactly why watching the trend (not just current state) reveals what's happening.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is "8,000 users" not a meaningful universal threshold for when this bottleneck appears?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The specific number depends on server size, query patterns, and how much work each request does — the underlying mechanism (resource contention) is universal, but the threshold at which it bites is app-specific</button>
+        <button class="q-option" data-correct="false">Every application hits exactly this same bottleneck at exactly 8,000 users</button>
+        <button class="q-option" data-correct="false">User count has no actual bearing on when this bottleneck appears</button>
+      </div>
+      <div class="q-explain">This is an important generalization check — the pattern (co-located app and DB eventually contend for resources) transfers across systems, but the specific number where it happens doesn't.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does identifying "which specific resource is saturated" matter before choosing a fix?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A specific, legible signal (CPU pegged at 91%, both processes need it) points toward the right fix — a vague sense of "the app is slow" doesn't</button>
+        <button class="q-option" data-correct="false">The specific bottleneck resource never actually influences which fix is appropriate</button>
+        <button class="q-option" data-correct="false">All performance problems have the same solution regardless of what's actually saturated</button>
+      </div>
+      <div class="q-explain">This is a durable diagnostic habit worth carrying through the whole track — a precise understanding of what's actually constrained is what makes the next page's fix a reasoned choice rather than a guess.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "the bottleneck emerges when the application and database start competing for CPU and memory on the same machine"; system-design-primer (GitHub) — iterative benchmark/profile/address-bottleneck methodology.</p>
+
+  <div class="pager">
+    <a href="../phase-01-launch-day/1-2-the-fragility-nobody-notices-yet.html">&larr; 1.2 The fragility nobody notices yet</a>
+    <a href="2-2-the-fix-splitting-app-and-database.html">2.2 The fix: splitting app and database &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderRc() {
+  const users = parseInt(document.getElementById('rc-users').value, 10);
+  document.getElementById('rc-users-val').textContent = users.toLocaleString();
+  const cpuPct = Math.min(95, 15 + (users / 12000) * 80);
+  const latencyMs = Math.round(60 + Math.pow(users / 1000, 2.1) * 3);
+  document.getElementById('rc-cpu').style.width = cpuPct + '%';
+  document.getElementById('rc-cpu').style.background = cpuPct > 85 ? '#e5484d' : cpuPct > 65 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('rc-cpu-val').textContent = Math.round(cpuPct) + '%';
+  document.getElementById('rc-latency').style.width = Math.min(100, latencyMs / 7) + '%';
+  document.getElementById('rc-latency').style.background = latencyMs > 500 ? '#e5484d' : latencyMs > 200 ? '#f2b84b' : '#5b8cff';
+  document.getElementById('rc-latency-val').textContent = latencyMs + 'ms';
+}
+document.getElementById('rc-users').addEventListener('input', renderRc);
+renderRc();
+
+document.getElementById('fig-contention').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: application and database both drawing from the same limited CPU and memory pool on a single server, competing for resources">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="180" y="15" width="320" height="35" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/>
+  <text x="340" y="38" text-anchor="middle" fill="#ff8b8f">Shared CPU + RAM (finite)</text>
+  <line x1="260" y1="50" x2="230" y2="80" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd2)"/>
+  <line x1="420" y1="50" x2="450" y2="80" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd2)"/>
+  <rect x="140" y="85" width="180" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="230" y="110" text-anchor="middle" fill="#a9c1ff">Chirp app</text>
+  <rect x="360" y="85" width="180" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="450" y="110" text-anchor="middle" fill="#3ecf8e">Postgres</text>
+  <defs><marker id="sd2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 The ceiling: why vertical scaling runs out | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · First Growing Pains &middot; ~5,000-20,000 users</div>
+  <h1>2.3 The ceiling: why vertical scaling runs out</h1>
+  <p class="subtitle">"Just get a bigger server" worked twice. It has a real limit — and Chirp is about to find it.</p>
+
+  <div class="chirp-quote">
+    "Traffic's up again. I bumped the app server to the next size tier — more CPU, more RAM. Bought us a few weeks probably. But I looked at the pricing page and... that's not a strategy we can keep doing forever." — you, updating the infra doc
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Vertical scaling</strong> — upgrading to a bigger, more powerful machine — is the
+    fastest and simplest way to buy headroom, and it's the right move for both of Chirp's servers
+    right now. But it has three real limits: cost grows faster than capacity (the biggest
+    machines carry a steep premium), there's a hard physical ceiling on how big any single machine
+    gets, and it does nothing at all for the single-point-of-failure risk from Chapter 1 — a
+    bigger single server is still a single server. <strong>Horizontal scaling</strong> — adding
+    more machines instead of bigger ones — is the fix that has genuine room to grow, and it's
+    where the next chapter goes.
+  </div>
+
+  <h2>Try it: watch cost outpace capacity</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:120px;">Server tier</label>
+      <input type="range" id="vs-tier" min="1" max="6" value="1" style="flex:1;">
+      <span id="vs-tier-val" style="font-weight:700; min-width:90px;"></span>
+    </div>
+    <div class="fn-metrics" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;" id="vs-metrics"></div>
+  </div>
+
+  <h2>Why cost and capacity decouple at the high end</h2>
+  <p>
+    Doubling a small server's specs roughly doubles its price. Doubling an already-large server's
+    specs costs meaningfully more than double — the highest tiers carry a real premium, since fewer
+    customers need them and the hardware itself becomes more specialized and expensive at the
+    extreme end. This is exactly why vertical scaling is a genuinely good short-term move but a
+    poor long-term strategy: it works great for the first several upgrades, then the cost curve
+    bends sharply upward while the capacity gain per dollar keeps shrinking.
+  </p>
+
+  <div class="figure" id="fig-cost-curve"></div>
+
+  <h2>The hard ceiling, not just the expensive one</h2>
+  <p>
+    Beyond cost, there's a genuine physical limit: even cloud providers' largest available
+    instance types top out at a specific number of CPU cores and a specific amount of RAM. No
+    matter how much budget is available, at some point there simply isn't a bigger single machine
+    to buy. Chirp is nowhere near this ceiling yet — but it's worth naming now, because it's the
+    permanent reason vertical scaling alone can never be the long-term answer for a system that
+    genuinely intends to keep growing.
+  </p>
+
+  <h2>What vertical scaling still doesn't fix</h2>
+  <p>
+    Recall Chapter 1's single point of failure. A bigger app server and a bigger database server
+    are still exactly one server each — if either one goes down, Chirp goes down completely, same
+    as on day one. Vertical scaling adds capacity; it adds zero redundancy. This gap becomes the
+    direct setup for Chapter 3: the fix that actually addresses both capacity <em>and</em>
+    single-point-of-failure risk at once is adding more machines, not bigger ones.
+  </p>
+
+  <h2>Why this chapter's fix was still the right call, and this one is too</h2>
+  <p>
+    None of this means Chapter 2's server-splitting fix, or upgrading server tiers along the way,
+    was wrong. Both were the correct, proportionate response to the problem actually in front of
+    you at the time. The pattern worth internalizing: vertical scaling is a legitimate first
+    response to a capacity problem, precisely because it's fast and simple — the mistake would be
+    treating it as the <em>permanent</em> answer once its cost curve and hard ceiling become the
+    binding constraint instead of raw capacity.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does the cost of vertical scaling grow faster than the capacity it buys, at the high end?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The largest server tiers carry a real premium — fewer customers need them and the hardware becomes more specialized and expensive at the extreme end, so cost outpaces the capacity gained</button>
+        <button class="q-option" data-correct="false">Vertical scaling costs scale in exact linear proportion to capacity at every tier, with no premium ever</button>
+        <button class="q-option" data-correct="false">Cost and capacity are unrelated to each other in cloud pricing</button>
+      </div>
+      <div class="q-explain">This decoupling at the high end is exactly why vertical scaling is a good short-term move but a poor long-term strategy — the economics genuinely change as you move up the tier ladder.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does vertical scaling fail to address, even after multiple upgrades?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The single-point-of-failure risk from Chapter 1 — a bigger single server is still exactly one server that can still go down completely</button>
+        <button class="q-option" data-correct="false">Vertical scaling fully resolves both capacity and redundancy concerns simultaneously</button>
+        <button class="q-option" data-correct="false">Single point of failure risk only exists for small, low-capacity servers</button>
+      </div>
+      <div class="q-explain">This is the direct link to next chapter — capacity and redundancy are genuinely separate problems, and vertical scaling only ever addresses the first one.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why was upgrading server tiers still the right call for Chirp at this point in the story, despite its long-term limits?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It was the correct, proportionate response to the capacity problem actually in front of the team at the time — fast and simple, which matters when a real problem needs solving now</button>
+        <button class="q-option" data-correct="false">Vertical scaling should never be used under any circumstances, even temporarily</button>
+        <button class="q-option" data-correct="false">The upgrade was a mistake that should have been avoided entirely in favor of horizontal scaling from the start</button>
+      </div>
+      <div class="q-explain">This reinforces 1.1's core theme one more time — the right architecture is the one that matches the actual current constraint, and vertical scaling matched Chirp's actual constraint at this stage.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: EZ Tech Learn "System Design 101: How to Scale an Application to 1 Million Concurrent Users" (2026) — "without relying on the myth of 'just buy bigger servers'"; Medium (Preeti) "Designing for Scale: Lessons from 1,000 to 1 Billion Users" (2025).</p>
+
+  <div class="pager">
+    <a href="2-2-the-fix-splitting-app-and-database.html">&larr; 2.2 The fix: splitting app and database</a>
+    <a href="../phase-03-the-weekend-spike/3-1-the-bottleneck-one-server-cant-keep-up.html">Phase 3: The Weekend Spike &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const VS_TIERS = [
+  { name: "Small (2 vCPU / 4GB)", cost: "$40/mo", capacity: "~2,000 req/min", note: "Baseline" },
+  { name: "Medium (4 vCPU / 8GB)", cost: "$80/mo", capacity: "~4,200 req/min", note: "Good value — near-linear" },
+  { name: "Large (8 vCPU / 16GB)", cost: "$165/mo", capacity: "~8,500 req/min", note: "Still reasonable" },
+  { name: "XL (16 vCPU / 32GB)", cost: "$380/mo", capacity: "~16,000 req/min", note: "Premium creeping in" },
+  { name: "2XL (32 vCPU / 64GB)", cost: "$950/mo", capacity: "~28,000 req/min", note: "Cost outpacing capacity" },
+  { name: "4XL (64 vCPU / 128GB)", cost: "$2,600/mo", capacity: "~42,000 req/min", note: "Sharp premium — the ceiling approaches" },
+];
+function renderVs() {
+  const idx = parseInt(document.getElementById('vs-tier').value, 10) - 1;
+  const t = VS_TIERS[idx];
+  document.getElementById('vs-tier-val').textContent = t.name;
+  document.getElementById('vs-metrics').innerHTML = `
+    <div class="fn-metric" style="background:var(--surface-2); border-radius:8px; padding:14px; text-align:center;"><div style="font-size:16px; font-weight:700;">${t.cost}</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">Monthly cost</div></div>
+    <div class="fn-metric" style="background:var(--surface-2); border-radius:8px; padding:14px; text-align:center;"><div style="font-size:16px; font-weight:700;">${t.capacity}</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">Capacity</div></div>
+    <div class="fn-metric" style="background:var(--surface-2); border-radius:8px; padding:14px; text-align:center;"><div style="font-size:13px; font-weight:700; color:#f5a623;">${t.note}</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">What's happening</div></div>
+  `;
+}
+document.getElementById('vs-tier').addEventListener('input', renderVs);
+renderVs();
+
+document.getElementById('fig-cost-curve').innerHTML = `
+<svg viewBox="0 0 680 150" width="100%" role="img" aria-label="Chart: capacity growing roughly linearly with server tier while cost grows exponentially, the two lines diverging sharply at higher tiers">
+  <style>text{font-family:-apple-system,sans-serif;font-size:9px;fill:#9aa4b5;}</style>
+  <line x1="40" y1="20" x2="40" y2="130" stroke="#262d3a" stroke-width="1"/>
+  <line x1="40" y1="130" x2="650" y2="130" stroke="#262d3a" stroke-width="1"/>
+  <path d="M 40 120 L 150 105 L 260 90 L 370 72 L 480 55 L 590 35" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <text x="600" y="28" fill="#a9c1ff">Capacity</text>
+  <path d="M 40 125 L 150 118 L 260 105 L 370 82 L 480 45 L 590 12" fill="none" stroke="#e5484d" stroke-width="2"/>
+  <text x="600" y="18" fill="#ff8b8f" transform="translate(0,-15)"> </text>
+  <text x="560" y="20" fill="#ff8b8f">Cost</text>
+  <text x="340" y="145" text-anchor="middle" fill="#9aa4b5">Server tier, small → large</text>
+</svg>
+`;
+</script>
+</body>
+</html>

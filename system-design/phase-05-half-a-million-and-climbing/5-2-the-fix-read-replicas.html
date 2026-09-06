@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.2 The fix: read replicas | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Half a Million and Climbing &middot; ~500,000-1,000,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>5.2 The fix: read replicas</h1>
+  <p class="subtitle">One database for writes. Several copies, kept in sync automatically, just for reads.</p>
+
+  <div class="chirp-quote">
+    "Spun up 3 read replicas this week. Writes still go through the primary exclusively — reads get spread across the replicas. Primary's CPU dropped from 92% to 31%." — you, infra notes
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>read replica</strong> is a continuously-updated copy of the primary database,
+    receiving a stream of every change the primary makes and applying them locally —
+    <strong>replication</strong>. All writes still go to exactly one primary database (avoiding
+    5.1's write-consistency problem entirely), but reads now get distributed across the primary
+    plus however many replicas exist. This is horizontal scaling (Chapter 3's core idea) applied
+    to the database layer instead of the app layer — more machines sharing the read workload,
+    rather than one bigger machine trying to absorb all of it.
+  </div>
+
+  <h2>Try it: watch reads spread across replicas</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:140px;">Number of replicas</label>
+      <input type="range" id="rr-count" min="0" max="5" value="0" style="flex:1;">
+      <span id="rr-count-val" style="font-weight:700; min-width:30px;">0</span>
+    </div>
+    <div id="rr-servers"></div>
+  </div>
+
+  <h2>How replication actually works, mechanically</h2>
+  <p>
+    The primary database records every write as an entry in a sequential log (Postgres calls this
+    the write-ahead log). Each replica continuously streams and replays that log, applying the
+    same changes in the same order the primary made them — effectively "replaying" the primary's
+    history to stay in sync. This streaming happens asynchronously by default: the primary
+    doesn't wait for a replica to confirm it received an update before considering the write
+    complete.
+  </p>
+
+  <div class="figure" id="fig-replication"></div>
+
+  <h2>Why "asynchronous by default" is a deliberate, named choice</h2>
+  <p>
+    The alternative — synchronous replication, where the primary waits for at least one replica to
+    confirm receipt before acknowledging a write as successful — genuinely guarantees replicas
+    are never behind, at the direct cost of every write becoming slower (it now has to wait on a
+    network round trip to at least one other machine). Chirp chooses asynchronous replication
+    specifically because write speed matters more here than replica freshness — a trade-off
+    worth stating explicitly, since it's about to have a very visible consequence.
+  </p>
+
+  <h2>How the application knows where to send each query</h2>
+  <pre><code>def get_feed(user_id):
+    # reads: route to any available replica
+    return replica_pool.query("SELECT ... FROM posts WHERE ...")
+
+def create_post(user_id, content):
+    # writes: always go to the primary, never a replica
+    return primary_db.execute("INSERT INTO posts ...")</code></pre>
+  <p>
+    This read/write split needs to be explicit in the application code (or handled by a proxy
+    layer that does it automatically) — nothing about a "database" inherently knows which of its
+    copies should receive which type of query. Getting this routing wrong (accidentally sending a
+    write to a replica) either fails outright or silently doesn't do what was intended, depending
+    on how the replica's permissions are configured.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do all writes still go to exactly one primary database, even after adding read replicas?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Keeping writes centralized to one primary avoids the harder consistency problem of multiple databases independently accepting writes to the same data, identified as the reason to rule that approach out in 5.1</button>
+        <button class="q-option" data-correct="false">Replicas are technically incapable of ever processing a write under any configuration</button>
+        <button class="q-option" data-correct="false">There's no meaningful difference between writing to a primary versus writing to a replica</button>
+      </div>
+      <div class="q-explain">This directly resolves 5.1's setup — the fix deliberately keeps the write side simple (one source of truth) while only distributing the read side, which is the part that actually needed to scale.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does choosing asynchronous replication over synchronous replication trade away, and what does it gain?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It trades a guarantee that replicas are never behind the primary, in exchange for faster writes — since the primary doesn't have to wait for a replica's confirmation before considering a write complete</button>
+        <button class="q-option" data-correct="false">Asynchronous replication guarantees replicas are always perfectly in sync with the primary</button>
+        <button class="q-option" data-correct="false">Synchronous and asynchronous replication have identical performance and consistency characteristics</button>
+      </div>
+      <div class="q-explain">This is a genuinely real, deliberate trade-off — and naming it explicitly here is exactly what sets up the next page's bug as a predictable consequence, not a surprise.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why must the application code (or a proxy layer) explicitly decide whether a query goes to the primary or a replica?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Nothing about a database copy inherently knows which type of query it should receive — this routing logic has to be built deliberately, whether in application code or a dedicated proxy</button>
+        <button class="q-option" data-correct="false">Databases automatically route every query to the correct destination with no configuration needed</button>
+        <button class="q-option" data-correct="false">Read replicas can safely process write queries exactly as well as the primary can</button>
+      </div>
+      <div class="q-explain">This is a practical detail worth taking seriously — read/write routing is an explicit responsibility, not something that happens automatically just because replicas exist.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "add read replicas... route write operations exclusively to the primary database"; system-design-primer (GitHub) — master-slave replication and asynchronous vs. synchronous trade-offs.</p>
+
+  <div class="pager">
+    <a href="5-1-the-bottleneck-primary-database-drowning-in-reads.html">&larr; 5.1 The bottleneck: primary DB drowning in reads</a>
+    <a href="5-3-the-new-problem-i-just-posted-but-cant-see-it.html">5.3 The new problem: "I just posted but can't see it" &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderRr() {
+  const count = parseInt(document.getElementById('rr-count').value, 10);
+  document.getElementById('rr-count-val').textContent = count;
+  const readLoad = 4500;
+  const perNode = count === 0 ? readLoad : readLoad / (count + 1);
+  const capacity = 4500;
+  let html = '<div style="display:grid; grid-template-columns:repeat(' + (count+1) + ',1fr); gap:8px; margin-top:10px;">';
+  const pctPrimary = Math.min(100, (perNode / capacity) * 100);
+  html += `<div style="text-align:center;"><div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Primary</div><div style="height:70px; background:var(--surface-2); border-radius:6px; position:relative; overflow:hidden;"><div style="position:absolute; bottom:0; width:100%; height:${pctPrimary}%; background:${pctPrimary>85?'#e5484d':pctPrimary>60?'#f2b84b':'#3ecf8e'};"></div></div><div style="font-size:10px; margin-top:4px;">${Math.round(perNode)}/s</div></div>`;
+  for (let i = 0; i < count; i++) {
+    html += `<div style="text-align:center;"><div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Replica ${i+1}</div><div style="height:70px; background:var(--surface-2); border-radius:6px; position:relative; overflow:hidden;"><div style="position:absolute; bottom:0; width:100%; height:${pctPrimary}%; background:${pctPrimary>85?'#e5484d':pctPrimary>60?'#f2b84b':'#3ecf8e'};"></div></div><div style="font-size:10px; margin-top:4px;">${Math.round(perNode)}/s</div></div>`;
+  }
+  html += '</div>';
+  document.getElementById('rr-servers').innerHTML = html;
+}
+document.getElementById('rr-count').addEventListener('input', renderRr);
+renderRr();
+
+document.getElementById('fig-replication').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: primary database streaming its write-ahead log to three read replicas, which apply the same changes to stay in sync">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="270" y="15" width="140" height="40" rx="6" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="340" y="40" text-anchor="middle" fill="#f5a623">Primary (writes)</text>
+  <line x1="300" y1="55" x2="150" y2="90" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd11)"/>
+  <line x1="340" y1="55" x2="340" y2="90" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd11)"/>
+  <line x1="380" y1="55" x2="530" y2="90" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd11)"/>
+  <rect x="80" y="90" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="150" y="112" text-anchor="middle" fill="#3ecf8e" font-size="8">Replica 1</text>
+  <rect x="270" y="90" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="112" text-anchor="middle" fill="#3ecf8e" font-size="8">Replica 2</text>
+  <rect x="460" y="90" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="530" y="112" text-anchor="middle" fill="#3ecf8e" font-size="8">Replica 3</text>
+  <text x="340" y="70" text-anchor="middle" fill="#5fb98a" font-size="8">stream write-ahead log (async)</text>
+  <defs><marker id="sd11" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.4 The new problem: celebrities & cross-shard search | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · The Database Ceiling &middot; ~1,000,000-10,000,000 users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>6.4 The new problem: celebrities & cross-shard search</h1>
+  <p class="subtitle">Sharding evenly distributed the data. It did not evenly distribute the attention that data receives.</p>
+
+  <div class="chirp-quote">
+    "A musician with 4 million followers just joined Chirp. Every one of her posts generates fan-out writes to millions of followers' feeds, and her single shard is now doing 40x the work of every other shard combined. Also — someone asked for a global search feature and I just realized we'd have to query all 8 shards for every single search." — you, two new problems in one Slack message</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Two genuinely distinct problems, both stemming from sharding, both worth understanding
+    separately. <strong>Hot shards</strong>: sharding assumes roughly even load per shard, but
+    real-world popularity is never evenly distributed — a celebrity account can make one shard do
+    dramatically more work than the others, undoing much of sharding's balance. <strong>Cross-shard
+    queries</strong>: any query that needs data spanning multiple shards (like "search all posts
+    containing this keyword") now has to check every single shard and merge results — a
+    <strong>scatter-gather</strong> query — inherently slower and more complex than the
+    single-shard queries sharding was designed around.
+  </div>
+
+  <h2>Try it: watch one hot shard skew the whole cluster</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:170px;">Celebrity's follower count (millions)</label>
+      <input type="range" id="hs-followers" min="0" max="8" value="0" style="flex:1;">
+      <span id="hs-followers-val" style="font-weight:700; min-width:30px;">0M</span>
+    </div>
+    <div id="hs-shards"></div>
+  </div>
+
+  <h2>Why hot shards are a genuinely different failure than anything earlier in this track</h2>
+  <p>
+    Every earlier fix assumed load could be spread roughly evenly across identical machines.
+    Celebrity accounts violate that assumption at the data-distribution level itself — no amount
+    of adding more app servers or more shards fixes one specific shard being disproportionately
+    popular, because the imbalance lives in <em>which data people want</em>, not in how much total
+    hardware exists.
+  </p>
+
+  <div class="figure" id="fig-hotshard"></div>
+
+  <h2>A real, partial fix for hot shards: special-case the extremes</h2>
+  <p>
+    Rather than trying to perfectly rebalance shards (impossible, since popularity shifts
+    constantly and unpredictably), a practical pattern: detect accounts whose activity
+    dramatically exceeds normal, and give them dedicated handling — extra caching specifically for
+    their content, or splitting their fan-out writes across a wider pool of workers (foreshadowing
+    Chapter 7 directly). This doesn't eliminate the imbalance; it accepts that a small number of
+    accounts are genuinely different and treats them differently on purpose, rather than pretending
+    every account is the same size.
+  </p>
+
+  <h2>Cross-shard search: why it can't just be "query all shards"</h2>
+  <p>
+    Technically, querying all 8 shards and merging results does work — but it means every search
+    request does 8x the database work of a normal query, and the response can only be as fast as
+    the slowest single shard's reply. As shard count grows, this gets linearly worse. The real fix
+    for search specifically isn't more scatter-gather — it's a separate, purpose-built search
+    index that isn't sharded the same way as the transactional data, a topic that gets its own
+    full treatment in Phase 11's toolbox and Phase 12's search-autocomplete capstone.
+  </p>
+
+  <h2>The honest takeaway from this whole chapter</h2>
+  <p>
+    Sharding solved 6.1's real, pressing problem — and introduced two new, genuinely harder ones
+    in exchange. This isn't a failure of the design; it's the most vivid instance yet of this
+    track's core theme: there is no fix without a new trade-off, and the skill isn't avoiding
+    trade-offs, it's correctly anticipating and managing the ones a given fix introduces.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't a hot shard problem be fixed by simply adding more shards or more hardware?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The imbalance lives in which data people actually want to access, not in total available hardware — a celebrity's disproportionate popularity follows their data to whichever shard holds it, regardless of shard count</button>
+        <button class="q-option" data-correct="false">Adding more shards always perfectly resolves any hot shard imbalance</button>
+        <button class="q-option" data-correct="false">Hot shards only occur when there is exactly one shard in the entire system</button>
+      </div>
+      <div class="q-explain">This is what makes hot shards a genuinely different category of problem from everything earlier in the track — it's a data-distribution issue, not a capacity issue that more machines can absorb.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a scatter-gather query across all shards get worse as the number of shards grows?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Every additional shard means more total database work per search request, and the response time is bounded by whichever single shard responds slowest — both effects compound as shard count increases</button>
+        <button class="q-option" data-correct="false">Scatter-gather queries get faster as more shards are added, since work is spread more thinly</button>
+        <button class="q-option" data-correct="false">The number of shards has no effect on scatter-gather query performance</button>
+      </div>
+      <div class="q-explain">This linear-worsening property is exactly why scatter-gather is described as inherently at odds with sharding's original goal, and why a separate search index (Phase 11/12) is the real long-term fix.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What is this chapter's stated broader lesson about sharding's costs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Sharding solved a real, pressing problem while introducing genuinely harder new ones in exchange — the skill isn't avoiding trade-offs entirely, but anticipating and managing the specific ones each fix introduces</button>
+        <button class="q-option" data-correct="false">Sharding was ultimately the wrong decision and should be reversed</button>
+        <button class="q-option" data-correct="false">This chapter proves that every architectural fix eventually creates problems worse than the one it solved</button>
+      </div>
+      <div class="q-explain">This is the track's recurring theme stated at its most vivid — trade-offs are inevitable and manageable, not a sign that the original fix was a mistake.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: system-design-primer (GitHub) — hot spot/celebrity problem in sharded systems and scatter-gather query patterns; AlgoMaster "Designing Twitter" (2026) — the celebrity problem as a named, canonical social-feed challenge.</p>
+
+  <div class="pager">
+    <a href="6-3-deep-dive-consistent-hashing.html">&larr; 6.3 Deep dive: consistent hashing</a>
+    <a href="../index.html">Phase 7: Everything's on Fire at Once &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderHs() {
+  const followersM = parseInt(document.getElementById('hs-followers').value, 10);
+  document.getElementById('hs-followers-val').textContent = followersM + 'M';
+  let html = '<div style="display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin-top:10px;">';
+  for (let i = 0; i < 8; i++) {
+    const isHot = i === 3;
+    const load = isHot ? 12 + followersM * 10 : 12;
+    const pct = Math.min(100, load);
+    const color = isHot && followersM > 3 ? '#e5484d' : isHot && followersM > 0 ? '#f2b84b' : '#3ecf8e';
+    html += `<div style="text-align:center;">
+      <div style="font-size:9px; color:var(--text-muted);">Shard ${i}</div>
+      <div style="height:60px; background:var(--surface-2); border-radius:4px; position:relative; overflow:hidden;">
+        <div style="position:absolute; bottom:0; width:100%; height:${pct}%; background:${color}; transition:all 0.3s;"></div>
+      </div>
+      <div style="font-size:9px; margin-top:2px;">${isHot ? '⭐ ' : ''}${load}%</div>
+    </div>`;
+  }
+  html += '</div>';
+  document.getElementById('hs-shards').innerHTML = html;
+}
+document.getElementById('hs-followers').addEventListener('input', renderHs);
+renderHs();
+
+document.getElementById('fig-hotshard').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: a celebrity's fan-out writes flooding one specific shard while all other shards remain at normal load">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="150" height="50" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="2"/><text x="95" y="62" text-anchor="middle" fill="#ff8b8f">Shard 3 (celebrity)</text><text x="95" y="78" text-anchor="middle" fill="#d98f92" font-size="8">40x normal load</text>
+  <rect x="220" y="50" width="100" height="30" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="270" y="69" text-anchor="middle" fill="#3ecf8e" font-size="8">Shard 1: normal</text>
+  <rect x="340" y="50" width="100" height="30" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="390" y="69" text-anchor="middle" fill="#3ecf8e" font-size="8">Shard 2: normal</text>
+  <rect x="460" y="50" width="100" height="30" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="510" y="69" text-anchor="middle" fill="#3ecf8e" font-size="8">Shard 4: normal</text>
+  <rect x="580" y="50" width="80" height="30" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="620" y="69" text-anchor="middle" fill="#3ecf8e" font-size="8">...normal</text>
+</svg>
+`;
+</script>
+</body>
+</html>

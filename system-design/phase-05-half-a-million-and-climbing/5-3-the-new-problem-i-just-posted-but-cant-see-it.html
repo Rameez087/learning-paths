@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.3 The new problem: I just posted but can't see it | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Half a Million and Climbing &middot; ~500,000-1,000,000 users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>5.3 The new problem: "I just posted but can't see it"</h1>
+  <p class="subtitle">A user posts, immediately refreshes to make sure it worked, and — for a fraction of a second — sees nothing. Then refreshes again and it's there.</p>
+
+  <div class="chirp-quote">
+    "Getting scattered reports of posts 'disappearing' right after being made, then reappearing seconds later. Nothing's actually lost — I checked the primary directly, the post's there instantly. It's specifically the read replicas that are a beat behind." — you, investigating
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This is 5.2's asynchronous replication trade-off, now visible to real users. The primary
+    database has the new post the instant it's written. But the load balancer might route the
+    user's very next read (checking that their post succeeded) to a replica that hasn't caught up
+    yet — <strong>replication lag</strong>, usually just milliseconds, but non-zero. This specific
+    scenario — reading your own just-made write and not seeing it — has a name:
+    <strong>read-after-write consistency</strong>, and it's one of the most common, most
+    user-visible symptoms of asynchronous replication anywhere it's used.
+  </div>
+
+  <h2>Try it: watch the lag window in real time</h2>
+  <div class="metric-box" id="lag-timeline"></div>
+
+  <h2>Why this specific bug is worse than 4.4's stale-cache problem, psychologically</h2>
+  <p>
+    4.4's staleness was about seeing an old version of content. This is different and sharper: the
+    user's action appears to have <em>failed</em>, even though it actually succeeded instantly. A
+    user who just posted and sees nothing reasonably wonders if they need to post again — and a
+    duplicate post from an anxious retry is a real, avoidable consequence of not handling this
+    case deliberately.
+  </p>
+
+  <div class="figure" id="fig-lag"></div>
+
+  <h2>The fix: route a user back to the primary for their own recent writes</h2>
+  <p>
+    A specific, targeted pattern: immediately after a user writes something, route <em>their next
+    few reads</em> back to the primary database (which always has the latest data) instead of a
+    replica, for a short window — often just a few seconds, or until their session's known "last
+    write" timestamp is confirmed to have propagated. Everyone else's reads still go to replicas
+    as normal; only the person whose own action needs to be immediately, reliably visible gets the
+    special treatment.
+  </p>
+  <pre><code>def get_feed(user_id, session):
+    if session.get("last_write_at") and time_since(session["last_write_at"]) &lt; 5:
+        # user wrote something in the last 5 seconds — read their own
+        # data from the primary to guarantee they see it
+        return primary_db.query_feed(user_id)
+    return replica_pool.query_feed(user_id)  # normal case: any replica is fine</code></pre>
+
+  <h2>Why this doesn't need to apply to every read, everywhere</h2>
+  <p>
+    Routing every single read to the primary "just to be safe" would completely undo Chapter 5.2's
+    fix — the primary would immediately become the bottleneck again, exactly as in 5.1. The
+    targeted version only protects the one specific case that actually matters: a user checking on
+    their own extremely recent action. Everyone reading everyone else's older content is entirely
+    unaffected by lag windows measured in milliseconds, and keeps getting served by replicas as
+    intended.
+  </p>
+
+  <h2>The pattern this chapter reinforces, one more time</h2>
+  <p>
+    Same shape as 4.4: a real, deliberate trade-off (asynchronous replication for write speed)
+    produces a real, narrow edge case (a user briefly not seeing their own write) that gets a
+    targeted fix rather than reversing the original trade-off wholesale. This specific
+    discipline — protect the one case that hurts, without undoing the broader win — is going to
+    keep showing up for the rest of this track.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does "read-after-write consistency" specifically refer to in this scenario?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A user's own just-made write not being immediately visible when they read it back, because their read was routed to a replica that hasn't caught up to the primary yet</button>
+        <button class="q-option" data-correct="false">A general term for any database read operation, regardless of timing relative to writes</button>
+        <button class="q-option" data-correct="false">A guarantee that all replicas are always perfectly synchronized with zero lag</button>
+      </div>
+      <div class="q-explain">This is the specific, named consistency property being violated here — and naming it precisely is what makes the targeted fix (routing recent-writers back to primary) an obviously correct response rather than a guess.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is this bug described as psychologically worse than 4.4's stale-cache problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The user's action appears to have failed entirely, even though it actually succeeded — potentially causing an anxious retry and a real duplicate post, rather than just seeing slightly outdated content</button>
+        <button class="q-option" data-correct="false">This bug causes actual data loss, while 4.4's staleness never does</button>
+        <button class="q-option" data-correct="false">There is no meaningful difference in severity between the two bugs</button>
+      </div>
+      <div class="q-explain">The distinction is about perceived failure versus perceived staleness — "did my action work at all" is a sharper, more anxiety-inducing question than "is this content current."</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why would routing every single read to the primary "just to be safe" be the wrong fix here?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It would completely undo the point of adding read replicas in 5.2, immediately making the primary the bottleneck again exactly as in 5.1</button>
+        <button class="q-option" data-correct="false">The primary database is technically incapable of handling any read traffic at all</button>
+        <button class="q-option" data-correct="false">Routing all reads to the primary would have no effect on database load</button>
+      </div>
+      <div class="q-explain">This is the same "targeted fix, not wholesale reversal" discipline from 4.4 — solving the specific case that hurts without discarding the broader benefit the original fix provided.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This chapter reflects standard, widely-documented distributed database theory around asynchronous replication lag and read-after-write consistency — a foundational and extremely common real-world pattern in horizontally-scaled database architectures.</p>
+
+  <div class="pager">
+    <a href="5-2-the-fix-read-replicas.html">&larr; 5.2 The fix: read replicas</a>
+    <a href="../phase-06-the-database-ceiling/6-1-the-bottleneck-one-database-cant-hold-everyone.html">Phase 6: The Database Ceiling &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('lag-timeline').innerHTML = `
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:var(--text-muted);">T+0ms</span><div style="flex:1; padding:8px 12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; font-size:12px; color:#3ecf8e;">User posts. Primary database has it instantly.</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:var(--text-muted);">T+40ms</span><div style="flex:1; padding:8px 12px; background:rgba(229,72,77,0.1); border:1px solid #e5484d; border-radius:6px; font-size:12px; color:#ff8b8f;">User refreshes to confirm. Load balancer routes to Replica 2 — hasn't received the update yet. Post appears missing.</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:var(--text-muted);">T+120ms</span><div style="flex:1; padding:8px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;">Replication catches up. Replica 2 now has the post too.</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:var(--text-muted);">T+2000ms</span><div style="flex:1; padding:8px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;">User refreshes again out of confusion. Post is there now — looks like it "fixed itself."</div></div>
+  </div>
+`;
+
+document.getElementById('fig-lag').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: a write completing instantly on the primary while a replica briefly lags behind, causing a user's read to miss their own recent post">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="90" y="42" text-anchor="middle" fill="#3ecf8e">Primary: post visible</text>
+  <rect x="20" y="70" width="140" height="35" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="90" y="88" text-anchor="middle" fill="#ff8b8f" font-size="8">Replica: still lagging</text>
+  <line x1="160" y1="37" x2="280" y2="37" stroke="#3ecf8e" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <text x="220" y="27" fill="#5fb98a" font-size="8">~40-100ms replication delay</text>
+  <line x1="160" y1="87" x2="280" y2="87" stroke="#e5484d" stroke-width="1.5"/>
+  <rect x="400" y="45" width="180" height="35" rx="6" fill="#182238" stroke="#f5a623"/><text x="490" y="67" text-anchor="middle" fill="#f5a623" font-size="8">User's refresh lands here first</text>
+  <line x1="280" y1="87" x2="400" y2="65" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd12)"/>
+  <defs><marker id="sd12" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

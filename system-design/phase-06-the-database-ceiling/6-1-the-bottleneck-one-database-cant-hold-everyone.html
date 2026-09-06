@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.1 The bottleneck: one database can't hold everyone | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · The Database Ceiling &middot; ~1,000,000-10,000,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>6.1 The bottleneck: one database can't hold everyone</h1>
+  <p class="subtitle">Read replicas fixed the read problem beautifully. Nobody thought to ask what happens when the data itself simply won't fit anymore.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    Primary database storage is at 89% of its maximum volume size. Write latency on the posts table has climbed 3x over the last month as its index has grown past what fits comfortably in memory. Replicas are healthy — this is a primary-side problem replication can't help with.
+  </div>
+
+  <div class="chirp-quote">
+    "This is a new kind of bottleneck. It's not that we're doing too much work at once — the database is running out of actual room. And every replica just faithfully copies the same, ever-growing dataset, so more replicas don't help even a little." — you, in the infra channel
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Read replicas (Chapter 5) solve <em>read throughput</em> by adding more machines that can
+    each answer queries — but every replica holds a full, identical copy of the same growing
+    dataset. As the total volume of posts, users, and follows keeps climbing into the tens of
+    millions of rows, the data itself eventually exceeds what a single primary machine can store
+    and index efficiently, and writes — which still all go to that one primary — start slowing
+    down as a direct consequence. This is a genuinely different constraint than anything solved so
+    far: not too many requests, but too much data.
+  </div>
+
+  <h2>Try it: watch write latency degrade as the dataset grows</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:140px;">Total posts stored</label>
+      <input type="range" id="ds-rows" min="1" max="10" value="1" style="flex:1;">
+      <span id="ds-rows-val" style="font-weight:700; min-width:80px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Index size vs. RAM</span><div class="metric-bar-track"><div class="metric-bar-fill" id="ds-index" style="background:#3ecf8e;"></div></div><span id="ds-index-val" style="min-width:60px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+    <div class="metric-row"><span class="metric-label">Write latency</span><div class="metric-bar-track"><div class="metric-bar-fill" id="ds-write" style="background:#3ecf8e;"></div></div><span id="ds-write-val" style="min-width:60px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+
+  <h2>Why a growing index specifically slows writes down</h2>
+  <p>
+    Every insert into a table needs to update that table's indexes so future lookups stay fast.
+    When an index is small enough to sit entirely in RAM, this update is nearly instant. Once the
+    index grows past available memory, updating it starts requiring disk access — dramatically
+    slower than memory access — and every single write now pays that cost. This is a specific,
+    mechanical reason storage growth translates directly into write slowness, not just a vague
+    "big data is slow" intuition.
+  </p>
+
+  <div class="figure" id="fig-replica-limit"></div>
+
+  <h2>Why read replicas were never going to solve this</h2>
+  <p>
+    A replica's entire purpose is holding a faithful, complete copy of the primary's data — that's
+    what makes it useful for reads in the first place. Adding a fourth or fifth replica doesn't
+    shrink the dataset each one has to hold; it just adds another machine storing the exact same
+    growing volume. This is worth stating plainly: replication and the storage-ceiling problem are
+    almost entirely orthogonal — solving one genuinely does nothing for the other.
+  </p>
+
+  <h2>What's actually needed: splitting the data itself, not just the traffic</h2>
+  <p>
+    Every fix so far has added more machines to share <em>work</em> — more app servers sharing
+    requests, more replicas sharing reads. What Chirp needs now is fundamentally different: more
+    machines each holding a <em>portion</em> of the data, so no single machine needs to store or
+    index the entire dataset alone. That's the idea the next page introduces.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a growing database index specifically cause writes to slow down?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Once an index grows past what fits in available RAM, updating it on every write requires disk access, which is dramatically slower than memory access</button>
+        <button class="q-option" data-correct="false">Index size has no mechanical relationship to write speed</button>
+        <button class="q-option" data-correct="false">Writes only slow down when the number of read replicas increases</button>
+      </div>
+      <div class="q-explain">This is the specific, mechanical explanation — not a vague "big data is slow" claim, but a concrete reason rooted in the memory-versus-disk access speed difference.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can't adding more read replicas solve the storage-ceiling problem this chapter describes?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Every replica holds a complete, faithful copy of the same growing dataset — adding more replicas doesn't shrink what each one has to store, it just duplicates the same growing volume onto more machines</button>
+        <button class="q-option" data-correct="false">Read replicas automatically shrink the dataset as more of them are added</button>
+        <button class="q-option" data-correct="false">Replication and storage capacity are the exact same underlying mechanism</button>
+      </div>
+      <div class="q-explain">This is the key distinction the whole chapter turns on — replication scales read throughput, not storage capacity, and the two problems are genuinely separate.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's fundamentally different about the fix this bottleneck requires, compared to every previous fix in this track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Previous fixes added machines to share work (requests, reads); this bottleneck requires machines that each hold a portion of the actual data, so no single machine stores the entire dataset</button>
+        <button class="q-option" data-correct="false">This bottleneck requires the exact same fix as every previous chapter — more machines doing the same job</button>
+        <button class="q-option" data-correct="false">There is no way to address a storage-ceiling problem through architectural changes</button>
+      </div>
+      <div class="q-explain">This is the conceptual pivot the chapter sets up — splitting data itself (sharding) is a genuinely different technique from every horizontal-scaling fix used so far.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "when a single database can no longer hold all your data, you shard it across multiple databases"; system-design-primer (GitHub) — sharding as the response to storage limits distinct from read-scaling.</p>
+
+  <div class="pager">
+    <a href="../phase-05-half-a-million-and-climbing/5-3-the-new-problem-i-just-posted-but-cant-see-it.html">&larr; 5.3 The new problem: "I just posted but can't see it"</a>
+    <a href="6-2-the-fix-sharding-chirps-data.html">6.2 The fix: sharding Chirp's data &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderDs() {
+  const tier = parseInt(document.getElementById('ds-rows').value, 10);
+  const rows = [50, 150, 400, 900, 1800, 3200, 5000, 7500, 11000, 16000][tier-1];
+  document.getElementById('ds-rows-val').textContent = rows.toLocaleString() + 'M rows';
+  const indexPct = Math.min(100, 8 + tier * 9.5);
+  const writeLatency = tier <= 5 ? 4 + tier * 0.6 : 4 + 5*0.6 + Math.pow(tier-5, 1.8) * 3;
+  document.getElementById('ds-index').style.width = indexPct + '%';
+  document.getElementById('ds-index').style.background = indexPct > 85 ? '#e5484d' : indexPct > 60 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('ds-index-val').textContent = Math.round(indexPct) + '%';
+  document.getElementById('ds-write').style.width = Math.min(100, writeLatency * 2.5) + '%';
+  document.getElementById('ds-write').style.background = writeLatency > 25 ? '#e5484d' : writeLatency > 10 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('ds-write-val').textContent = Math.round(writeLatency) + 'ms';
+}
+document.getElementById('ds-rows').addEventListener('input', renderDs);
+renderDs();
+
+document.getElementById('fig-replica-limit').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: primary and all its replicas each holding a full, identically growing copy of the same dataset, so adding replicas never reduces per-machine storage">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="40" y="30" width="140" height="70" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/><text x="110" y="55" text-anchor="middle" fill="#ff8b8f">Primary</text><text x="110" y="75" text-anchor="middle" fill="#d98f92" font-size="8">FULL dataset (growing)</text>
+  <rect x="270" y="30" width="140" height="70" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/><text x="340" y="55" text-anchor="middle" fill="#ff8b8f">Replica 1</text><text x="340" y="75" text-anchor="middle" fill="#d98f92" font-size="8">SAME full dataset</text>
+  <rect x="500" y="30" width="140" height="70" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/><text x="570" y="55" text-anchor="middle" fill="#ff8b8f">Replica 2</text><text x="570" y="75" text-anchor="middle" fill="#d98f92" font-size="8">SAME full dataset</text>
+  <text x="340" y="120" text-anchor="middle" fill="#9aa4b5" font-size="9">More replicas = more copies of the same growing problem, not less</text>
+</svg>
+`;
+</script>
+</body>
+</html>

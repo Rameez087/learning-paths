@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 The bottleneck: everyone's feed hits the database | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · The Read Storm &middot; ~100,000-500,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>4.1 The bottleneck: everyone's feed hits the database</h1>
+  <p class="subtitle">Four app servers fixed the capacity problem. Now the database — still just one machine — is the thing quietly running out of room.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    Database CPU sits at 88% sustained, not just during spikes. The single most frequent query — "get the 20 most recent posts from people I follow" — now runs an average of 340 times per second and accounts for roughly 70% of total database load.
+  </div>
+
+  <div class="chirp-quote">
+    "The app servers are fine — barely breaking a sweat. It's the database. Every single person who opens Chirp triggers the exact same expensive query, just with a different user ID." — you, looking at query stats
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Four app servers successfully spread out the <em>application</em> work (Chapter 3), but every
+    one of those servers still ultimately asks the same single database to do the same expensive
+    read — computing a personalized feed — over and over, for every user, on every refresh. The
+    database has become the new bottleneck precisely <em>because</em> the app layer got faster at
+    generating requests for it to serve. This is a specific, common pattern: fixing one bottleneck
+    routes more traffic into whatever's next in line.
+  </div>
+
+  <h2>Try it: watch identical queries pile onto the database</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Feed refreshes per second</label>
+      <input type="range" id="rs-refreshes" min="20" max="500" value="20" style="flex:1;">
+      <span id="rs-refreshes-val" style="font-weight:700; min-width:50px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Database CPU</span><div class="metric-bar-track"><div class="metric-bar-fill" id="rs-dbcpu" style="background:#3ecf8e;"></div></div><span id="rs-dbcpu-val" style="min-width:50px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+    <div class="metric-row"><span class="metric-label">App server CPU (unaffected)</span><div class="metric-bar-track"><div class="metric-bar-fill" id="rs-appcpu" style="background:#3ecf8e; width:22%;"></div></div><span style="min-width:50px; text-align:right; font-weight:700; font-size:12px;">22%</span></div>
+  </div>
+
+  <h2>Why this is fundamentally a <em>read</em> problem, not a write problem</h2>
+  <p>
+    Chirp's users post far less often than they scroll — a typical user might create one post a
+    day but refresh their feed dozens of times. This is an extremely common, almost universal
+    pattern in real applications: reads vastly outnumber writes. It matters here specifically
+    because it points toward a very targeted fix — one that speeds up repeated, identical reads
+    without needing to touch how writes work at all.
+  </p>
+
+  <div class="figure" id="fig-read-heavy"></div>
+
+  <h2>Why more read replicas of the database isn't (yet) the obvious answer</h2>
+  <p>
+    A tempting first instinct is Chapter 2's playbook again — add more database capacity. But
+    notice what's actually being computed here: the exact same feed query, for popular
+    combinations of followed accounts, gets run again and again within seconds of the previous
+    identical run. Paying to recompute an answer that hasn't changed since the last time it was
+    computed is wasteful in a way that adding more database horsepower doesn't actually solve —
+    it just makes the waste faster.
+  </p>
+
+  <h2>What would actually help: not recomputing what hasn't changed</h2>
+  <p>
+    If a feed's answer was already computed 400 milliseconds ago and nothing in it has changed
+    since, the database shouldn't need to redo that work at all — something should just remember
+    the answer and hand it back. This is the exact shape of problem caching exists to solve, and
+    it's what the next page introduces.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why did the database become the bottleneck specifically after Chapter 3's load balancing fix, rather than before it?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The app layer became faster at generating requests once it could handle more concurrent traffic, which routed more total load into the database — the same underlying pattern where fixing one bottleneck exposes the next one in line</button>
+        <button class="q-option" data-correct="false">The database bottleneck is completely unrelated to the load balancing fix from Chapter 3</button>
+        <button class="q-option" data-correct="false">Adding app servers directly increased the database's own resource limits</button>
+      </div>
+      <div class="q-explain">This is a genuinely common pattern worth naming explicitly — solving a bottleneck at one layer often reveals (or worsens) a bottleneck at the next layer downstream.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does the fact that "reads vastly outnumber writes" matter for choosing the right fix here?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It points toward a fix that specifically speeds up repeated, identical reads without needing to change how writes are handled at all — a much more targeted solution than a generic capacity increase</button>
+        <button class="q-option" data-correct="false">Read-heavy workloads require the exact same fix as write-heavy workloads</button>
+        <button class="q-option" data-correct="false">The read/write ratio has no bearing on which architectural fix is appropriate</button>
+      </div>
+      <div class="q-explain">Recognizing the workload's actual shape (read-heavy) is what makes the eventual fix well-targeted rather than a generic "add more resources" response.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is simply adding more database capacity described as making "the waste faster" rather than solving the real problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The database is repeatedly recomputing an identical answer to the same query within seconds — more capacity would compute that same redundant answer faster, without addressing the redundancy itself</button>
+        <button class="q-option" data-correct="false">More database capacity would fully and permanently solve this specific bottleneck</button>
+        <button class="q-option" data-correct="false">Redundant computation is not actually happening in this scenario</button>
+      </div>
+      <div class="q-explain">This distinction — treating the symptom (not enough capacity) versus the actual cause (unnecessary repeated computation) — is exactly what motivates caching as the targeted fix on the next page.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "as read traffic grows, the database becomes the bottleneck... caching frequently accessed data reduces load significantly"; blog.algomaster.io "How to Scale a System from 0 to 10 million+ Users" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-03-the-weekend-spike/3-4-the-new-problem-users-keep-getting-logged-out.html">&larr; 3.4 The new problem: users keep getting logged out</a>
+    <a href="4-2-the-fix-caching-and-cdn.html">4.2 The fix: caching &amp; CDN &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderRs() {
+  const refreshes = parseInt(document.getElementById('rs-refreshes').value, 10);
+  document.getElementById('rs-refreshes-val').textContent = refreshes + '/s';
+  const dbCpu = Math.min(97, 10 + (refreshes / 500) * 85);
+  document.getElementById('rs-dbcpu').style.width = dbCpu + '%';
+  document.getElementById('rs-dbcpu').style.background = dbCpu > 80 ? '#e5484d' : dbCpu > 55 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('rs-dbcpu-val').textContent = Math.round(dbCpu) + '%';
+}
+document.getElementById('rs-refreshes').addEventListener('input', renderRs);
+renderRs();
+
+document.getElementById('fig-read-heavy').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: many identical read requests for popular feed combinations converging on the database, versus a much smaller trickle of write requests">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <text x="170" y="20" text-anchor="middle" font-size="11">Reads (feed loads) — constant flood</text>
+  <line x1="30" y1="35" x2="330" y2="35" stroke="#e5484d" stroke-width="2"/>
+  <line x1="30" y1="45" x2="330" y2="45" stroke="#e5484d" stroke-width="2"/>
+  <line x1="30" y1="55" x2="330" y2="55" stroke="#e5484d" stroke-width="2"/>
+  <line x1="30" y1="65" x2="330" y2="65" stroke="#e5484d" stroke-width="2"/>
+  <line x1="30" y1="75" x2="330" y2="75" stroke="#e5484d" stroke-width="2"/>
+  <text x="510" y="20" text-anchor="middle" font-size="11">Writes (new posts) — a trickle</text>
+  <line x1="380" y1="55" x2="640" y2="55" stroke="#3ecf8e" stroke-width="2" stroke-dasharray="6,10"/>
+  <rect x="270" y="95" width="140" height="30" rx="6" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="340" y="115" text-anchor="middle" fill="#f5a623">Database</text>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Design &mdash; Scaling Chirp from 500 to 100M users</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="index.html">System <span>Design</span></a>
+  <div class="crumbs">by Rameez Manzoor</div>
+</nav>
+<main class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow">🚧 Phase 1 live &middot; 12 more phases in progress</div>
+    <h1>One app.<br>Ten breaking points.</h1>
+    <p class="subtitle">You're the engineer behind Chirp, a Twitter-style app. It launches on one server. Then it grows &mdash; and breaks, again and again, in exactly the order real systems do. Every concept in this track exists because something you built actually failed first. No abstract theory before the pain that motivates it.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="n">13</div><div class="l">Phases planned</div></div>
+      <div class="hero-stat"><div class="n">20</div><div class="l">Topics live</div></div>
+      <div class="hero-stat"><div class="n">52</div><div class="l">Topics total (planned)</div></div>
+      <div class="hero-stat"><div class="n">12</div><div class="l">Worked interview problems</div></div>
+    </div>
+  </div>
+
+  <div class="phase-grid">
+
+    <a class="phase-card" data-phase="1" data-total="2" data-slugs="1-1-meet-chirp-why-starting-simple-is-correct,1-2-the-fragility-nobody-notices-yet" href="phase-01-launch-day/1-1-meet-chirp-why-starting-simple-is-correct.html">
+      <div class="phase-card-top"><div class="phase-card-num">1</div><div class="phase-card-count">0 / 2 done</div></div>
+      <h3>Launch Day</h3>
+      <p>Meet Chirp. Why the single-server monolith is the right way to start.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </a>
+
+    <a class="phase-card" data-phase="2" data-total="3" data-slugs="2-1-the-bottleneck-one-machine-two-jobs,2-2-the-fix-splitting-app-and-database,2-3-the-ceiling-why-vertical-scaling-runs-out" href="phase-02-first-growing-pains/2-1-the-bottleneck-one-machine-two-jobs.html">
+      <div class="phase-card-top"><div class="phase-card-num">2</div><div class="phase-card-count">0 / 3 done</div></div>
+      <h3>First Growing Pains</h3>
+      <p>App and DB fight for resources. Split them apart. Why vertical scaling always runs out.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </a>
+
+    <a class="phase-card" data-phase="3" data-total="4" data-slugs="3-1-the-bottleneck-one-server-cant-keep-up,3-2-the-fix-load-balancing-and-horizontal-scaling,3-3-deep-dive-load-balancing-algorithms,3-4-the-new-problem-users-keep-getting-logged-out" href="phase-03-the-weekend-spike/3-1-the-bottleneck-one-server-cant-keep-up.html">
+      <div class="phase-card-top"><div class="phase-card-num">3</div><div class="phase-card-count">0 / 4 done</div></div>
+      <h3>The Weekend Spike</h3>
+      <p>One server can't keep up. Load balancing, horizontal scaling, and why sessions break.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </a>
+
+    <a class="phase-card" data-phase="4" data-total="4" data-slugs="4-1-the-bottleneck-everyones-feed-hits-the-database,4-2-the-fix-caching-and-cdn,4-3-deep-dive-cache-eviction-and-write-strategies,4-4-the-new-problem-stale-data-after-you-edit" href="phase-04-the-read-storm/4-1-the-bottleneck-everyones-feed-hits-the-database.html">
+      <div class="phase-card-top"><div class="phase-card-num">4</div><div class="phase-card-count">0 / 4 done</div></div>
+      <h3>The Read Storm</h3>
+      <p>Every feed load hits the database. Caching, CDN, and the cache invalidation problem.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </a>
+
+    <a class="phase-card" data-phase="5" data-total="3" data-slugs="5-1-the-bottleneck-primary-database-drowning-in-reads,5-2-the-fix-read-replicas,5-3-the-new-problem-i-just-posted-but-cant-see-it" href="phase-05-half-a-million-and-climbing/5-1-the-bottleneck-primary-database-drowning-in-reads.html">
+      <div class="phase-card-top"><div class="phase-card-num">5</div><div class="phase-card-count">0 / 3 done</div></div>
+      <h3>Half a Million and Climbing</h3>
+      <p>Reads still drown the primary. Read replicas, and the replication lag bug.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </a>
+
+    <a class="phase-card" data-phase="6" data-total="4" data-slugs="6-1-the-bottleneck-one-database-cant-hold-everyone,6-2-the-fix-sharding-chirps-data,6-3-deep-dive-consistent-hashing,6-4-the-new-problem-celebrities-and-cross-shard-search" href="phase-06-the-database-ceiling/6-1-the-bottleneck-one-database-cant-hold-everyone.html">
+      <div class="phase-card-top"><div class="phase-card-num">6</div><div class="phase-card-count">0 / 4 done</div></div>
+      <h3>The Database Ceiling</h3>
+      <p>One database can't hold everyone. Sharding, consistent hashing, celebrity users.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </a>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">7</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>Everything's on Fire at Once</h3>
+      <p>Notifications and video block every request. Message queues, workers, idempotency.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">8</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>One Codebase, One Team, One Outage</h3>
+      <p>Nobody can deploy safely. Microservices, and the saga pattern.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">9</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>The Other Side of the World</h3>
+      <p>Latency for distant users. CDN edge, multi-region, cross-region consistency.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">10</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>When Failure Is the Default</h3>
+      <p>One slow dependency cascades. Circuit breakers, graceful degradation, chaos.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">11</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>The Toolbox</h3>
+      <p>API design, rate-limiting algorithms, CAP/PACELC, database taxonomy, the interview framework.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">12</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>The Patterns Everyone Asks</h3>
+      <p>URL shortener, social feed, chat app, Uber, rate limiter, search autocomplete.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="phase-card" style="opacity:0.5; cursor:default;">
+      <div class="phase-card-top"><div class="phase-card-num">13</div><div class="phase-card-count">Coming soon</div></div>
+      <h3>Specialized Patterns</h3>
+      <p>Video streaming, notifications, Dropbox, payments, collaborative editing, RAG chatbot.</p>
+      <div class="phase-card-bar"><div class="phase-card-bar-fill" style="width:0%"></div></div>
+    </div>
+
+  </div>
+
+</main>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

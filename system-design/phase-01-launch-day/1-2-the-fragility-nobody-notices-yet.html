@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 The fragility nobody notices yet | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.fn-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.fn-slider-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.fn-slider-row input[type=range] { flex: 1; }
+.fn-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; }
+.fn-metric { background: var(--surface-2); border-radius: 8px; padding: 14px; text-align: center; }
+.fn-metric .n { font-size: 16px; font-weight: 700; }
+.fn-metric .l { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-top:4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Launch Day</div>
+  <h1>1.2 The fragility nobody notices yet</h1>
+  <p class="subtitle">One server means one thing: if it goes down, Chirp goes down completely. At 500 users, that's a real risk you're choosing to accept — knowingly, not by accident.</p>
+
+  <div class="chirp-quote">
+    "Quick heads up — I restarted the server to apply a security patch and Chirp was down for about 90 seconds. Nobody seemed to notice. But if this happens during a bigger traffic moment, that's a different story." — you, three weeks after launch
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>single point of failure</strong> is any one component whose failure takes down the
+    whole system. Chirp's single server is currently a single point of failure for everything —
+    the application, the database, and even local file storage all live and die together. At 500
+    users, this is a genuinely acceptable trade-off: the alternative (redundancy) costs real money
+    and real complexity, for a failure that, if it happens, affects very few people for a short
+    time. The question this chapter sets up: at what point does that trade-off stop making sense?
+  </div>
+
+  <h2>Try it: watch the real cost of downtime scale with users</h2>
+  <div class="fn-box">
+    <div class="fn-slider-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">Chirp's user count</label>
+      <input type="range" id="fn-users" min="1" max="10" value="1">
+      <span id="fn-users-val" style="font-weight:700; min-width:70px;">500 users</span>
+    </div>
+    <div class="fn-metrics" id="fn-metrics"></div>
+  </div>
+
+  <h2>Why "just add a backup server" isn't actually the next move</h2>
+  <p>
+    The intuitive fix for a single point of failure is redundancy — a second server ready to take
+    over. But at Chirp's current scale, this solves a problem that isn't actually the pressing
+    one yet. As you'll see starting next chapter, the single server's real first failure mode
+    isn't going to be "it crashes" — it's going to be "the app and the database start actively
+    fighting each other for the same CPU and memory," which redundancy alone wouldn't fix anyway.
+    Availability and capacity are different problems, and Chirp is about to hit the capacity
+    problem first.
+  </p>
+
+  <div class="figure" id="fig-spof"></div>
+
+  <h2>What "acceptable risk" actually means in system design</h2>
+  <p>
+    Every architectural decision in this track is a trade-off, not a pursuit of some theoretical
+    "correct" design. Accepting a single point of failure at 500 users isn't a mistake to feel
+    bad about — it's a deliberate, reasonable choice given the actual cost of failure at this
+    scale versus the cost of preventing it. The skill this track is building isn't "always choose
+    maximum resilience" — it's recognizing exactly when a given trade-off stops making sense, which
+    is a different threshold for every system, every team, and every moment in that system's
+    growth.
+  </p>
+
+  <h2>What's about to happen</h2>
+  <p>
+    Chirp's user count is about to climb — not because of some external event, but because the
+    product is genuinely working. And the very first crack won't be a dramatic outage. It'll be
+    something quieter and more specific: two processes on the same machine, quietly getting in
+    each other's way.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What makes Chirp's single server a "single point of failure" specifically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If it goes down, the application, database, and file storage all fail together, since all three currently live on the same machine</button>
+        <button class="q-option" data-correct="false">A single point of failure means the server has a bug that will eventually crash it</button>
+        <button class="q-option" data-correct="false">Single points of failure only exist in systems with more than one server</button>
+      </div>
+      <div class="q-explain">The defining trait is that one component's failure takes the whole system down with it — currently true for every part of Chirp, since nothing is separated or redundant yet.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does this page argue that "just add a backup server" isn't actually Chirp's most pressing next move?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Chirp's actual next failure mode is a capacity problem (app and DB competing for resources), not an availability problem — redundancy alone wouldn't fix that</button>
+        <button class="q-option" data-correct="false">Backup servers are technically impossible to set up for a single-server application</button>
+        <button class="q-option" data-correct="false">Redundancy and capacity are the same problem, so either fix works equally well</button>
+      </div>
+      <div class="q-explain">This distinguishes two genuinely different problem categories — availability (is it up) and capacity (can it handle the load) — and sets up why chapter 2's actual bottleneck is capacity, not redundancy.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does this page argue is the actual skill being built across this track, regarding risk and trade-offs?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Recognizing exactly when a given trade-off stops making sense — not defaulting to "always maximize resilience" regardless of actual cost and current scale</button>
+        <button class="q-option" data-correct="false">Every system should always be designed for maximum redundancy regardless of scale or cost</button>
+        <button class="q-option" data-correct="false">Trade-offs are a fixed, universal calculation that's identical for every system</button>
+      </div>
+      <div class="q-explain">This reinforces the core theme from 1.1 — good system design judgment is contextual, weighing real costs against real risks at the actual current scale, not applying a one-size-fits-all rule.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — the walkthrough pattern of scaling a social app from zero, each stage solving the bottleneck that emerged from growth; GitHub system-design-primer, "Design a system that scales to millions of users on AWS" — the iterative benchmark→bottleneck→fix cycle.</p>
+
+  <div class="pager">
+    <a href="1-1-meet-chirp-why-starting-simple-is-correct.html">&larr; 1.1 Meet Chirp: why starting simple is correct</a>
+    <a href="../phase-02-first-growing-pains/2-1-the-bottleneck-one-machine-two-jobs.html">Phase 2: First Growing Pains &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const FN_STAGES = [
+  { users: "500 users", affected: "~1-2 users", cost: "Negligible", risk: "Low" },
+  { users: "1,500 users", affected: "~4-6 users", cost: "Minor annoyance", risk: "Low" },
+  { users: "3,000 users", affected: "~10-15 users", cost: "A few complaints", risk: "Low-Medium" },
+  { users: "6,000 users", affected: "~20-30 users", cost: "Visible on social media", risk: "Medium" },
+  { users: "12,000 users", affected: "~50-70 users", cost: "Support tickets pile up", risk: "Medium" },
+  { users: "25,000 users", affected: "~100-150 users", cost: "Real reputational risk", risk: "Medium-High" },
+  { users: "50,000 users", affected: "~250-350 users", cost: "Press/investor visibility", risk: "High" },
+  { users: "100,000 users", affected: "~500-800 users", cost: "This is now a real incident", risk: "High" },
+  { users: "250,000 users", affected: "~1,200-2,000 users", cost: "Redundancy should've shipped already", risk: "Critical" },
+  { users: "500,000 users", affected: "~2,500-4,000 users", cost: "Single-server risk is now unacceptable", risk: "Critical" },
+];
+function renderFn() {
+  const idx = parseInt(document.getElementById('fn-users').value, 10) - 1;
+  const s = FN_STAGES[idx];
+  document.getElementById('fn-users-val').textContent = s.users;
+  document.getElementById('fn-metrics').innerHTML = `
+    <div class="fn-metric"><div class="n">${s.affected}</div><div class="l">Affected by 90s outage</div></div>
+    <div class="fn-metric"><div class="n">${s.cost}</div><div class="l">Real-world cost</div></div>
+    <div class="fn-metric"><div class="n" style="color:${s.risk.includes('Critical')?'#ff8b8f':s.risk.includes('High')?'#f2b84b':'#3ecf8e'}">${s.risk}</div><div class="l">Risk level</div></div>
+  `;
+}
+document.getElementById('fn-users').addEventListener('input', renderFn);
+renderFn();
+
+document.getElementById('fig-spof').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: one server as a single point of failure, with the application, database, and file storage all failing together if the server goes down">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="240" y="15" width="200" height="40" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/>
+  <text x="340" y="40" text-anchor="middle" fill="#ff8b8f">One server (single point of failure)</text>
+  <line x1="280" y1="55" x2="150" y2="90" stroke="#6b7386" stroke-width="1"/>
+  <line x1="340" y1="55" x2="340" y2="90" stroke="#6b7386" stroke-width="1"/>
+  <line x1="400" y1="55" x2="530" y2="90" stroke="#6b7386" stroke-width="1"/>
+  <rect x="80" y="90" width="140" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="150" y="109" text-anchor="middle" fill="#a9c1ff" font-size="9">Application</text>
+  <rect x="270" y="90" width="140" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="109" text-anchor="middle" fill="#3ecf8e" font-size="9">Database</text>
+  <rect x="460" y="90" width="140" height="30" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="530" y="109" text-anchor="middle" fill="#f5a623" font-size="9">File storage</text>
+</svg>
+`;
+</script>
+</body>
+</html>

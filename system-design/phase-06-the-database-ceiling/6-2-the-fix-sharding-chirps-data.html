@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 The fix: sharding Chirp's data | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · The Database Ceiling &middot; ~1,000,000-10,000,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>6.2 The fix: sharding Chirp's data</h1>
+  <p class="subtitle">Instead of one database holding everyone, eight databases each holding an eighth of everyone — and a rule for knowing exactly which eighth.</p>
+
+  <div class="chirp-quote">
+    "Split users and their posts across 8 shards, keyed by user ID. Each shard is now a fifth the size it would've been on one server, and write latency is back to normal. The tricky part wasn't the sharding itself — it was making sure every single query knows which shard to look in." — you, post-migration notes</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Sharding</strong> (or horizontal partitioning) splits one large dataset across
+    multiple independent databases, each holding only a portion of the total data. A
+    <strong>shard key</strong> — Chirp uses <code>user_id</code> — deterministically decides
+    which shard any given piece of data lives on, so the application always knows exactly where
+    to look without having to search every shard. This directly solves 6.1's storage ceiling:
+    each shard now only needs to store and index a fraction of the total dataset, restoring fast
+    writes.
+  </div>
+
+  <h2>Try it: watch data route to the correct shard</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">Try a user ID</label>
+      <input type="number" id="sh-userid" value="4821" min="1" max="99999" style="flex:1; padding:8px 12px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text-primary); font-family:var(--font-mono);">
+    </div>
+    <div id="sh-result" style="margin-top:12px;"></div>
+  </div>
+
+  <h2>The simplest sharding scheme, and its very real problem</h2>
+  <pre><code>def get_shard(user_id, num_shards=8):
+    return user_id % num_shards  # simplest possible approach</code></pre>
+  <p>
+    Modulo-based sharding is genuinely simple and works — until the number of shards ever needs
+    to change. Going from 8 shards to 9 changes the result of <code>user_id % num_shards</code>
+    for the overwhelming majority of existing user IDs, meaning nearly every piece of data would
+    need to be physically moved to a different shard just to add one more machine. This is a real,
+    serious problem for a system that fully intends to keep growing — and it's exactly what the
+    next page's deep dive on consistent hashing solves properly.
+  </p>
+
+  <div class="figure" id="fig-sharding"></div>
+
+  <h2>Why user_id specifically, and not something else</h2>
+  <p>
+    Chirp's most common queries — "get this user's posts," "get this user's feed," "update this
+    user's profile" — are almost all naturally scoped to one user. Choosing <code>user_id</code>
+    as the shard key means the overwhelming majority of real queries only ever need to touch one
+    shard, which is exactly what makes sharding pay off cleanly. Choosing a poor shard key —
+    something that doesn't align with how data is actually queried — can force many queries to
+    check every shard, which erases most of sharding's benefit. This choice is worth taking
+    seriously and is very hard to change later.
+  </p>
+
+  <h2>What sharding costs, honestly</h2>
+  <p>
+    Every shard is now its own independent database with its own connection pool, its own
+    replicas (Chapter 5's fix still applies — each shard can have its own read replicas), and its
+    own operational overhead. Cross-shard operations — anything that needs data from more than one
+    shard at once — become genuinely harder, a cost this chapter is about to make very concrete in
+    6.4.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does sharding by user_id directly solve 6.1's storage ceiling problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each shard only needs to store and index a fraction of the total dataset, rather than every machine holding the complete, ever-growing dataset</button>
+        <button class="q-option" data-correct="false">Sharding increases the total amount of storage available without changing how data is distributed</button>
+        <button class="q-option" data-correct="false">Sharding and replication solve the exact same problem in the exact same way</button>
+      </div>
+      <div class="q-explain">This is the direct mechanism — splitting the data itself (not just adding copies of it) is what actually reduces the per-machine storage and indexing burden.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the specific, serious problem with simple modulo-based sharding (user_id % num_shards)?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Changing the number of shards changes the result for nearly every existing user ID, meaning almost all data would need to be physically moved just to add one more machine</button>
+        <button class="q-option" data-correct="false">Modulo-based sharding cannot technically distribute data evenly across shards</button>
+        <button class="q-option" data-correct="false">This approach has no real drawbacks and is the permanent, correct solution</button>
+      </div>
+      <div class="q-explain">This specific fragility — around growing or shrinking the shard count — is exactly what consistent hashing (next page) is designed to solve.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does choosing the right shard key matter so much for whether sharding actually pays off?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A shard key aligned with how data is actually queried (like user_id, matching Chirp's mostly user-scoped queries) lets most queries touch only one shard — a poorly chosen key can force queries to check every shard, erasing sharding's benefit</button>
+        <button class="q-option" data-correct="false">Any shard key produces identical query performance regardless of the application's actual query patterns</button>
+        <button class="q-option" data-correct="false">Shard key choice can always be easily changed later with no real cost</button>
+      </div>
+      <div class="q-explain">This is a genuinely consequential design decision — the shard key needs to match real query patterns, and it's specifically flagged as hard to change once data is already distributed by it.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "shard your database... choosing the right shard key is critical"; system-design-primer (GitHub) — horizontal partitioning and shard key selection criteria.</p>
+
+  <div class="pager">
+    <a href="6-1-the-bottleneck-one-database-cant-hold-everyone.html">&larr; 6.1 The bottleneck: one database can't hold everyone</a>
+    <a href="6-3-deep-dive-consistent-hashing.html">6.3 Deep dive: consistent hashing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderSh() {
+  const userId = parseInt(document.getElementById('sh-userid').value, 10) || 0;
+  const shard = userId % 8;
+  document.getElementById('sh-result').innerHTML = `
+    <div style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;">
+      <code>${userId} % 8 = ${shard}</code> → routes to <strong style="color:#f5a623;">Shard ${shard}</strong>
+    </div>
+  `;
+}
+document.getElementById('sh-userid').addEventListener('input', renderSh);
+renderSh();
+
+document.getElementById('fig-sharding').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: application routing each request to one of eight shards based on the user ID, each shard holding only its own portion of the data">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="270" y="10" width="140" height="30" rx="6" fill="#182238" stroke="#5b8cff"/><text x="340" y="30" text-anchor="middle" fill="#a9c1ff" font-size="9">App: get_shard(user_id)</text>
+  <line x1="290" y1="40" x2="80" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="310" y1="40" x2="180" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="330" y1="40" x2="280" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="350" y1="40" x2="380" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="370" y1="40" x2="480" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <line x1="390" y1="40" x2="580" y2="70" stroke="#6b7386" stroke-width="1"/>
+  <rect x="30" y="75" width="100" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="80" y="96" text-anchor="middle" fill="#3ecf8e">Shard 0</text>
+  <rect x="140" y="75" width="80" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="180" y="96" text-anchor="middle" fill="#3ecf8e">Shard 1</text>
+  <rect x="240" y="75" width="80" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="280" y="96" text-anchor="middle" fill="#3ecf8e">Shard 2</text>
+  <rect x="340" y="75" width="80" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="380" y="96" text-anchor="middle" fill="#3ecf8e">Shard 3</text>
+  <rect x="440" y="75" width="80" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="480" y="96" text-anchor="middle" fill="#3ecf8e">...</text>
+  <rect x="540" y="75" width="100" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="590" y="96" text-anchor="middle" fill="#3ecf8e">Shard 7</text>
+  <text x="340" y="125" text-anchor="middle" fill="#9aa4b5" font-size="8">each shard: full read replica setup from Chapter 5 still applies independently</text>
+</svg>
+`;
+</script>
+</body>
+</html>

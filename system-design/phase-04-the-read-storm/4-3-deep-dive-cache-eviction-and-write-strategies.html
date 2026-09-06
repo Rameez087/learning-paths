@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.3 Deep dive: cache eviction & write strategies | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.ce-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.ce-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ce-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ce-tab.active { background: rgba(245,166,35,0.15); border-color: #f5a623; color: #f5c168; }
+.lru-slot { display: inline-block; width: 70px; height: 50px; margin: 4px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border-strong); text-align: center; line-height: 50px; font-size: 11px; font-weight: 600; transition: all 0.3s; }
+.lru-slot.new { background: rgba(62,207,142,0.2); border-color: #3ecf8e; }
+.lru-slot.evicted { background: rgba(229,72,77,0.2); border-color: #e5484d; opacity: 0.4; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · The Read Storm &middot; Deep dive</div>
+  <h1>4.3 Deep dive: cache eviction & write strategies</h1>
+  <p class="subtitle">Redis has finite memory. When it fills up, something has to be thrown out — the question is what, and getting it wrong quietly undoes most of caching's benefit.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Eviction policies</strong> decide what to remove when a cache is full: <strong>LRU</strong>
+    (Least Recently Used — evict whatever hasn't been touched in the longest time) is the most
+    common default, and it works because access patterns are rarely uniform — some content stays
+    genuinely popular. Separately, <strong>write strategies</strong> decide how the cache stays in
+    sync with the database when data changes: <strong>write-through</strong> (update both at once,
+    safer but slower), <strong>write-behind</strong> (update the cache immediately, database
+    later, faster but riskier), and <strong>cache-aside</strong> (4.2's pattern — the application
+    manages both explicitly).
+  </div>
+
+  <h2>Try it: watch LRU eviction in action</h2>
+  <div class="ce-box">
+    <div id="lru-cache" style="margin-bottom:12px;"></div>
+    <button id="lru-access" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Simulate a new feed request (random user)</button>
+    <p id="lru-log" style="font-size:12px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>Why LRU specifically, and not "just evict randomly"</h2>
+  <p>
+    LRU exploits a genuinely common real-world pattern called <strong>temporal locality</strong>:
+    something accessed recently is disproportionately likely to be accessed again soon. A user
+    who just refreshed their feed will probably refresh it again within the next minute; a user
+    who hasn't opened Chirp in three days probably won't in the next thirty seconds either.
+    Evicting the least-recently-used entry specifically protects the entries most likely to be
+    requested again, which random eviction wouldn't do any better than chance.
+  </p>
+
+  <div class="figure" id="fig-write-strategies"></div>
+
+  <h2>Write-through vs. write-behind: the actual trade-off</h2>
+  <p>
+    <strong>Write-through</strong> updates the cache and the database in the same operation,
+    before confirming success to whoever made the write — slower per write, but the cache is never
+    out of sync with the database, even for a moment. <strong>Write-behind</strong> updates the
+    cache immediately and writes to the database asynchronously, shortly after — faster writes,
+    but a real window exists where a crash between the two steps could lose the write entirely.
+    For something like a new Chirp post, that risk is usually unacceptable; for a less critical
+    metric like a view counter, it's often a perfectly reasonable trade.
+  </p>
+
+  <h2>Why Chirp's feed cache uses cache-aside, not write-through</h2>
+  <p>
+    Chirp's feed cache doesn't get directly written to when a new post is created — instead, it
+    simply expires after 60 seconds (4.2) and gets recomputed fresh on the next request. This is
+    the cache-aside pattern: the application, not the cache infrastructure itself, decides when to
+    read from cache, when to fall through to the database, and when to let old entries expire
+    naturally. It's simpler to reason about than keeping every cache entry perfectly synchronized
+    on every single write — at the direct cost of exactly the staleness window the next chapter is
+    about to make painfully visible.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does LRU eviction generally outperform random eviction for a cache like Chirp's?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It exploits temporal locality — content accessed recently is disproportionately likely to be requested again soon, so LRU specifically protects the entries most likely to actually be needed next</button>
+        <button class="q-option" data-correct="false">LRU and random eviction produce statistically identical results in every real workload</button>
+        <button class="q-option" data-correct="false">LRU eviction guarantees a cache will never need to evict anything else afterward</button>
+      </div>
+      <div class="q-explain">This is the specific real-world pattern (temporal locality) that makes recency a genuinely useful signal for predicting future access, rather than an arbitrary heuristic.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What real risk does write-behind caching introduce that write-through avoids?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A window exists between updating the cache and writing to the database where a crash could lose the write entirely, since the database update happens asynchronously afterward</button>
+        <button class="q-option" data-correct="false">Write-behind and write-through carry identical risk profiles with no meaningful difference</button>
+        <button class="q-option" data-correct="false">Write-behind caching is always the safer choice regardless of the data's importance</button>
+      </div>
+      <div class="q-explain">This is a genuine, real trade-off — faster writes in exchange for a real (if often small) window of data-loss risk, which is why the choice depends on how critical the specific data actually is.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does Chirp's feed cache use expiration-based cache-aside rather than actively updating the cache on every new post?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's simpler to reason about than keeping every cache entry perfectly synchronized on every write, at the direct cost of a staleness window the fix deliberately accepts</button>
+        <button class="q-option" data-correct="false">Cache-aside is technically incapable of ever becoming stale</button>
+        <button class="q-option" data-correct="false">Actively updating the cache on every write is always simpler than using expiration</button>
+      </div>
+      <div class="q-explain">This directly sets up 4.4 — the simplicity of cache-aside comes with an explicit, accepted trade-off (staleness) that's about to become a real, visible user-facing problem.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This deep dive reflects standard, durable caching theory (LRU/LFU eviction, write-through/write-behind/cache-aside patterns) consistent across Redis, Memcached, and most production caching systems.</p>
+
+  <div class="pager">
+    <a href="4-2-the-fix-caching-and-cdn.html">&larr; 4.2 The fix: caching &amp; CDN</a>
+    <a href="4-4-the-new-problem-stale-data-after-you-edit.html">4.4 The new problem: stale data after you edit &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let lruCache = ["user_A", "user_B", "user_C", "user_D"];
+const CAPACITY = 4;
+const userPool = ["user_A","user_B","user_C","user_D","user_E","user_F","user_G","user_H"];
+function renderLru(newUser, evicted) {
+  document.getElementById('lru-cache').innerHTML = lruCache.map(u =>
+    `<div class="lru-slot${u===newUser?' new':''}">${u}</div>`
+  ).join('') + (evicted ? `<div class="lru-slot evicted">${evicted}</div>` : '');
+}
+renderLru();
+document.getElementById('lru-access').addEventListener('click', () => {
+  const user = userPool[Math.floor(Math.random() * userPool.length)];
+  const existingIdx = lruCache.indexOf(user);
+  let evicted = null;
+  if (existingIdx !== -1) {
+    lruCache.splice(existingIdx, 1);
+    lruCache.push(user);
+    document.getElementById('lru-log').textContent = `${user} was already cached (cache hit) — moved to most-recently-used position.`;
+  } else {
+    if (lruCache.length >= CAPACITY) {
+      evicted = lruCache.shift();
+    }
+    lruCache.push(user);
+    document.getElementById('lru-log').textContent = evicted
+      ? `${user} was a cache miss. Cache was full, so ${evicted} (least recently used) was evicted to make room.`
+      : `${user} was a cache miss. Added to cache.`;
+  }
+  renderLru(user, evicted);
+});
+
+document.getElementById('fig-write-strategies').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram comparing write-through, updating cache and database together synchronously, versus write-behind, updating cache immediately and database afterward asynchronously">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <text x="170" y="20" text-anchor="middle" font-size="11">Write-through</text>
+  <rect x="30" y="35" width="100" height="35" rx="4" fill="#182238" stroke="#5b8cff"/><text x="80" y="57" text-anchor="middle" fill="#a9c1ff" font-size="8">Write request</text>
+  <line x1="130" y1="45" x2="180" y2="45" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd8)"/>
+  <line x1="130" y1="60" x2="180" y2="60" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd8)"/>
+  <rect x="180" y="20" width="80" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="220" y="39" text-anchor="middle" fill="#3ecf8e" font-size="8">Cache</text>
+  <rect x="180" y="55" width="80" height="30" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="220" y="74" text-anchor="middle" fill="#f5a623" font-size="8">Database</text>
+  <text x="220" y="105" text-anchor="middle" fill="#9aa4b5" font-size="8">both updated together, before confirming</text>
+
+  <text x="510" y="20" text-anchor="middle" font-size="11">Write-behind</text>
+  <rect x="370" y="35" width="100" height="35" rx="4" fill="#182238" stroke="#5b8cff"/><text x="420" y="57" text-anchor="middle" fill="#a9c1ff" font-size="8">Write request</text>
+  <line x1="470" y1="52" x2="520" y2="52" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd8)"/>
+  <rect x="520" y="35" width="80" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="560" y="54" text-anchor="middle" fill="#3ecf8e" font-size="8">Cache (instant)</text>
+  <line x1="560" y1="65" x2="560" y2="90" stroke="#f2b84b" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#sd8y)"/>
+  <rect x="520" y="95" width="80" height="30" rx="4" fill="#1a2029" stroke="#f2b84b"/><text x="560" y="114" text-anchor="middle" fill="#f2b84b" font-size="8">Database (later)</text>
+  <defs>
+    <marker id="sd8" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd8y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.2 The fix: splitting app and database | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.sp-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.sp-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.sp-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.sp-toggle-btn.active { background: rgba(245,166,35,0.15); border-color: #f5a623; color: #f5c168; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 · First Growing Pains &middot; ~5,000-20,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>2.2 The fix: splitting app and database</h1>
+  <p class="subtitle">The fix here isn't clever. It's the most obvious move available — and it's obvious precisely because the bottleneck was so precisely diagnosed.</p>
+
+  <div class="chirp-quote">
+    "Moved Postgres onto its own droplet last night. App server CPU dropped to 34%. DB server sits around 40%. Feed loads in under 100ms again." — you, the next morning
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Move the database onto its own dedicated machine. Now the application has its CPU and RAM
+    entirely to itself, and so does the database — they still talk to each other constantly, but
+    over the network instead of fighting for the same local resources. This single move is
+    usually the very first scaling step any growing system takes, because it directly addresses
+    the exact contention diagnosed in 2.1 without introducing any new moving parts yet.
+  </div>
+
+  <h2>Try it: compare the before and after</h2>
+  <div class="sp-box">
+    <div class="sp-toggle">
+      <div class="sp-toggle-btn active" data-v="before">Before: shared server</div>
+      <div class="sp-toggle-btn" data-v="after">After: separated</div>
+    </div>
+    <div id="sp-fig"></div>
+  </div>
+
+  <h2>The trade-off this fix introduces, honestly stated</h2>
+  <p>
+    Separating the database onto its own machine removes resource contention, but it adds
+    something that wasn't there before: <strong>network latency</strong> between the app and the
+    database. A query that used to be a local function call is now a network round trip — typically
+    still fast (often under a millisecond on the same data center's internal network), but not
+    literally free the way an in-process call was. This is the first real instance of a pattern
+    that recurs throughout this entire track: every fix trades one problem for a smaller,
+    different one.
+  </p>
+
+  <div class="figure" id="fig-separated"></div>
+
+  <h2>Why this is now two machines to operate, not one</h2>
+  <p>
+    A less obvious cost: there are now two things to monitor, patch, back up, and pay for instead
+    of one. This is a genuinely real operational cost, and it's worth being honest about it rather
+    than presenting this fix as strictly free. It's simply a cost worth paying at this scale — the
+    contention problem from 2.1 was actively degrading the product for real users, while "one more
+    server to manage" is an ongoing but manageable line item.
+  </p>
+
+  <h2>Configuration, not just placement</h2>
+  <p>
+    Splitting the machines only pays off if each one is actually tuned for its job. A database
+    server benefits from memory configured for its specific workload (query caching, connection
+    pooling settings) — configuration that would have been a compromise on a shared machine where
+    the application also needed its own share of memory. Separation doesn't just remove
+    contention; it unlocks tuning that wasn't previously possible.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What specific new cost does separating the app and database onto different machines introduce?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Network latency — a database query that was previously a local function call now becomes a network round trip between the two machines</button>
+        <button class="q-option" data-correct="false">Separating the machines has no real trade-offs or costs at all</button>
+        <button class="q-option" data-correct="false">Separation always makes the database slower than it was when co-located</button>
+      </div>
+      <div class="q-explain">This is the first concrete instance of "every fix trades one problem for a smaller one" — a theme this track returns to repeatedly, starting here.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does having two separate machines now represent a genuine operational cost worth acknowledging?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">There are now two things to monitor, patch, back up, and pay for instead of one — a real ongoing cost, even though it's worth paying given the alternative</button>
+        <button class="q-option" data-correct="false">Operating two machines is always exactly as simple as operating one</button>
+        <button class="q-option" data-correct="false">This cost only matters for systems with more than 100,000 users</button>
+      </div>
+      <div class="q-explain">Being honest about real costs, even when a fix is clearly worth it, is a discipline this track maintains throughout — a fix isn't "free" just because it solves the immediate problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does separating the machines "unlock tuning" that wasn't available when they were co-located?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">On a shared machine, memory and configuration had to compromise between the app's needs and the database's needs — separated, each machine can be tuned entirely for its own specific workload</button>
+        <button class="q-option" data-correct="false">Tuning is only possible on machines running a single process regardless of what else was previously true</button>
+        <button class="q-option" data-correct="false">Configuration and separation are entirely unrelated concerns</button>
+      </div>
+      <div class="q-explain">This is a genuine secondary benefit beyond just removing contention — dedicated hardware can be configured for its actual job in a way shared hardware inherently can't be.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "the first scaling move is usually separating the database onto its own machine... now each component can be tuned independently"; Medium (Preeti) "Designing for Scale" (2025).</p>
+
+  <div class="pager">
+    <a href="2-1-the-bottleneck-one-machine-two-jobs.html">&larr; 2.1 The bottleneck: one machine, two jobs</a>
+    <a href="2-3-the-ceiling-why-vertical-scaling-runs-out.html">2.3 The ceiling: why vertical scaling runs out &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SP_FIGS = {
+  before: `<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Before: app and database sharing one server, both at high CPU usage">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:10px;font-weight:600;}</style>
+    <rect x="220" y="20" width="240" height="90" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/>
+    <text x="340" y="40" text-anchor="middle" fill="#ff8b8f">One server (91% CPU)</text>
+    <rect x="240" y="55" width="90" height="35" rx="4" fill="#182238" stroke="#5b8cff"/><text x="285" y="76" text-anchor="middle" fill="#a9c1ff" font-size="9">Chirp app</text>
+    <rect x="345" y="55" width="90" height="35" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="390" y="76" text-anchor="middle" fill="#3ecf8e" font-size="9">Postgres</text>
+  </svg>`,
+  after: `<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="After: app and database on separate servers connected over the network, each with lower CPU usage">
+    <style>text{font-family:-apple-system,sans-serif;fill:#e6e9ef;font-size:10px;font-weight:600;}</style>
+    <rect x="60" y="40" width="180" height="50" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/>
+    <text x="150" y="60" text-anchor="middle" fill="#a9c1ff">App server</text><text x="150" y="76" text-anchor="middle" fill="#7891c9" font-size="9">34% CPU</text>
+    <line x1="240" y1="65" x2="440" y2="65" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd3)"/>
+    <text x="340" y="55" text-anchor="middle" fill="#f5a623" font-size="8">network round trip</text>
+    <rect x="440" y="40" width="180" height="50" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/>
+    <text x="530" y="60" text-anchor="middle" fill="#3ecf8e">DB server</text><text x="530" y="76" text-anchor="middle" fill="#5fb98a" font-size="9">40% CPU</text>
+    <defs><marker id="sd3" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker></defs>
+  </svg>`
+};
+document.querySelectorAll('.sp-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sp-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sp-fig').innerHTML = SP_FIGS[btn.dataset.v];
+  });
+});
+document.getElementById('sp-fig').innerHTML = SP_FIGS['before'];
+
+document.getElementById('fig-separated').innerHTML = `
+<svg viewBox="0 0 680 100" width="100%" role="img" aria-label="Diagram: Chirp's architecture now consists of two components, an app server and a database server, connected by a network link">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="60" y="30" width="180" height="45" rx="8" fill="#182238" stroke="#5b8cff"/><text x="150" y="57" text-anchor="middle" fill="#a9c1ff">App server</text>
+  <line x1="240" y1="52" x2="440" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd4)" marker-start="url(#sd4b)"/>
+  <rect x="440" y="30" width="180" height="45" rx="8" fill="#1a2029" stroke="#3ecf8e"/><text x="530" y="57" text-anchor="middle" fill="#3ecf8e">DB server</text>
+  <defs>
+    <marker id="sd4" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd4b" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 Z" fill="#6b7386"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

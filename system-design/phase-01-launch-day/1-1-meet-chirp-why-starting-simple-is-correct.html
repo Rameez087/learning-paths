@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.1 Meet Chirp: why starting simple is correct | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.mc-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.mc-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+.mc-toggle-btn { padding: 10px 16px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.mc-toggle-btn.active { background: rgba(245,166,35,0.15); border-color: #f5a623; color: #f5c168; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 · Launch Day</div>
+  <h1>1.1 Meet Chirp: why starting simple is correct</h1>
+  <p class="subtitle">You're the only engineer at a two-person startup. Chirp — short posts, a feed, follows — just went live. It runs on one server. That's not a mistake you'll fix later. It's the correct decision, made for the right reasons, that you'll need to unmake later for equally right reasons.</p>
+
+  <div class="chirp-quote">
+    "We shipped Chirp last night. 40 signups so far, mostly friends. It's just... running. One DigitalOcean droplet, Postgres and the app on the same box. Feels almost too simple to call 'architecture.'" — you, in the team Slack, launch day
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This whole track is one continuous story: Chirp grows from 500 users to 100 million, and at
+    nearly every stage, something that worked perfectly well at the previous scale breaks —
+    predictably, for a specific, explainable reason. You'll meet the fix, then meet the new
+    problem the fix quietly introduces, which becomes the next chapter's bottleneck. Nothing here
+    is taught before it's needed. That's deliberate: system design interviews test whether you can
+    reason from constraints to a defensible design, not whether you've memorized a list of
+    technologies — and reasoning is exactly what this format forces you to practice.
+  </div>
+
+  <h2>Try it: what Chirp actually looks like on day one</h2>
+  <div class="mc-box">
+    <div class="mc-toggle">
+      <div class="mc-toggle-btn active" data-v="simple">What Chirp runs today</div>
+      <div class="mc-toggle-btn" data-v="overbuilt">What a "prepared" version might look like</div>
+    </div>
+    <div id="mc-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why the "overbuilt" version is actually the wrong answer</h2>
+  <p>
+    It's tempting to think the disciplined move is designing for scale from day one — sharded
+    database, message queues, a Kubernetes cluster, multi-region from the start. It isn't. At 500
+    users, none of that infrastructure has a job to do yet, and every piece of it is something you
+    now have to operate, monitor, and pay for while getting zero benefit in return. Interviewers
+    specifically penalize this instinct at the junior level — the signal it sends isn't
+    "prepared," it's "doesn't understand what problem each piece of infrastructure actually
+    solves."
+  </p>
+
+  <div class="figure" id="fig-launch-arch"></div>
+
+  <h2>The one thing worth doing on day one anyway</h2>
+  <p>
+    Simple doesn't mean careless. Even at 500 users, Chirp's code separates cleanly into layers
+    (routes, business logic, data access) and the database schema is sensibly normalized — not
+    because the current scale demands it, but because clean separation costs almost nothing to
+    maintain now and makes every future change (including every fix in this track) meaningfully
+    easier to make correctly. The distinction that matters: architectural complexity you don't need
+    yet is expensive and premature; code hygiene you'll always want is nearly free.
+  </p>
+
+  <h2>How to read this track</h2>
+  <p>
+    Every chapter from here follows a consistent shape: a <span class="stage-badge bottleneck">Bottleneck</span>
+    page showing exactly what's breaking and why, with real (fictional but realistic) diagnostic
+    data — a graph, a spiking metric, an alert. Then a <span class="stage-badge fix">Fix</span>
+    page explaining the solution and why it works. Most chapters end with a
+    <span class="stage-badge newproblem">New Problem</span> page — the side effect the fix quietly
+    introduces, which becomes the next chapter's bottleneck. After the ten growth chapters, Phase
+    11 consolidates the vocabulary into reference form, and Phases 12-13 apply everything to the
+    classic named interview problems.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is designing Chirp for massive scale on day one considered a mistake, not just unnecessary caution?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">At 500 users, that infrastructure has no real job to do yet, but still needs to be operated, monitored, and paid for — pure cost with no corresponding benefit</button>
+        <button class="q-option" data-correct="false">Scaling infrastructure is always technically impossible to set up before it's needed</button>
+        <button class="q-option" data-correct="false">There's no meaningful difference between a simple and an overbuilt starting architecture</button>
+      </div>
+      <div class="q-explain">This is specifically why interviewers penalize premature complexity — it signals a mismatch between the proposed architecture and the actual stated requirements, not technical sophistication.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the distinction this page draws between "architectural complexity you don't need yet" and "code hygiene you'll always want"?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Unneeded architectural complexity is expensive and premature, while clean code separation costs almost nothing now and makes future changes easier — so one is worth avoiding early, the other isn't</button>
+        <button class="q-option" data-correct="false">Both are equally unnecessary at 500 users and should be avoided</button>
+        <button class="q-option" data-correct="false">Code hygiene and architectural complexity are the same thing, described differently</button>
+      </div>
+      <div class="q-explain">This is the actual nuance behind "start simple" — it's not an argument for sloppiness, just for not building infrastructure that has no current job to do.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does this track deliberately teach every concept only at the point Chirp's story actually needs it?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">System design interviews test reasoning from constraints to a defensible design, not memorized technology lists — learning concepts through the problem that motivates them practices that exact reasoning skill</button>
+        <button class="q-option" data-correct="false">Teaching concepts in narrative order is purely a stylistic preference with no connection to how the skill is actually tested</button>
+        <button class="q-option" data-correct="false">This format guarantees every possible system design concept will be covered automatically</button>
+      </div>
+      <div class="q-explain">This is the core pedagogical bet of the whole track — motivation-first learning builds the same reasoning muscle the actual interview tests, rather than just recognition of terms.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — the level-calibration framing (junior candidates penalized for over-engineering) and the reasoning-over-memorization reframe of what interviews test; Medium (Preeti) "Designing for Scale: Lessons from 1,000 to 1 Billion Users" (2025).</p>
+
+  <div class="pager">
+    <a href="../index.html">&larr; Track overview</a>
+    <a href="1-2-the-fragility-nobody-notices-yet.html">1.2 The fragility nobody notices yet &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const MC_INFO = {
+  simple: "One server. The Chirp app and Postgres database run side by side on the same machine. Static assets (profile pictures, the tiny bit of CSS) are served straight off local disk. No load balancer — there's only one server to balance across. No cache — the database is nowhere near its limits. Total monthly infrastructure cost: about the price of a nice dinner.",
+  overbuilt: "A sharded, multi-region Postgres cluster. A Redis cache warming for traffic that doesn't exist. A Kafka cluster for events nothing produces yet. A Kubernetes cluster orchestrating containers for a service with 40 users. Someone now has to operate, patch, and pay for all of this — and debugging anything is dramatically harder than it needs to be, for zero current benefit.",
+};
+document.querySelectorAll('.mc-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mc-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('mc-detail').textContent = MC_INFO[btn.dataset.v];
+  });
+});
+document.getElementById('mc-detail').textContent = MC_INFO['simple'];
+
+document.getElementById('fig-launch-arch').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: a single server running both the Chirp application and its Postgres database, receiving requests directly from users">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <rect x="20" y="50" width="120" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="80" y="74" text-anchor="middle">Users</text>
+  <line x1="140" y1="70" x2="220" y2="70" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd1)"/>
+  <rect x="220" y="30" width="240" height="80" rx="8" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/>
+  <text x="340" y="55" text-anchor="middle" fill="#f5a623">One server</text>
+  <rect x="240" y="65" width="90" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="285" y="84" text-anchor="middle" fill="#a9c1ff" font-size="9">Chirp app</text>
+  <rect x="345" y="65" width="90" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="390" y="84" text-anchor="middle" fill="#3ecf8e" font-size="9">Postgres</text>
+  <defs><marker id="sd1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

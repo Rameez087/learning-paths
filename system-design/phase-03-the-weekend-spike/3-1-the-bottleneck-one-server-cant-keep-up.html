@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 The bottleneck: one server can't keep up | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · The Weekend Spike &middot; ~20,000-100,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>3.1 The bottleneck: one server can't keep up</h1>
+  <p class="subtitle">A local influencer posted about Chirp on a Friday night. By Saturday morning, the app server was returning 502 errors to roughly one in six requests.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    Request queue depth on the app server spiked to 1,400 pending requests at peak. Error rate hit 17% for 40 minutes. The app server's own CPU sat at 96%+ throughout — this time it's a capacity problem, not a contention problem, since the database is on its own machine now (Chapter 2) and its CPU stayed under 30%.
+  </div>
+
+  <div class="chirp-quote">
+    "We're trending?! Amazing news except the app is falling over. Every request is timing out. I don't think a bigger server fixes this fast enough even if I upgrade it right now." — you, Saturday morning, from your phone
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Even with the database separated out (Chapter 2) and the app server vertically scaled up
+    (Chapter 2.3), one app server has a genuine, real ceiling on how many concurrent requests it
+    can process at once. A traffic spike — the exact kind Chirp just got, unpredictably, from a
+    viral moment — can blow straight past that ceiling in minutes, and there's no time to
+    provision a bigger machine fast enough to matter. This is the moment vertical scaling's second
+    real limitation shows up: it isn't just expensive at the high end, it's also <em>slow</em> to
+    react to a spike, since resizing a running server usually means a restart.
+  </div>
+
+  <h2>Try it: watch one server hit its wall</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Concurrent requests/sec</label>
+      <input type="range" id="ws-load" min="100" max="3000" value="100" step="50" style="flex:1;">
+      <span id="ws-load-val" style="font-weight:700; min-width:60px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Queue depth</span><div class="metric-bar-track"><div class="metric-bar-fill" id="ws-queue" style="background:#3ecf8e;"></div></div><span id="ws-queue-val" style="min-width:70px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+    <div class="metric-row"><span class="metric-label">Error rate</span><div class="metric-bar-track"><div class="metric-bar-fill" id="ws-errors" style="background:#3ecf8e;"></div></div><span id="ws-errors-val" style="min-width:70px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+
+  <h2>Why one server can never fully absorb an unpredictable spike</h2>
+  <p>
+    Every server, no matter its size, has a maximum number of requests it can process per second
+    before new requests start queuing faster than old ones finish. Once that queue starts growing,
+    response times climb for everyone — including requests that would otherwise have been fast —
+    because they're now waiting in line behind a backlog. Past a certain queue depth, the server
+    (or a proxy in front of it) starts actively rejecting requests rather than accepting more it
+    can't handle, which is exactly the 502 errors real Chirp users saw.
+  </p>
+
+  <div class="figure" id="fig-queue-collapse"></div>
+
+  <h2>Why this is a genuinely different problem from Chapter 2's</h2>
+  <p>
+    Chapter 2's bottleneck was resource contention between two processes sharing one machine —
+    solved by giving each its own hardware. This bottleneck is different: even with the app
+    server having its CPU entirely to itself, there's simply more concurrent work arriving than
+    <em>one machine, however large,</em> can process at once. Bigger hardware helps somewhat, but
+    the real fix is structural: stop relying on exactly one machine to absorb all traffic, no
+    matter how big that one machine gets.
+  </p>
+
+  <h2>Why unpredictability makes this worse than steady growth</h2>
+  <p>
+    Chapters 1 and 2's growth was gradual — user count climbing over weeks, giving time to notice
+    trends and react. A viral spike is different: traffic can 20x within an hour, with zero
+    advance warning. Any fix that depends on a human noticing a graph and manually provisioning
+    more capacity is too slow for this specific failure mode. The fix needs to already exist,
+    ready to absorb a sudden spike, not be something reactively built after the fact.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is this bottleneck genuinely different from Chapter 2's resource-contention problem, even though both involve the app server?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Chapter 2 was two processes competing for one machine's resources; this is one machine's absolute processing capacity being exceeded by real traffic volume, even with the CPU entirely dedicated to it</button>
+        <button class="q-option" data-correct="false">The two bottlenecks are actually identical, just occurring at different user counts</button>
+        <button class="q-option" data-correct="false">This bottleneck only occurs when the database is still sharing the app server</button>
+      </div>
+      <div class="q-explain">This distinction matters for the fix — separating processes (Chapter 2's fix) doesn't help when the actual issue is one process type having too much total work, regardless of what else is or isn't sharing its hardware.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can't simply upgrading to a bigger server fast enough solve a sudden, unpredictable traffic spike?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Resizing a running server typically requires a restart and provisioning time, which is too slow to react to a spike that can multiply traffic within an hour with no advance warning</button>
+        <button class="q-option" data-correct="false">Servers can always be resized instantly with zero downtime or delay</button>
+        <button class="q-option" data-correct="false">Traffic spikes are always predictable well in advance, giving plenty of time to react</button>
+      </div>
+      <div class="q-explain">This is vertical scaling's second real limitation (beyond cost from 2.3) — it's not just expensive at the high end, it's also too slow to react to genuinely sudden demand.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does a fix relying on a human noticing a graph and manually reacting fail for this specific failure mode?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A viral spike can happen faster than any human reaction time allows — the fix needs to already exist and be ready to absorb sudden load, not be built reactively after the spike starts</button>
+        <button class="q-option" data-correct="false">Human-monitored systems are always fast enough to react to any traffic pattern</button>
+        <button class="q-option" data-correct="false">This concern only applies to systems with fewer than 1,000 users</button>
+      </div>
+      <div class="q-explain">This sets up exactly why the next page's fix needs to be structural and pre-existing rather than something manually provisioned in the moment — a genuinely durable point about designing for unpredictability.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: EZ Tech Learn "System Design 101: How to Scale an Application to 1 Million Concurrent Users" (2026) — "to break past the single-server limit, you move to horizontal scaling"; blog.algomaster.io "How to Scale a System from 0 to 10 million+ Users" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-02-first-growing-pains/2-3-the-ceiling-why-vertical-scaling-runs-out.html">&larr; 2.3 The ceiling: why vertical scaling runs out</a>
+    <a href="3-2-the-fix-load-balancing-and-horizontal-scaling.html">3.2 The fix: load balancing &amp; horizontal scaling &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderWs() {
+  const load = parseInt(document.getElementById('ws-load').value, 10);
+  document.getElementById('ws-load-val').textContent = load.toLocaleString() + '/s';
+  const capacity = 1200; // this server's max sustainable throughput
+  const queueDepth = Math.max(0, Math.round((load - capacity) * 2.2));
+  const errorRate = load <= capacity ? 0 : Math.min(60, Math.round(((load - capacity) / capacity) * 55));
+  document.getElementById('ws-queue').style.width = Math.min(100, queueDepth / 20) + '%';
+  document.getElementById('ws-queue').style.background = queueDepth > 800 ? '#e5484d' : queueDepth > 200 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('ws-queue-val').textContent = queueDepth.toLocaleString() + ' pending';
+  document.getElementById('ws-errors').style.width = Math.min(100, errorRate * 1.6) + '%';
+  document.getElementById('ws-errors').style.background = errorRate > 15 ? '#e5484d' : errorRate > 5 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('ws-errors-val').textContent = errorRate + '%';
+}
+document.getElementById('ws-load').addEventListener('input', renderWs);
+renderWs();
+
+document.getElementById('fig-queue-collapse').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: requests arriving faster than the server can process them pile up in a growing queue, eventually overflowing into rejected requests">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <text x="90" y="25" text-anchor="middle" font-size="11">Requests arriving</text>
+  <rect x="20" y="35" width="140" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="90" y="55" text-anchor="middle" font-size="9">Fast, steady stream</text>
+  <line x1="160" y1="50" x2="220" y2="50" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd5)"/>
+  <rect x="220" y="30" width="160" height="80" rx="6" fill="#1a2029" stroke="#f2b84b" stroke-width="1.5"/>
+  <text x="300" y="55" text-anchor="middle" fill="#f2b84b">Growing queue</text>
+  <text x="300" y="75" text-anchor="middle" fill="#c9a05f" font-size="9">requests waiting</text>
+  <text x="300" y="95" text-anchor="middle" fill="#c9a05f" font-size="9">their turn to process</text>
+  <line x1="380" y1="50" x2="440" y2="30" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd5g)"/>
+  <text x="480" y="25" fill="#3ecf8e" font-size="9">eventually processed</text>
+  <line x1="380" y1="70" x2="440" y2="100" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd5r)"/>
+  <text x="490" y="115" fill="#ff8b8f" font-size="9">or rejected (502) if queue is full</text>
+  <defs>
+    <marker id="sd5" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd5g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd5r" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

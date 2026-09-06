@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.3 Deep dive: load balancing algorithms | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.la-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+.la-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.la-tab { padding: 8px 14px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.la-tab.active { background: rgba(245,166,35,0.15); border-color: #f5a623; color: #f5c168; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · The Weekend Spike &middot; Deep dive</div>
+  <h1>3.3 Deep dive: load balancing algorithms</h1>
+  <p class="subtitle">Round robin got Chirp through Saturday. It's not the algorithm every load balancer should always use — here's why, and what the alternatives actually do differently.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Four algorithms cover the large majority of real load balancing decisions:
+    <strong>round robin</strong> (cycle through servers evenly, simplest), <strong>least
+    connections</strong> (send to whichever server currently has the fewest active requests —
+    better when requests take genuinely different amounts of time), <strong>weighted</strong>
+    variants of either (account for servers with different capacities), and
+    <strong>IP hash / consistent hashing</strong> (the same client always routes to the same
+    server — useful when a server needs to remember something about a specific client). Health
+    checks run underneath all of them, removing a failed server from rotation automatically.
+  </div>
+
+  <h2>Try it: watch how each algorithm handles uneven request costs</h2>
+  <div class="la-box">
+    <div class="la-tabs">
+      <div class="la-tab active" data-a="roundrobin">Round robin</div>
+      <div class="la-tab" data-a="leastconn">Least connections</div>
+      <div class="la-tab" data-a="weighted">Weighted round robin</div>
+      <div class="la-tab" data-a="iphash">IP hash</div>
+    </div>
+    <div id="la-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why round robin can quietly create an imbalance</h2>
+  <p>
+    Round robin assumes every request costs roughly the same amount of work — true for many of
+    Chirp's endpoints, but not all of them. A request to load a simple profile page and a request
+    to process a video upload are wildly different in cost. If server 2 happens to get several
+    expensive video-upload requests in a row purely by the luck of the rotation, it can end up
+    doing meaningfully more work than servers 1, 3, and 4 — even though round robin gave each of
+    them the exact same <em>number</em> of requests.
+  </p>
+
+  <div class="figure" id="fig-least-conn"></div>
+
+  <h2>Health checks: the mechanism underneath every algorithm</h2>
+  <pre><code># Simplified health check logic, run periodically against every server
+def health_check(server):
+    try:
+        response = http_get(f"http://{server}/health", timeout=2)
+        return response.status_code == 200
+    except TimeoutError:
+        return False
+
+# Every 5 seconds, the load balancer re-checks each server
+# and removes any failing server from the active rotation
+for server in server_pool:
+    if not health_check(server):
+        remove_from_rotation(server)
+    else:
+        add_to_rotation(server)  # re-add if it recovers</code></pre>
+  <p>
+    This is what actually delivers on 3.2's resilience claim — a server crashing doesn't just
+    mean it stops receiving new traffic eventually, it means the load balancer actively detects
+    the failure within seconds and routes around it, without anyone needing to intervene manually.
+  </p>
+
+  <h2>IP hash: when "any server can handle any request" stops being true</h2>
+  <p>
+    Every algorithm so far assumes any server can equally handle any request — true for Chirp's
+    app servers right now, since they're stateless copies of the same code with no server-specific
+    memory. IP hash exists for the opposite case: when a server needs to remember something
+    specific about a client across multiple requests (an in-progress file upload, a WebSocket
+    connection). Foreshadowing directly: Chirp's next chapter is about to hit exactly this
+    "server needs to remember something" problem, for a different reason than uploads.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can round robin create an uneven workload even though it distributes an equal number of requests to each server?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Round robin assumes every request costs roughly the same amount of work, but real requests (a profile load vs. a video upload) can differ wildly in cost — equal request count doesn't guarantee equal actual load</button>
+        <button class="q-option" data-correct="false">Round robin always sends more requests to some servers than others by design</button>
+        <button class="q-option" data-correct="false">Request cost has no bearing on server load under any load balancing algorithm</button>
+      </div>
+      <div class="q-explain">This is exactly why least-connections exists as an alternative — it reacts to actual current load rather than just counting requests distributed.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How do health checks deliver on the resilience benefit claimed for horizontal scaling in 3.2?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">They actively and automatically detect a failing server within seconds and remove it from rotation, without requiring manual intervention</button>
+        <button class="q-option" data-correct="false">Health checks only run once when a server is first added to the pool, never again afterward</button>
+        <button class="q-option" data-correct="false">Health checks have no actual effect on which servers receive traffic</button>
+      </div>
+      <div class="q-explain">This is the concrete mechanism underneath the abstract resilience claim — without automated health checks, a failed server would keep receiving traffic it can't handle until someone noticed manually.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What specific situation does IP hash routing solve that round robin and least-connections don't?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">When a server needs to remember something specific about a client across multiple requests, requiring that client to consistently reach the same server</button>
+        <button class="q-option" data-correct="false">IP hash is strictly better than every other algorithm in all situations</button>
+        <button class="q-option" data-correct="false">IP hash exists purely to distribute load evenly, identically to round robin</button>
+      </div>
+      <div class="q-explain">This is a genuinely distinct use case — algorithms that route freely assume statelessness, while IP hash specifically solves the case where that assumption breaks down.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This deep dive reflects standard, durable load balancing algorithm behavior consistent across major implementations (Nginx, HAProxy, AWS/GCP/Azure load balancers) — stable concepts despite differing product names.</p>
+
+  <div class="pager">
+    <a href="3-2-the-fix-load-balancing-and-horizontal-scaling.html">&larr; 3.2 The fix: load balancing &amp; horizontal scaling</a>
+    <a href="3-4-the-new-problem-users-keep-getting-logged-out.html">3.4 The new problem: users keep getting logged out &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const LA_INFO = {
+  roundrobin: "Cycles through servers in fixed order: 1, 2, 3, 4, 1, 2, 3, 4... Simple, predictable, and a good default when requests cost roughly the same amount of work. Doesn't react to a server that's currently busier than the others.",
+  leastconn: "Routes each new request to whichever server currently has the fewest active (in-progress) connections. Adapts naturally to uneven request costs — a server stuck on a few slow requests receives fewer new ones until it catches up.",
+  weighted: "Like round robin, but servers with more capacity get proportionally more requests — a server rated '2x' gets twice as many as a '1x' server. Useful when the server pool isn't uniform (mixed instance sizes during a gradual upgrade, for instance).",
+  iphash: "Computes a hash of the client's IP address to consistently route that specific client to the same server every time. Trades even distribution for predictable routing — needed when a server holds client-specific state.",
+};
+document.querySelectorAll('.la-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.la-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('la-detail').textContent = LA_INFO[tab.dataset.a];
+  });
+});
+document.getElementById('la-detail').textContent = LA_INFO['roundrobin'];
+
+document.getElementById('fig-least-conn').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: round robin gives equal request counts but uneven load, least connections adapts by routing new requests to the least busy server">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <text x="170" y="20" text-anchor="middle" font-size="11">Round robin: equal count, uneven load</text>
+  <rect x="30" y="35" width="70" height="60" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="65" y="68" text-anchor="middle" fill="#3ecf8e" font-size="8">1 req</text>
+  <rect x="110" y="35" width="70" height="60" rx="4" fill="#1a2029" stroke="#e5484d"/><text x="145" y="60" text-anchor="middle" fill="#ff8b8f" font-size="8">1 req</text><text x="145" y="75" text-anchor="middle" fill="#ff8b8f" font-size="7">(video upload)</text>
+  <rect x="190" y="35" width="70" height="60" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="225" y="68" text-anchor="middle" fill="#3ecf8e" font-size="8">1 req</text>
+  <rect x="270" y="35" width="70" height="60" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="305" y="68" text-anchor="middle" fill="#3ecf8e" font-size="8">1 req</text>
+
+  <text x="510" y="20" text-anchor="middle" font-size="11">Least connections: adapts</text>
+  <rect x="420" y="35" width="70" height="60" rx="4" fill="#182238" stroke="#5b8cff"/><text x="455" y="68" text-anchor="middle" fill="#a9c1ff" font-size="8">2 req</text>
+  <rect x="500" y="35" width="70" height="60" rx="4" fill="#1a2029" stroke="#e5484d"/><text x="535" y="60" text-anchor="middle" fill="#ff8b8f" font-size="8">1 req</text><text x="535" y="75" text-anchor="middle" fill="#ff8b8f" font-size="7">(video, busy)</text>
+  <rect x="580" y="35" width="70" height="60" rx="4" fill="#182238" stroke="#5b8cff"/><text x="615" y="68" text-anchor="middle" fill="#a9c1ff" font-size="8">2 req</text>
+</svg>
+`;
+</script>
+</body>
+</html>

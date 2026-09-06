@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.3 Deep dive: consistent hashing | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 · The Database Ceiling &middot; Deep dive</div>
+  <h1>6.3 Deep dive: consistent hashing</h1>
+  <p class="subtitle">Arguably the single most-tested distributed systems concept in real interviews — and it exists to solve exactly the "adding a shard reshuffles everything" problem from 6.2.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Instead of <code>user_id % num_shards</code>, consistent hashing places both shards and data
+    keys onto points around an imaginary circle (a "hash ring"), using a hash function. Each piece
+    of data belongs to the first shard found going clockwise around the ring from its own hash
+    position. Adding or removing a shard only affects the small arc of the ring immediately
+    adjacent to that change — every other shard's data stays exactly where it was, which is the
+    entire point.
+  </div>
+
+  <h2>Try it: add a shard and watch how little actually moves</h2>
+  <div class="metric-box">
+    <div id="ch-ring-svg"></div>
+    <button id="ch-add-shard" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Add Shard 8 to the ring</button>
+    <p id="ch-log" style="font-size:12px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>Why this is dramatically better than modulo sharding</h2>
+  <p>
+    Recall 6.2's problem: adding one shard to a modulo scheme reshuffles nearly all existing data.
+    On a hash ring, adding a new shard only "steals" the data whose hash falls in the arc between
+    the new shard's position and the next shard clockwise from it — everything else on the ring is
+    completely unaffected. Growing from 8 shards to 9 might move roughly 1/9th of total data,
+    instead of nearly all of it.
+  </p>
+
+  <div class="figure" id="fig-ring-concept"></div>
+
+  <h2>Virtual nodes: solving uneven distribution</h2>
+  <p>
+    With only one point per shard on the ring, pure chance can give some shards a much larger arc
+    (and therefore much more data) than others — especially with a small number of shards.
+    <strong>Virtual nodes</strong> fix this by placing each physical shard at many points around
+    the ring (commonly 100–200 per shard) instead of just one. More points per shard means the
+    law of large numbers evens out the total data each physical shard ends up responsible for,
+    even though any single point's arc is still somewhat random.
+  </p>
+
+  <h2>Where consistent hashing shows up beyond database sharding</h2>
+  <p>
+    This exact mechanism isn't unique to databases — it's the same idea underneath distributing
+    keys across a cache cluster, routing requests in a CDN, and load balancing in some
+    configurations (recall 3.3's IP hash routing is a simpler cousin of this same family of idea).
+    Recognizing "this is a consistent hashing problem" is one of the single highest-leverage
+    pattern-recognition skills for system design interviews specifically, precisely because it
+    shows up in so many disguises.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does adding a shard to a consistent hashing ring only affect a small portion of existing data, unlike modulo-based sharding?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A new shard only takes over the specific arc of the ring between its position and the next shard clockwise — every other shard's data, positioned elsewhere on the ring, is completely unaffected</button>
+        <button class="q-option" data-correct="false">Consistent hashing and modulo sharding redistribute exactly the same proportion of data when a shard is added</button>
+        <button class="q-option" data-correct="false">Adding a shard to a hash ring requires recomputing every single data item's position from scratch</button>
+      </div>
+      <div class="q-explain">This locality property — only the immediately adjacent arc is affected — is the entire reason consistent hashing solves 6.2's reshuffling problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What problem do virtual nodes solve in a consistent hashing implementation?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Uneven data distribution that can occur when each shard has only one point on the ring — placing each shard at many points evens out the total data each physical shard ends up responsible for</button>
+        <button class="q-option" data-correct="false">Virtual nodes eliminate the need for a hash function entirely</button>
+        <button class="q-option" data-correct="false">Virtual nodes are only useful when there is exactly one shard in the system</button>
+      </div>
+      <div class="q-explain">This is a genuine refinement addressing a real weakness of the basic single-point-per-shard version — randomness in arc size gets smoothed out by using many points per shard instead of one.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is recognizing "this is a consistent hashing problem" described as a particularly high-leverage skill for interviews?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The same underlying mechanism shows up in many different disguises — cache cluster key distribution, CDN routing, and certain load balancing configurations — not just database sharding</button>
+        <button class="q-option" data-correct="false">Consistent hashing only ever appears in database sharding contexts, nowhere else</button>
+        <button class="q-option" data-correct="false">Interview questions about consistent hashing are always phrased identically with no variation</button>
+      </div>
+      <div class="q-explain">This is exactly the pattern-recognition value emphasized throughout this track's design philosophy — one primitive, recognized across many different-looking problems.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This deep dive reflects standard, foundational consistent hashing theory (the hash ring, virtual nodes) — a stable, widely-documented distributed systems primitive underlying Cassandra, DynamoDB, many CDNs, and countless sharded architectures.</p>
+
+  <div class="pager">
+    <a href="6-2-the-fix-sharding-chirps-data.html">&larr; 6.2 The fix: sharding Chirp's data</a>
+    <a href="6-4-the-new-problem-celebrities-and-cross-shard-search.html">6.4 The new problem: celebrities &amp; cross-shard search &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let ringShards = [
+  { name: "S0", angle: 10 }, { name: "S1", angle: 55 }, { name: "S2", angle: 100 },
+  { name: "S3", angle: 150 }, { name: "S4", angle: 200 }, { name: "S5", angle: 250 },
+  { name: "S6", angle: 300 }, { name: "S7", angle: 340 },
+];
+function polar(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+function renderRing() {
+  const cx = 200, cy = 140, r = 110;
+  let svg = `<svg viewBox="0 0 400 280" width="100%" style="max-width:400px; display:block; margin:0 auto;" role="img" aria-label="Hash ring with shards placed at various angles, data hashed to points routed clockwise to the nearest shard">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#262d3a" stroke-width="2"/>`;
+  ringShards.sort((a,b) => a.angle - b.angle).forEach(s => {
+    const p = polar(cx, cy, r, s.angle);
+    const isNew = s.name === "S8";
+    svg += `<circle cx="${p.x}" cy="${p.y}" r="9" fill="${isNew ? '#f5a623' : '#3ecf8e'}" stroke="#0b0e14" stroke-width="2"/>`;
+    const lp = polar(cx, cy, r + 22, s.angle);
+    svg += `<text x="${lp.x}" y="${lp.y}" text-anchor="middle" fill="${isNew?'#f5a623':'#3ecf8e'}" font-size="11" font-weight="700" font-family="-apple-system,sans-serif">${s.name}</text>`;
+  });
+  svg += `</svg>`;
+  document.getElementById('ch-ring-svg').innerHTML = svg;
+}
+renderRing();
+document.getElementById('ch-add-shard').addEventListener('click', function() {
+  if (ringShards.find(s => s.name === "S8")) return;
+  ringShards.push({ name: "S8", angle: 320 });
+  renderRing();
+  document.getElementById('ch-log').textContent = "Shard 8 added at position 320°. Only the data that hashes between S7 (340°) and S8 (320°) moves — every other shard's data is completely untouched.";
+  this.disabled = true;
+  this.style.opacity = "0.5";
+});
+
+document.getElementById('fig-ring-concept').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: a data key hashes to a point on the ring and is assigned to the next shard found going clockwise">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <circle cx="150" cy="65" r="50" fill="none" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="150" cy="15" r="6" fill="#3ecf8e"/><text x="150" y="5" text-anchor="middle" fill="#3ecf8e" font-size="9">Shard A</text>
+  <circle cx="195" cy="95" r="6" fill="#3ecf8e"/><text x="215" y="105" fill="#3ecf8e" font-size="9">Shard B</text>
+  <circle cx="105" cy="95" r="6" fill="#3ecf8e"/><text x="70" y="105" fill="#3ecf8e" font-size="9">Shard C</text>
+  <circle cx="170" cy="40" r="4" fill="#f5a623"/><text x="200" y="35" fill="#f5a623" font-size="9">key hashes here</text>
+  <path d="M 170 40 A 50 50 0 0 1 195 95" fill="none" stroke="#f5a623" stroke-width="2" stroke-dasharray="3,2"/>
+  <text x="350" y="65" fill="#9aa4b5" font-size="10">→ Key is assigned to Shard B (next shard clockwise)</text>
+</svg>
+`;
+</script>
+</body>
+</html>

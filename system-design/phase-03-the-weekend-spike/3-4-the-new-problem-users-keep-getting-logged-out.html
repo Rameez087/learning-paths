@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.4 The new problem: users keep getting logged out | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · The Weekend Spike &middot; ~20,000-100,000 users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>3.4 The new problem: users keep getting logged out</h1>
+  <p class="subtitle">The spike is handled. Now support is getting a strange new complaint: "I log in, then two clicks later, I'm logged out again. Happens randomly."</p>
+
+  <div class="chirp-quote">
+    "Getting a handful of tickets a day now — 'randomly logged out.' Can't reproduce it consistently myself. Weirdly, it seems to happen more to people clicking around fast." — support lead, in the bug tracker
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    When a user logs in, the app server that handled that specific request stored their session
+    (who they are, that they're authenticated) in its own local memory — a leftover assumption
+    from the single-server days. Now that there are four app servers behind a load balancer, the
+    <em>next</em> request from that same user might get routed to a completely different server
+    that has never heard of their session, and gets treated as logged out. This is 3.3's "any
+    server can handle any request" assumption breaking, for a new reason: the app servers aren't
+    actually fully stateless yet.
+  </div>
+
+  <h2>Try it: watch a session break across servers</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Click through user actions</label>
+    </div>
+    <div id="session-sim"></div>
+  </div>
+
+  <h2>Why this didn't happen before Chapter 3</h2>
+  <p>
+    With one app server, every request from every user always landed on the exact same machine —
+    so storing session data in that server's local memory worked perfectly, by accident. It was
+    never actually a good pattern; it just happened to work because there was only ever one place
+    a request could go. Horizontal scaling didn't introduce a new bug into the session logic — it
+    exposed an assumption that was always fragile, the moment it stopped being true.
+  </p>
+
+  <div class="figure" id="fig-session-problem"></div>
+
+  <h2>Two real fixes, and why one is clearly better here</h2>
+  <ul>
+    <li><strong>Sticky sessions</strong> — configure the load balancer to always route a given user's requests to the same server (this is exactly 3.3's IP hash routing, applied to solve this specific problem). Simple to set up, but it undermines even distribution and means losing that one server logs out everyone whose session lived there.</li>
+    <li><strong>Externalize the session entirely</strong> — store session data somewhere all four app servers can read from equally (a shared store like Redis), so it genuinely doesn't matter which server handles any given request. This is the pattern that scales cleanly — it's what makes the app servers <em>actually</em> stateless, not just accidentally stateless when there was only one of them.</li>
+  </ul>
+  <p>
+    Chirp goes with externalizing sessions to Redis. It's slightly more setup than flipping a
+    sticky-session switch, but it doesn't create a new fragile dependency on any one specific
+    server, and it sets up cleanly for every future chapter where more app servers get added.
+  </p>
+
+  <h2>The pattern this chapter teaches, stated plainly</h2>
+  <p>
+    Anything an app server "remembers" about a specific user between requests needs to live
+    somewhere every server can access equally — not in any one server's local memory. This
+    single principle (statelessness) is one of the most load-bearing ideas in this entire track;
+    it's what makes horizontal scaling actually work cleanly, and it'll come up again directly in
+    Phase 7's background job workers and Phase 8's service decomposition.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does storing session data in an app server's local memory break once there are multiple servers behind a load balancer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A user's next request can be routed to a different server than the one that stored their session, and that new server has no knowledge of it, treating them as logged out</button>
+        <button class="q-option" data-correct="false">Session data stored locally is always automatically replicated to every server</button>
+        <button class="q-option" data-correct="false">This problem only occurs when using round robin specifically, not other load balancing algorithms</button>
+      </div>
+      <div class="q-explain">This is the direct mechanism — local memory is, by definition, local to one specific machine, which becomes a real problem the moment more than one machine exists.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why did this session problem never occur back when Chirp ran on a single app server?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Every request from every user always landed on the same single machine, so local-memory session storage worked by accident, not because it was actually a sound design</button>
+        <button class="q-option" data-correct="false">Single-server systems are technically incapable of storing any session data</button>
+        <button class="q-option" data-correct="false">This exact bug was present from day one but simply wasn't noticed until now</button>
+      </div>
+      <div class="q-explain">This is an important distinction — horizontal scaling didn't create a new bug, it exposed a fragile assumption that was always there but never mattered until the environment changed.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does externalizing session storage to a shared store (like Redis) scale better than sticky sessions?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It makes app servers genuinely stateless — any server can handle any request equally — rather than creating a dependency on always routing a given user to one specific server</button>
+        <button class="q-option" data-correct="false">Sticky sessions and externalized sessions provide identical scaling and resilience properties</button>
+        <button class="q-option" data-correct="false">Externalized sessions require no additional infrastructure at all compared to local storage</button>
+      </div>
+      <div class="q-explain">This sets up the statelessness principle that recurs throughout the rest of the track — a genuinely stateless app layer is more resilient and easier to scale than one relying on sticky routing.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This chapter reflects standard, durable distributed-systems practice around session externalization and application statelessness — a foundational pattern underlying nearly all horizontally-scaled web architectures.</p>
+
+  <div class="pager">
+    <a href="3-3-deep-dive-load-balancing-algorithms.html">&larr; 3.3 Deep dive: load balancing algorithms</a>
+    <a href="../phase-04-the-read-storm/4-1-the-bottleneck-everyones-feed-hits-the-database.html">Phase 4: The Read Storm &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SESSION_STEPS = [
+  { text: "1. User logs in → request routed to App Server 2", server: 2, status: "App 2 stores session in its own local memory" },
+  { text: "2. User clicks a link → request routed to App Server 4", server: 4, status: "App 4 has never seen this session — user appears logged out" },
+];
+let sessionIdx = 0;
+function renderSession() {
+  const s = SESSION_STEPS[sessionIdx];
+  let html = '<div style="font-size:13px; margin-bottom:12px;">' + s.text + '</div>';
+  html += '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">';
+  for (let i = 1; i <= 4; i++) {
+    const isTarget = i === s.server;
+    const hasSession = sessionIdx >= 1 ? (i === 2) : (i === s.server);
+    html += `<div style="text-align:center; padding:12px 6px; border-radius:8px; background:${isTarget ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)'}; border:1px solid ${isTarget ? '#f5a623' : 'var(--border-strong)'};">
+      <div style="font-size:11px; font-weight:700;">App ${i}</div>
+      <div style="font-size:10px; color:${hasSession ? '#3ecf8e' : 'var(--text-muted)'}; margin-top:4px;">${hasSession ? '✓ has session' : 'no session'}</div>
+    </div>`;
+  }
+  html += '</div>';
+  html += `<div style="margin-top:10px; padding:10px 12px; background:var(--code-bg); border-radius:6px; font-size:12px; color:${sessionIdx===1?'#ff8b8f':'var(--text-secondary)'};">${s.status}</div>`;
+  html += `<button class="ic-btn" id="session-next" style="margin-top:10px; padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">${sessionIdx === 0 ? 'Next: user clicks something →' : 'Reset'}</button>`;
+  document.getElementById('session-sim').innerHTML = html;
+  document.getElementById('session-next').addEventListener('click', () => {
+    sessionIdx = sessionIdx === 0 ? 1 : 0;
+    renderSession();
+  });
+}
+renderSession();
+
+document.getElementById('fig-session-problem').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: session data trapped in one app server's local memory, invisible to the other three servers a user's later requests might be routed to">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="90" height="35" rx="4" fill="#182238" stroke="#3ecf8e"/><text x="65" y="66" text-anchor="middle" fill="#3ecf8e" font-size="8">App 1</text>
+  <rect x="120" y="45" width="90" height="35" rx="4" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="165" y="62" text-anchor="middle" fill="#f5a623" font-size="8">App 2</text><text x="165" y="74" text-anchor="middle" fill="#c9a05f" font-size="7">has session</text>
+  <rect x="220" y="45" width="90" height="35" rx="4" fill="#182238" stroke="#3ecf8e"/><text x="265" y="66" text-anchor="middle" fill="#3ecf8e" font-size="8">App 3</text>
+  <rect x="320" y="45" width="90" height="35" rx="4" fill="#1a2029" stroke="#e5484d"/><text x="365" y="62" text-anchor="middle" fill="#ff8b8f" font-size="8">App 4</text><text x="365" y="74" text-anchor="middle" fill="#d98f92" font-size="7">no idea who you are</text>
+  <text x="480" y="65" fill="#9aa4b5" font-size="9">← next request lands here, sees a stranger</text>
+</svg>
+`;
+</script>
+</body>
+</html>

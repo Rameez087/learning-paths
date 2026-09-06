@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.1 The bottleneck: primary database drowning in reads | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 · Half a Million and Climbing &middot; ~500,000-1,000,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>5.1 The bottleneck: primary database drowning in reads</h1>
+  <p class="subtitle">Caching bought real headroom. Half a million users later, even a 90%+ cache hit rate isn't enough — because the 10% that misses has gotten enormous in absolute terms.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    Cache hit rate holds steady at 91% — the caching layer is working exactly as designed. But at current volume, that remaining 9% of requests still represents over 4,500 database reads per second, and the single primary database is once again running hot.
+  </div>
+
+  <div class="chirp-quote">
+    "This one's frustrating because nothing's actually wrong. Cache hit rate looks great on the dashboard. But 9% of a much bigger number is still a big number, and it's all landing on one database." — you, looking at the metrics
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Caching (Chapter 4) reduced the <em>percentage</em> of requests hitting the database, not the
+    absolute ceiling of how many the single database can handle. As Chirp's total traffic keeps
+    growing, the same 9% cache-miss rate translates into a steadily larger raw number of database
+    reads — and that number has now caught back up to the primary database's real capacity. This
+    is a specific, recurring shape in this track: a fix reduces a problem's <em>rate</em>, but
+    growth eventually outpaces even a reduced rate.
+  </div>
+
+  <h2>Try it: watch the miss volume grow even with a stable hit rate</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Total requests/sec</label>
+      <input type="range" id="db-total" min="1000" max="50000" value="1000" step="500" style="flex:1;">
+      <span id="db-total-val" style="font-weight:700; min-width:70px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Cache hit rate (stable)</span><div class="metric-bar-track"><div class="metric-bar-fill" style="width:91%; background:#3ecf8e;"></div></div><span style="min-width:70px; text-align:right; font-weight:700; font-size:12px;">91%</span></div>
+    <div class="metric-row"><span class="metric-label">Raw DB reads/sec</span><div class="metric-bar-track"><div class="metric-bar-fill" id="db-misses" style="background:#3ecf8e;"></div></div><span id="db-misses-val" style="min-width:90px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+
+  <h2>Why this bottleneck feels different from Chapter 4.1's</h2>
+  <p>
+    Chapter 4's problem was <em>redundant</em> work — the same answer, recomputed unnecessarily,
+    over and over. This one is different: every single one of these database reads is a genuinely
+    unique request, for genuinely different data, that caching correctly identified as not
+    reusable. There's no wasted computation to eliminate here — the database is being asked to do
+    real work, just more of it than one machine can keep up with. This distinction matters because
+    it rules out "add more caching" as the fix; the problem this time is real, unavoidable read
+    volume.
+  </p>
+
+  <div class="figure" id="fig-single-primary"></div>
+
+  <h2>Why one primary database is a genuine structural limit here</h2>
+  <p>
+    Vertical scaling the primary database (Chapter 2.3's playbook) can push this ceiling higher,
+    but it's the same cost curve and hard limit from before — a temporary reprieve, not a lasting
+    fix. What's actually needed is a way to serve more simultaneous reads without asking one
+    machine to answer all of them itself — while still keeping exactly one authoritative place
+    where writes happen, since having multiple databases independently accepting writes to the
+    same data would create a much harder consistency problem than the one currently being solved.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a stable, healthy 91% cache hit rate still result in a growing database bottleneck as traffic increases?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Caching reduced the percentage of requests reaching the database, not the absolute ceiling of what the database can handle — as total traffic grows, the same 9% miss rate becomes a larger raw number over time</button>
+        <button class="q-option" data-correct="false">A 91% hit rate means the cache is actually failing and needs to be fixed</button>
+        <button class="q-option" data-correct="false">Cache hit rate and database load have no relationship to each other</button>
+      </div>
+      <div class="q-explain">This is the core mechanism — a percentage-based improvement doesn't create a permanent ceiling if the underlying traffic volume keeps growing past it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How is this bottleneck fundamentally different from Chapter 4.1's original database problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">4.1 was redundant, unnecessary recomputation of the same answer; this is genuinely unique, non-reusable read requests that caching correctly determined couldn't be served from cache</button>
+        <button class="q-option" data-correct="false">Both bottlenecks are identical and would be solved by the exact same fix</button>
+        <button class="q-option" data-correct="false">This bottleneck only occurs when the cache is misconfigured</button>
+      </div>
+      <div class="q-explain">This distinction is what rules out "just add more caching" as a solution here — the problem this time is genuine read volume, not wasted redundant computation.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why can't this problem be solved by simply having multiple databases that all accept writes to the same data?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Multiple databases independently accepting writes to the same data would create a much harder consistency problem than the read-scaling problem currently being solved</button>
+        <button class="q-option" data-correct="false">Databases are technically incapable of ever having more than one instance</button>
+        <button class="q-option" data-correct="false">Write consistency is not actually a real concern in distributed database design</button>
+      </div>
+      <div class="q-explain">This sets up exactly why the next page's fix (read replicas) keeps writes centralized to one primary while distributing only the read workload — a deliberately narrower, more tractable solution.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "as your read traffic grows even further, add read replicas to distribute the read load"; system-design-primer (GitHub) — master-slave replication scaling patterns.</p>
+
+  <div class="pager">
+    <a href="../phase-04-the-read-storm/4-4-the-new-problem-stale-data-after-you-edit.html">&larr; 4.4 The new problem: stale data after you edit</a>
+    <a href="5-2-the-fix-read-replicas.html">5.2 The fix: read replicas &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderDb() {
+  const total = parseInt(document.getElementById('db-total').value, 10);
+  document.getElementById('db-total-val').textContent = total.toLocaleString() + '/s';
+  const misses = Math.round(total * 0.09);
+  const capacity = 4500;
+  const pct = Math.min(100, (misses / capacity) * 100);
+  document.getElementById('db-misses').style.width = pct + '%';
+  document.getElementById('db-misses').style.background = misses > capacity ? '#e5484d' : misses > capacity * 0.7 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('db-misses-val').textContent = misses.toLocaleString() + '/s';
+}
+document.getElementById('db-total').addEventListener('input', renderDb);
+renderDb();
+
+document.getElementById('fig-single-primary').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: cache absorbing most reads, but the remaining cache misses still all converge on a single primary database that must handle both these reads and all writes">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="90" y="67" text-anchor="middle" fill="#3ecf8e">Cache (91% hits)</text>
+  <line x1="160" y1="65" x2="220" y2="65" stroke="#e5484d" stroke-width="2" marker-end="url(#sd10)"/>
+  <text x="190" y="55" fill="#ff8b8f" font-size="8">9% miss (still huge)</text>
+  <rect x="220" y="25" width="150" height="80" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/>
+  <text x="295" y="55" text-anchor="middle" fill="#ff8b8f">One primary DB</text>
+  <text x="295" y="75" text-anchor="middle" fill="#d98f92" font-size="8">handles ALL reads + ALL writes</text>
+  <line x1="20" y1="95" x2="220" y2="95" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd10y)"/>
+  <text x="120" y="115" fill="#f5a623" font-size="8">all writes go here too</text>
+  <defs>
+    <marker id="sd10" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker>
+    <marker id="sd10y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

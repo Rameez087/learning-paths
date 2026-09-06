@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 The fix: load balancing & horizontal scaling | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 · The Weekend Spike &middot; ~20,000-100,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>3.2 The fix: load balancing & horizontal scaling</h1>
+  <p class="subtitle">Instead of one bigger server, four normal ones — and something in front deciding which one each request goes to.</p>
+
+  <div class="chirp-quote">
+    "Put 4 app servers behind a load balancer this week. Ran a simulated version of Saturday's traffic against it this morning. Zero errors. Actually kind of nervous how well it worked." — you, the following Wednesday
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Horizontal scaling</strong> means running multiple copies of the app server instead of
+    one bigger one. A <strong>load balancer</strong> sits in front of them, receiving every
+    incoming request and routing it to whichever app server should handle it — spreading the total
+    load across as many machines as are running. This directly solves 3.1's capacity ceiling
+    (more machines means more total throughput) and, as a genuine side benefit, finally kills
+    Chapter 1's original single-point-of-failure risk for the app layer — one server going down no
+    longer takes Chirp down completely.
+  </div>
+
+  <h2>Try it: watch a load balancer distribute a spike</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Total requests/sec</label>
+      <input type="range" id="lb-load" min="100" max="4800" value="100" step="100" style="flex:1;">
+      <span id="lb-load-val" style="font-weight:700; min-width:60px;"></span>
+    </div>
+    <div id="lb-servers"></div>
+  </div>
+
+  <h2>Why more, smaller machines beat one bigger one here</h2>
+  <p>
+    Four servers each capable of 1,200 requests/second give roughly 4,800 requests/second total —
+    comparable to (often cheaper than) the largest single-machine tier from Chapter 2.3's cost
+    curve, but with a genuinely different risk profile: losing one of four servers means losing
+    25% of capacity, not 100% of it. This is horizontal scaling's real advantage over vertical
+    scaling — it improves both capacity <em>and</em> resilience at once, rather than trading one
+    for the other.
+  </p>
+
+  <div class="figure" id="fig-lb-arch"></div>
+
+  <h2>How the load balancer actually decides where a request goes</h2>
+  <p>
+    The simplest strategy, round robin, sends each new request to the next server in line,
+    cycling through them evenly. It's a reasonable default, but not always the best — a more
+    sophisticated load balancer can route based on which server currently has the fewest active
+    connections, or perform periodic health checks and stop sending traffic to a server that's
+    stopped responding correctly. The specific algorithm matters enough that it gets its own full
+    treatment next.
+  </p>
+
+  <h2>The load balancer is now doing a genuinely important job</h2>
+  <p>
+    Worth naming honestly: the load balancer itself is now a component every single request passes
+    through. If it's not itself resilient (usually achieved by running more than one, in an
+    active-passive or active-active setup), it becomes a new single point of failure — just moved
+    one layer up instead of eliminated. Most managed cloud load balancers handle this
+    transparently, but it's a real detail, not a hand-wave, and worth remembering later in this
+    track when the same "don't just move the bottleneck" pattern shows up again.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does horizontal scaling improve both capacity and resilience at once, unlike vertical scaling?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Multiple smaller machines add total throughput while also meaning any single machine's failure only removes a fraction of capacity, rather than all of it</button>
+        <button class="q-option" data-correct="false">Horizontal scaling only improves capacity, with no effect on resilience whatsoever</button>
+        <button class="q-option" data-correct="false">Vertical and horizontal scaling provide identical capacity and resilience benefits</button>
+      </div>
+      <div class="q-explain">This is the genuine dual benefit that makes horizontal scaling the structural fix here — it solves 3.1's capacity ceiling and Chapter 1's original single-point-of-failure risk simultaneously.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does a round-robin load balancing strategy actually do?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Sends each new incoming request to the next server in line, cycling through all available servers evenly</button>
+        <button class="q-option" data-correct="false">Sends every request to whichever server currently has the most active connections</button>
+        <button class="q-option" data-correct="false">Round robin routes all traffic to a single designated primary server</button>
+      </div>
+      <div class="q-explain">This is the simplest routing strategy — a reasonable default, though not always optimal, which is exactly why more sophisticated algorithms exist and get their own dedicated treatment.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is it important to acknowledge that the load balancer itself needs to be resilient?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If the load balancer isn't itself redundant, it becomes a new single point of failure — the original problem hasn't been eliminated, just moved up one layer</button>
+        <button class="q-option" data-correct="false">Load balancers are technically incapable of ever failing under any circumstances</button>
+        <button class="q-option" data-correct="false">The load balancer's own resilience has no bearing on the overall system's actual availability</button>
+      </div>
+      <div class="q-explain">This honest caveat matters — every request now depends on the load balancer working, so its own redundancy is genuinely part of the fix, not an afterthought to skip.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: EZ Tech Learn "System Design 101: How to Scale an Application to 1 Million Concurrent Users" (2026) — "place a load balancer (e.g., Nginx or AWS ALB) in front of your app servers"; AlgoMaster "Scalability | System Design" (2026).</p>
+
+  <div class="pager">
+    <a href="3-1-the-bottleneck-one-server-cant-keep-up.html">&larr; 3.1 The bottleneck: one server can't keep up</a>
+    <a href="3-3-deep-dive-load-balancing-algorithms.html">3.3 Deep dive: load balancing algorithms &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderLb() {
+  const total = parseInt(document.getElementById('lb-load').value, 10);
+  document.getElementById('lb-load-val').textContent = total.toLocaleString() + '/s';
+  const perServer = total / 4;
+  const capacity = 1200;
+  let html = '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px;">';
+  for (let i = 0; i < 4; i++) {
+    const pct = Math.min(100, (perServer / capacity) * 100);
+    const color = pct > 85 ? '#e5484d' : pct > 60 ? '#f2b84b' : '#3ecf8e';
+    html += `<div style="text-align:center;">
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Server ${i+1}</div>
+      <div style="height:80px; background:var(--surface-2); border-radius:6px; position:relative; overflow:hidden;">
+        <div style="position:absolute; bottom:0; width:100%; height:${pct}%; background:${color}; transition:all 0.3s;"></div>
+      </div>
+      <div style="font-size:11px; margin-top:4px; font-weight:600;">${Math.round(perServer)}/s</div>
+    </div>`;
+  }
+  html += '</div>';
+  document.getElementById('lb-servers').innerHTML = html;
+}
+document.getElementById('lb-load').addEventListener('input', renderLb);
+renderLb();
+
+document.getElementById('fig-lb-arch').innerHTML = `
+<svg viewBox="0 0 680 150" width="100%" role="img" aria-label="Diagram: incoming requests hit a load balancer which distributes them evenly across four app servers, which all connect to the same database">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="55" width="80" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="60" y="77" text-anchor="middle">Users</text>
+  <line x1="100" y1="72" x2="150" y2="72" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd6)"/>
+  <rect x="150" y="55" width="110" height="35" rx="6" fill="#182238" stroke="#a78bfa"/><text x="205" y="77" text-anchor="middle" fill="#c4b5fd">Load balancer</text>
+  <line x1="260" y1="65" x2="330" y2="20" stroke="#3ecf8e" stroke-width="1"/>
+  <line x1="260" y1="70" x2="330" y2="55" stroke="#3ecf8e" stroke-width="1"/>
+  <line x1="260" y1="75" x2="330" y2="90" stroke="#3ecf8e" stroke-width="1"/>
+  <line x1="260" y1="80" x2="330" y2="125" stroke="#3ecf8e" stroke-width="1"/>
+  <rect x="330" y="10" width="100" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="380" y="27" text-anchor="middle" font-size="8">App 1</text>
+  <rect x="330" y="45" width="100" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="380" y="62" text-anchor="middle" font-size="8">App 2</text>
+  <rect x="330" y="80" width="100" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="380" y="97" text-anchor="middle" font-size="8">App 3</text>
+  <rect x="330" y="115" width="100" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="380" y="132" text-anchor="middle" font-size="8">App 4</text>
+  <line x1="430" y1="75" x2="560" y2="75" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd6)"/>
+  <rect x="560" y="60" width="100" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="610" y="82" text-anchor="middle" fill="#3ecf8e">DB server</text>
+  <defs><marker id="sd6" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

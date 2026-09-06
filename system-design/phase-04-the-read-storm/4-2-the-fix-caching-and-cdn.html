@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 The fix: caching & CDN | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · The Read Storm &middot; ~100,000-500,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>4.2 The fix: caching & CDN</h1>
+  <p class="subtitle">Remember the answer instead of recomputing it. That's the entire idea — the details are in exactly how and where to remember it.</p>
+
+  <div class="chirp-quote">
+    "Added Redis in front of the database for feed queries. Database CPU dropped from 88% to 19% almost immediately. Also moved profile pictures and post images to a CDN — those were never supposed to be hitting our server directly in the first place." — you, deploy notes
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>cache</strong> (Redis, in Chirp's case) sits between the app servers and the
+    database, storing the results of expensive, frequently-repeated queries in fast memory. When a
+    feed is requested, the app checks the cache first — if the answer is there ("a cache hit"), it
+    returns instantly without touching the database at all. Only on a miss does it fall through to
+    the real database, then stores that result in the cache for next time. A <strong>CDN</strong>
+    (Content Delivery Network) does something related but different: it caches static files
+    (images, videos, CSS) at servers physically distributed close to users worldwide, so a user in
+    Tokyo doesn't fetch a profile picture from a server in Virginia every single time.
+  </div>
+
+  <h2>Try it: watch cache hit rate change database load</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Cache hit rate</label>
+      <input type="range" id="ch-rate" min="0" max="95" value="0" style="flex:1;">
+      <span id="ch-rate-val" style="font-weight:700; min-width:50px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Requests reaching database</span><div class="metric-bar-track"><div class="metric-bar-fill" id="ch-dbload" style="background:#e5484d; width:100%;"></div></div><span id="ch-dbload-val" style="min-width:70px; text-align:right; font-weight:700; font-size:12px;">100%</span></div>
+  </div>
+
+  <h2>The cache-aside pattern, in code</h2>
+  <pre><code>def get_feed(user_id):
+    cache_key = f"feed:{user_id}"
+    cached = redis.get(cache_key)
+    if cached is not None:
+        return cached  # cache hit — database never touched
+
+    # cache miss — compute the real answer
+    feed = database.query_feed(user_id)
+    redis.set(cache_key, feed, expire_seconds=60)  # remember it briefly
+    return feed</code></pre>
+  <p>
+    The <code>expire_seconds=60</code> matters more than it looks: it's a deliberate choice about
+    how stale a cached feed is allowed to get before being recomputed. Sixty seconds means a feed
+    might be up to a minute out of date — an acceptable trade-off Chirp is choosing deliberately,
+    not an accident.
+  </p>
+
+  <div class="figure" id="fig-cache-flow"></div>
+
+  <h2>Why CDN is a genuinely separate idea from application caching</h2>
+  <p>
+    Redis caches the <em>results of database queries</em> — dynamic, personalized data that
+    changes per user. A CDN caches <em>static files</em> that are identical for everyone — the
+    same profile picture, the same uploaded video, regardless of who's requesting it. This
+    difference is why they're different pieces of infrastructure solving genuinely different
+    problems, even though both are colloquially called "caching."
+  </p>
+
+  <h2>What this fix doesn't do</h2>
+  <p>
+    Caching is a genuine, major win — but it's a mitigation for read load, not a solution to
+    every future database problem. The database still holds the actual source of truth, still
+    handles every write, and still needs to answer every cache miss. Chapters 5 and 6 pick up
+    exactly where this leaves off — what happens as the underlying dataset itself keeps growing,
+    independent of how well reads are cached.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the fundamental difference between what Redis caches and what a CDN caches in Chirp's architecture?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Redis caches dynamic, personalized database query results; a CDN caches static files that are identical for every user, distributed geographically close to them</button>
+        <button class="q-option" data-correct="false">Redis and CDNs cache exactly the same type of data using the same mechanism</button>
+        <button class="q-option" data-correct="false">CDNs only work for text-based content, never images or video</button>
+      </div>
+      <div class="q-explain">This is why they're genuinely separate pieces of infrastructure despite both being called "caching" — the data shape and access pattern they're each optimized for is different.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What deliberate trade-off does setting a cache expiration of 60 seconds represent?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Accepting that a cached feed might be up to a minute out of date, in exchange for dramatically reduced database load — a conscious choice, not an accidental side effect</button>
+        <button class="q-option" data-correct="false">60 seconds guarantees the cached data is always perfectly up to date</button>
+        <button class="q-option" data-correct="false">Expiration time has no effect on data freshness, only on cache storage size</button>
+      </div>
+      <div class="q-explain">This trade-off — staleness tolerance in exchange for reduced load — is exactly the seed for 4.4's "new problem," where this same acceptable-sounding trade-off produces a real user-facing bug.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does the material emphasize that caching mitigates read load rather than solving every future database problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The database still holds the source of truth, handles every write, and answers every cache miss — caching doesn't address what happens as the underlying dataset itself continues to grow</button>
+        <button class="q-option" data-correct="false">Caching completely eliminates any future need to scale the database in any way</button>
+        <button class="q-option" data-correct="false">Once caching is added, the database becomes entirely unnecessary</button>
+      </div>
+      <div class="q-explain">This honest scoping sets up Chapters 5 and 6 directly — caching solves this chapter's specific read-load problem, not every database scaling challenge Chirp will eventually face.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "introduce a caching layer (e.g., Redis or Memcached) to store frequently accessed data... use a CDN to cache static assets closer to users"; EZ Tech Learn "System Design 101" (2026).</p>
+
+  <div class="pager">
+    <a href="4-1-the-bottleneck-everyones-feed-hits-the-database.html">&larr; 4.1 The bottleneck: everyone's feed hits the database</a>
+    <a href="4-3-deep-dive-cache-eviction-and-write-strategies.html">4.3 Deep dive: cache eviction &amp; write strategies &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderCh() {
+  const rate = parseInt(document.getElementById('ch-rate').value, 10);
+  document.getElementById('ch-rate-val').textContent = rate + '%';
+  const dbLoad = 100 - rate;
+  document.getElementById('ch-dbload').style.width = dbLoad + '%';
+  document.getElementById('ch-dbload').style.background = dbLoad > 70 ? '#e5484d' : dbLoad > 35 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('ch-dbload-val').textContent = dbLoad + '%';
+}
+document.getElementById('ch-rate').addEventListener('input', renderCh);
+renderCh();
+
+document.getElementById('fig-cache-flow').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: app server checks Redis cache first, only falling through to the database on a cache miss">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="50" width="100" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="70" y="72" text-anchor="middle" fill="#a9c1ff">App server</text>
+  <line x1="120" y1="65" x2="180" y2="45" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd7)"/>
+  <text x="150" y="35" fill="#3ecf8e" font-size="8">check cache</text>
+  <rect x="180" y="15" width="120" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/><text x="240" y="40" text-anchor="middle" fill="#3ecf8e">Redis cache</text>
+  <line x1="300" y1="35" x2="120" y2="70" stroke="#3ecf8e" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#sd7)"/>
+  <text x="220" y="65" fill="#3ecf8e" font-size="8">hit → instant return</text>
+  <line x1="240" y1="55" x2="240" y2="90" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd7r)"/>
+  <text x="270" y="80" fill="#ff8b8f" font-size="8">miss</text>
+  <rect x="180" y="95" width="120" height="35" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="240" y="117" text-anchor="middle" fill="#f5a623">Database</text>
+  <defs>
+    <marker id="sd7" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd7r" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.4 The new problem: stale data after you edit | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 · The Read Storm &middot; ~100,000-500,000 users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>4.4 The new problem: stale data after you edit</h1>
+  <p class="subtitle">"I deleted an embarrassing typo from my post 10 seconds ago. It's still showing the typo. Is this app broken?"</p>
+
+  <div class="chirp-quote">
+    "Getting a weird spike of tickets — people editing or deleting posts and still seeing the old version for up to a minute afterward. Nothing's actually broken, but try explaining 'cache expiration window' to a confused user." — support lead
+  </div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    This is 4.2's 60-second cache expiration, showing up exactly where it was always going to:
+    a user edits or deletes a post, the database updates instantly and correctly, but their
+    cached feed — computed just before the edit — doesn't know that yet, and won't be recomputed
+    until it naturally expires. This is <strong>cache invalidation</strong>: the general problem of
+    making a cache reflect a change the moment it happens, rather than waiting for a timer.
+    Famously called one of the two genuinely hard problems in computer science for a reason — it's
+    a real, recurring tension, not a bug to casually patch out.
+  </div>
+
+  <h2>Try it: watch the staleness window play out</h2>
+  <div class="metric-box" id="stale-timeline"></div>
+
+  <h2>Why this specific trade-off is a real, deliberate choice — not an oversight</h2>
+  <p>
+    4.2's 60-second expiration was chosen precisely because most feed content doesn't need to be
+    correct to the millisecond — a slightly stale view of other people's posts is a fine trade-off
+    for a much lighter database. The problem is that "slightly stale" includes the exact case a
+    user notices most: <em>their own</em> recent edit, which they know should already be reflected
+    because they just made it themselves. The trade-off was reasonable in aggregate; it's just
+    visible in one specific, emotionally noticeable case.
+  </p>
+
+  <div class="figure" id="fig-invalidation"></div>
+
+  <h2>The fix: active invalidation for the cases that actually matter</h2>
+  <p>
+    Rather than shortening the expiration window for everyone (which would bring back much of
+    4.1's original database load), Chirp adds targeted <strong>active invalidation</strong>: the
+    moment a user edits or deletes their own post, the application explicitly clears that
+    specific user's cached feed entry immediately, rather than waiting for the 60-second timer.
+    The next request for their feed becomes a guaranteed cache miss, forcing a fresh, correct
+    read — but only for the one case that actually needs immediate correctness, leaving the
+    broader 60-second window intact for everything else.
+  </p>
+  <pre><code>def edit_post(post_id, user_id, new_content):
+    database.update_post(post_id, new_content)
+    redis.delete(f"feed:{user_id}")  # invalidate immediately, don't wait for expiry
+    # anyone who follows this user will still see the stale
+    # version briefly — a smaller, separately accepted trade-off</code></pre>
+
+  <h2>Why this doesn't fully solve the problem — and why that's the honest answer</h2>
+  <p>
+    Invalidating the editor's own cache fixes the most emotionally sharp case, but anyone who
+    <em>follows</em> that user still sees a stale cached version of their feed until it naturally
+    expires — invalidating every follower's cache on every edit would reintroduce exactly the
+    database load problem this chapter exists to solve. This is the genuinely honest shape of
+    cache invalidation: there's rarely a fix that's both instantly correct for everyone and cheap
+    — only better and worse places to draw the line based on which staleness actually hurts most.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does this specific bug happen even though the cache expiration trade-off from 4.2 was a deliberate, reasonable choice?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The trade-off was reasonable in aggregate for feed content generally, but it becomes emotionally noticeable in the one specific case a user is most sensitive to: seeing their own just-made edit not reflected yet</button>
+        <button class="q-option" data-correct="false">The 60-second expiration was a mistake that should never have been implemented in the first place</button>
+        <button class="q-option" data-correct="false">This bug indicates the cache is fundamentally broken and not working as designed</button>
+      </div>
+      <div class="q-explain">This is the honest framing — a reasonable aggregate trade-off can still produce a sharply felt edge case, which doesn't mean the original decision was wrong.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does Chirp invalidate the editor's own cached feed immediately rather than shortening the expiration window for everyone?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Shortening the window for everyone would bring back much of the original database load problem from 4.1 — targeted invalidation fixes the specific case that matters most without reintroducing that cost broadly</button>
+        <button class="q-option" data-correct="false">Shortening the expiration window for everyone would have no effect on database load</button>
+        <button class="q-option" data-correct="false">Targeted invalidation and shortening the window produce identical trade-offs</button>
+      </div>
+      <div class="q-explain">This is a genuinely well-targeted fix — solving the sharpest instance of the problem without undoing the broader benefit the original trade-off was providing.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why doesn't invalidating the editor's own cache fully solve the staleness problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Followers of that user still see a stale cached version of their own feeds until natural expiration — invalidating every follower's cache on every edit would reintroduce the same load problem this chapter exists to solve</button>
+        <button class="q-option" data-correct="false">The fix completely and permanently eliminates all possible staleness for every user</button>
+        <button class="q-option" data-correct="false">Followers' feeds are entirely unrelated to the editor's post content</button>
+      </div>
+      <div class="q-explain">This honest limitation is the actual lesson of cache invalidation as a "hard problem" — there's rarely a fix that's both instantly correct everywhere and cheap; there are only better places to draw the line.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This chapter reflects standard cache invalidation theory and practice (active/explicit invalidation vs. TTL-based expiration) — a foundational, widely-documented tension in distributed caching design.</p>
+
+  <div class="pager">
+    <a href="4-3-deep-dive-cache-eviction-and-write-strategies.html">&larr; 4.3 Deep dive: cache eviction &amp; write strategies</a>
+    <a href="../phase-05-half-a-million-and-climbing/5-1-the-bottleneck-primary-database-drowning-in-reads.html">Phase 5: Half a Million and Climbing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('stale-timeline').innerHTML = `
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:80px; font-size:11px; color:var(--text-muted);">T+0s</span><div style="flex:1; padding:8px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;">User posts "Excited for the wknd!!" — feed cached with this version</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:80px; font-size:11px; color:var(--text-muted);">T+8s</span><div style="flex:1; padding:8px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;">User notices the typo, edits to "Excited for the weekend!!" — database updates instantly</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:80px; font-size:11px; color:#ff8b8f;">T+9s</span><div style="flex:1; padding:8px 12px; background:rgba(229,72,77,0.1); border:1px solid #e5484d; border-radius:6px; font-size:12px; color:#ff8b8f;">User refreshes their own feed — still sees "wknd" typo. Cache hasn't expired yet.</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:80px; font-size:11px; color:var(--text-muted);">T+60s</span><div style="flex:1; padding:8px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;">Cache naturally expires. Next refresh finally shows the corrected post.</div></div>
+  </div>
+`;
+
+document.getElementById('fig-invalidation').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: database updates instantly on edit, but the cache continues serving the old value until either natural expiration or active invalidation">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="130" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="85" y="62" text-anchor="middle" fill="#3ecf8e">Database: updated</text>
+  <rect x="270" y="40" width="130" height="35" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="335" y="62" text-anchor="middle" fill="#ff8b8f">Cache: still old value</text>
+  <line x1="400" y1="45" x2="470" y2="20" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#sd9)"/>
+  <text x="530" y="15" fill="#f2b84b" font-size="8">wait 60s → expires naturally</text>
+  <line x1="400" y1="65" x2="470" y2="90" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd9g)"/>
+  <text x="560" y="105" fill="#3ecf8e" font-size="8">or: invalidate immediately on edit</text>
+  <defs>
+    <marker id="sd9" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+    <marker id="sd9g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>
