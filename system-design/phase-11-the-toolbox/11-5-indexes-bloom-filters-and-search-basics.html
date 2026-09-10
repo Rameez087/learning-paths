@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.5 Indexes, bloom filters & search basics | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.5 Indexes, bloom filters & search basics</h1>
+  <p class="subtitle">Chapter 6.1 mentioned indexes growing too large for memory. Here's what an index actually is, and two more tricks that solve genuinely different problems.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>database index</strong> is a separate, sorted data structure (usually a B-tree) that
+    lets the database find rows matching a condition without scanning every row — dramatically
+    faster reads, at the cost of slightly slower writes (the index itself needs updating too,
+    exactly 6.1's mechanism). A <strong>bloom filter</strong> is a compact, probabilistic
+    structure answering "might this item exist?" — it can have false positives, but never false
+    negatives, making it a very cheap first check before an expensive lookup. An
+    <strong>inverted index</strong> (the core of search) maps each word to every document
+    containing it, the opposite direction from a normal index — enabling fast full-text search.
+  </div>
+
+  <h2>Try it: play with a bloom filter</h2>
+  <div class="metric-box">
+    <div id="bf-bits" style="display:flex; gap:4px; margin-bottom:14px; flex-wrap:wrap;"></div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <input id="bf-input" type="text" placeholder="Type a username" style="flex:1; min-width:150px; padding:8px 12px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text-primary);">
+      <button id="bf-add" style="padding:8px 16px; background:rgba(62,207,142,0.15); border:1px solid #3ecf8e; color:#3ecf8e; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Add to filter</button>
+      <button id="bf-check" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Check if present</button>
+    </div>
+    <p id="bf-log" style="font-size:12px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>Why an index speeds reads but slows writes — the same mechanism from 6.1</h2>
+  <p>
+    Recall Chapter 6.1's mechanical explanation: every insert has to update every relevant index,
+    not just the underlying table. A well-indexed table can answer "find this user's posts"
+    almost instantly by looking up the index rather than scanning millions of rows — but that
+    speed is bought by doing extra work on every write. Choosing which columns to index is a real
+    trade-off: index too little, and reads stay slow; index too much, and writes suffer, exactly
+    the tension 6.1 lived through directly.
+  </p>
+
+  <div class="figure" id="fig-bloom-use"></div>
+
+  <h2>Where a bloom filter earns its place: a cheap gatekeeper before an expensive check</h2>
+  <p>
+    A concrete real use: before checking whether a username is already taken (a real database
+    query), first check a bloom filter containing all taken usernames. If the filter says "no,"
+    it's genuinely, guaranteed not taken — skip the database call entirely. If it says "maybe,"
+    only then do the real, more expensive database check. Since most username attempts during
+    signup are actually available, this cheap first filter meaningfully reduces load on the real
+    database — the exact same "avoid unnecessary expensive work" instinct from Chapter 4's caching,
+    applied to a different kind of question (existence, not value).
+  </p>
+
+  <h2>Inverted indexes: the actual foundation of search</h2>
+  <p>
+    A normal index maps a row to its values. An inverted index flips this: it maps each distinct
+    word to every document containing it. Searching for "weekend" becomes a fast lookup of the
+    word "weekend" in the inverted index, instantly returning every matching post — instead of
+    scanning every post's text for the word. This is the foundational structure behind Elasticsearch
+    and virtually every real search engine, and it's exactly what Phase 12.6's search-autocomplete
+    capstone builds on directly.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does adding a database index speed up reads while slowing down writes, mechanically?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An index is a separate sorted structure that lets reads skip scanning every row — but every write now has to update that index too, not just the underlying table, exactly the mechanism described in Chapter 6.1</button>
+        <button class="q-option" data-correct="false">Indexes only affect read speed and have no relationship to write performance</button>
+        <button class="q-option" data-correct="false">Writes only slow down when there are zero indexes on a table</button>
+      </div>
+      <div class="q-explain">This directly connects back to 6.1's real, concrete mechanism — this isn't a new concept, it's naming the exact thing that chapter already demonstrated.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is checking a bloom filter before an expensive database query a genuinely useful optimization for a username-availability check?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A bloom filter's "no" answer is guaranteed accurate (no false negatives), so it can skip the database call entirely whenever the username is genuinely available, meaningfully reducing load for the common case</button>
+        <button class="q-option" data-correct="false">A bloom filter completely replaces the need for a real database check in every case</button>
+        <button class="q-option" data-correct="false">Bloom filters guarantee zero false positives, making the database check entirely unnecessary</button>
+      </div>
+      <div class="q-explain">This is the specific asymmetry that makes bloom filters useful — trustworthy "definitely not present" answers, requiring a real check only for "maybe present" answers.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does an inverted index differ from a normal database index, and why does that difference enable fast search?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A normal index maps a row to its values; an inverted index maps each word to every document containing it — flipping the direction, which lets a search for a word instantly find all matching documents instead of scanning every one</button>
+        <button class="q-option" data-correct="false">An inverted index and a normal index are functionally identical, just with different names</button>
+        <button class="q-option" data-correct="false">Inverted indexes only work for numeric data, never text</button>
+      </div>
+      <div class="q-explain">This structural flip — word-to-documents instead of row-to-values — is the actual foundation that makes full-text search fast, setting up Phase 12.6's search capstone directly.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — indexes and bloom filters named explicitly as foundational data-tier vocabulary; system-design-primer (GitHub) — inverted index and full-text search fundamentals.</p>
+
+  <div class="pager">
+    <a href="11-4-the-database-taxonomy.html">&larr; 11.4 The database taxonomy</a>
+    <a href="11-6-coordination-primitives.html">11.6 Coordination primitives &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let bfBits = new Array(20).fill(0);
+function simpleHashes(str) {
+  let h1 = 0, h2 = 0, h3 = 0;
+  for (let i = 0; i < str.length; i++) {
+    h1 = (h1 * 31 + str.charCodeAt(i)) % 20;
+    h2 = (h2 * 37 + str.charCodeAt(i) + 7) % 20;
+    h3 = (h3 * 41 + str.charCodeAt(i) + 13) % 20;
+  }
+  return [Math.abs(h1), Math.abs(h2), Math.abs(h3)];
+}
+function renderBf(highlight) {
+  document.getElementById('bf-bits').innerHTML = bfBits.map((b,i) => `
+    <div style="width:28px; height:28px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; background:${b ? '#3ecf8e' : 'var(--surface-2)'}; color:${b?'#0b0e14':'var(--text-muted)'}; border:2px solid ${highlight && highlight.includes(i) ? '#f5a623' : 'transparent'};">${b}</div>
+  `).join('');
+}
+renderBf();
+document.getElementById('bf-add').addEventListener('click', () => {
+  const val = document.getElementById('bf-input').value.trim();
+  if (!val) return;
+  const idxs = simpleHashes(val);
+  idxs.forEach(i => bfBits[i] = 1);
+  renderBf(idxs);
+  document.getElementById('bf-log').innerHTML = `<span style="color:#3ecf8e;">Added "${val}" — set bits at positions ${idxs.join(', ')}.</span>`;
+});
+document.getElementById('bf-check').addEventListener('click', () => {
+  const val = document.getElementById('bf-input').value.trim();
+  if (!val) return;
+  const idxs = simpleHashes(val);
+  const allSet = idxs.every(i => bfBits[i] === 1);
+  renderBf(idxs);
+  document.getElementById('bf-log').innerHTML = allSet
+    ? `<span style="color:#f2b84b;">"${val}" MIGHT be present (all bits set — could be a false positive from another item's hash overlap).</span>`
+    : `<span style="color:#ff8b8f;">"${val}" is DEFINITELY NOT present (at least one required bit is unset — this answer is always correct).</span>`;
+});
+
+document.getElementById('fig-bloom-use').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: a bloom filter check happening before an expensive database query, only proceeding to the real check when the filter says maybe present">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="35" width="150" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="95" y="59" text-anchor="middle" fill="#a9c1ff">Signup request</text>
+  <line x1="170" y1="55" x2="230" y2="55" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd19)"/>
+  <rect x="230" y="35" width="150" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="305" y="59" text-anchor="middle" fill="#3ecf8e">Bloom filter check</text>
+  <line x1="380" y1="45" x2="440" y2="20" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd19g)"/>
+  <text x="500" y="15" fill="#3ecf8e" font-size="8">"no" → skip DB, definitely available</text>
+  <line x1="380" y1="65" x2="440" y2="90" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#sd19y)"/>
+  <rect x="440" y="80" width="150" height="30" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="515" y="99" text-anchor="middle" fill="#f2b84b" font-size="8">"maybe" → real DB check</text>
+  <defs>
+    <marker id="sd19" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd19g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd19y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

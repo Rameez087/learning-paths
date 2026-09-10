@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.3 Design a chat app | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · The Patterns Everyone Asks</div>
+  <h1>12.3 Design a chat app</h1>
+  <p class="subtitle">Chirp added DMs. Unlike a feed, this needs a persistent, two-way connection — a genuinely different networking model than anything built so far.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: real-time one-on-one and group messaging, delivery confirmation, message
+    ordering. HTTP request-response (used everywhere else in this track) doesn't fit — there's no
+    "request" when a message needs to arrive the instant it's sent. <strong>WebSockets</strong>
+    provide a persistent, two-way connection between client and server, letting the server push a
+    message the moment it arrives rather than waiting for the client to ask. This is exactly
+    Chapter 3.3's IP-hash/sticky-session scenario, but now it's not just useful — it's required: a
+    user's WebSocket connection has to stay pinned to one specific server for its entire duration.
+  </div>
+
+  <h2>Try it: compare delivery guarantee strategies</h2>
+  <div class="metric-box">
+    <div id="chat-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="chat-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why chat specifically breaks the stateless assumption from Chapter 3.4</h2>
+  <p>
+    Recall Chapter 3.4's fix: making app servers stateless so any server can handle any request.
+    A WebSocket connection genuinely can't work that way — the connection itself is a stateful,
+    long-lived link to one specific server. The practical resolution: the connection is sticky to
+    one server, but the actual message data and delivery state still live in a shared store (11.4's
+    key-value pattern), so if that specific server goes down, the user simply reconnects to a
+    different one and picks up their message history from the shared store.
+  </p>
+
+  <div class="figure" id="fig-chat-arch"></div>
+
+  <h2>The deep-dive: message ordering across a distributed system</h2>
+  <p>
+    Two messages sent close together need to display in the order they were actually sent, even
+    if they're processed by different servers or arrive slightly out of order over the network.
+    The practical fix: assign each message a sequence number (or a precise timestamp with a
+    tiebreaker) at the point it's accepted by the system, and have clients sort by that sequence
+    number rather than trusting network arrival order — a specific, concrete instance of the
+    coordination challenges named abstractly in 11.6.
+  </p>
+
+  <h2>Delivery guarantees: read receipts as a specific idempotency problem</h2>
+  <p>
+    "Delivered" and "read" receipts need the exact same at-least-once-delivery handling from
+    Chapter 7.3 — a receipt message might be delivered twice due to a network retry, and the UI
+    needs to handle a duplicate "read" event gracefully (setting a boolean to true twice is
+    actually naturally idempotent here, a helpful case where the operation's own nature avoids
+    needing extra deduplication logic).
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a chat app require WebSockets instead of the standard HTTP request-response pattern used elsewhere in Chirp?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A message needs to be pushed to the recipient the instant it arrives, rather than waiting for the client to make a request — WebSockets provide the persistent, two-way connection this requires</button>
+        <button class="q-option" data-correct="false">HTTP request-response is technically incapable of ever transmitting chat messages</button>
+        <button class="q-option" data-correct="false">WebSockets and HTTP request-response provide identical real-time delivery guarantees</button>
+      </div>
+      <div class="q-explain">This is the core networking-model shift this topic introduces — genuinely real-time push delivery needs a different connection model than request-response.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does chat's need for sticky WebSocket connections get reconciled with Chapter 3.4's statelessness principle?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The connection itself is sticky to one server, but the actual message data and delivery state live in a shared store — so a server going down just means reconnecting elsewhere and picking up from the shared data</button>
+        <button class="q-option" data-correct="false">Chat completely abandons statelessness with no mitigation for the resulting fragility</button>
+        <button class="q-option" data-correct="false">WebSocket connections never need to persist any state at all</button>
+      </div>
+      <div class="q-explain">This shows how a genuine exception to an earlier principle (statelessness) gets handled thoughtfully rather than simply ignored — the stateful part is minimized and isolated.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is "read" receipt handling described as naturally idempotent, unlike the double-notification bug from Chapter 7.3?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Setting a "read" boolean to true twice produces the same end result as setting it once — the operation's own nature avoids needing extra deduplication logic, unlike sending a duplicate notification which is a genuinely repeated side effect</button>
+        <button class="q-option" data-correct="false">Read receipts have no relationship to the at-least-once delivery concept from Chapter 7.3</button>
+        <button class="q-option" data-correct="false">Read receipts always require exactly the same deduplication logic as sending a notification</button>
+      </div>
+      <div class="q-explain">This is a subtle but genuine distinction — some operations are naturally idempotent by their own definition, while others (like sending a notification) require deliberate deduplication logic to become safe against redelivery.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — chat/messaging as a canonical pattern (Designing Facebook Messenger), covering persistent connections, at-least-once delivery, and group fan-out.</p>
+
+  <div class="pager">
+    <a href="12-2-design-a-social-feed.html">&larr; 12.2 Design a social feed</a>
+    <a href="12-4-design-ubers-dispatch-system.html">12.4 Design Uber's dispatch system &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CHAT_STRATS = {
+  atleast: { label: "At-least-once (default)", detail: "Messages are guaranteed to arrive, but might arrive more than once under network retry conditions. Requires idempotent handling on the client (matching 7.3's pattern) to avoid showing duplicate messages." },
+  atmost: { label: "At-most-once", detail: "A message is sent once and never retried — simpler, but a genuine risk of silently losing a message if the first attempt fails. Rarely acceptable for a chat app where message loss is very noticeable to users." },
+  exactly: { label: "\"Exactly-once\" (client-perceived)", detail: "Not a true distributed exactly-once guarantee (recall 7.3 — that's not really achievable for free) — but achievable from the user's perspective by combining at-least-once delivery with client-side deduplication via message IDs." },
+};
+document.getElementById('chat-tabs').innerHTML = Object.keys(CHAT_STRATS).map((k,i) =>
+  `<div class="chat-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${CHAT_STRATS[k].label}</div>`
+).join('');
+function renderChat(key) {
+  document.getElementById('chat-detail').textContent = CHAT_STRATS[key].detail;
+  document.querySelectorAll('.chat-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.chat-tab').forEach(t => t.addEventListener('click', () => renderChat(t.dataset.k)));
+renderChat('atleast');
+
+document.getElementById('fig-chat-arch').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: two users connected via persistent WebSocket connections to specific servers, with messages routed through a shared store so either server can be reached after reconnection">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="35" width="110" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="75" y="57" text-anchor="middle">User A</text>
+  <line x1="130" y1="52" x2="190" y2="52" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd24)" marker-start="url(#sd24b)"/>
+  <text x="160" y="42" fill="#3ecf8e" font-size="7">WebSocket</text>
+  <rect x="190" y="35" width="120" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="250" y="57" text-anchor="middle" fill="#a9c1ff">Chat server 1</text>
+  <line x1="310" y1="52" x2="370" y2="52" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd24y)" marker-start="url(#sd24yb)"/>
+  <rect x="370" y="35" width="140" height="35" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="440" y="57" text-anchor="middle" fill="#f5a623">Shared message store</text>
+  <line x1="510" y1="52" x2="560" y2="52" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd24)" marker-start="url(#sd24b)"/>
+  <rect x="560" y="35" width="100" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="610" y="57" text-anchor="middle" fill="#a9c1ff">User B</text>
+  <defs>
+    <marker id="sd24" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd24b" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd24y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd24yb" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

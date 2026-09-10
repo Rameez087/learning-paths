@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.3 CAP theorem & PACELC | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.3 CAP theorem & PACELC</h1>
+  <p class="subtitle">Chapters 5.3 and 9.3 both lived through this theorem without naming it. Here's the formal vocabulary for what you already have real intuition for.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>CAP theorem</strong>: in the presence of a network partition, a distributed system
+    must choose between <strong>Consistency</strong> (every read sees the latest write) and
+    <strong>Availability</strong> (every request gets a response, even if not the latest data) —
+    you cannot have both during a partition. <strong>Partition tolerance</strong> isn't really a
+    choice for any real distributed system — networks fail, so it's a given, and CAP is really
+    about the C-vs-A choice specifically during those failures. <strong>PACELC</strong> extends
+    this usefully: even when there's <strong>no</strong> partition, a system still trades
+    <strong>Latency</strong> for <strong>Consistency</strong> — which is exactly the choice
+    Chapter 5.2 made when choosing asynchronous replication.
+  </div>
+
+  <h2>Try it: place real Chirp decisions on the CAP/PACELC map</h2>
+  <div class="metric-box">
+    <div id="cap-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="cap-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why "partition tolerance isn't optional" is the key insight most summaries skip</h2>
+  <p>
+    A common oversimplification treats CAP as "pick 2 of 3." In practice, real distributed systems
+    span multiple machines (and, since Chapter 9, multiple continents) connected by real networks
+    — and real networks partition sometimes, whether anyone wants them to or not. A system doesn't
+    get to opt out of network failures, so the actual, meaningful decision is what happens
+    <em>when</em> a partition occurs: does the system stay available (like Chirp choosing to serve
+    slightly stale replica reads in 5.2/5.3) or does it refuse to answer until consistency can be
+    guaranteed again.
+  </p>
+
+  <div class="figure" id="fig-cap"></div>
+
+  <h2>PACELC's genuinely useful addition</h2>
+  <p>
+    CAP alone only describes behavior during a partition — but partitions are relatively rare;
+    most of the time, the system is running normally. PACELC fills this gap: <strong>if
+    Partitioned</strong>, choose <strong>Availability or Consistency</strong> (this is CAP);
+    <strong>Else</strong> (normal operation), choose <strong>Latency or Consistency</strong>. This
+    second half is exactly what Chapter 5.2's asynchronous replication decision was — no partition
+    involved at all, just a deliberate choice to accept eventual consistency in exchange for
+    faster writes, made during completely normal operation.
+  </p>
+
+  <h2>Connecting this back to Chirp's actual decisions</h2>
+  <p>
+    Chapter 5.2 (asynchronous replication) is a PACELC "Latency over Consistency" choice, made
+    during normal operation. Chapter 9.3's multi-region conflict resolution is fundamentally the
+    same category of decision, just at larger scale. Neither chapter used this vocabulary at the
+    time — the whole point of building this intuition through the story first was so the formal
+    theorem now describes something already understood, rather than being an abstract rule
+    memorized without context.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is "partition tolerance" treated as a given rather than a genuine third option in CAP theorem, for any real distributed system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Real networks partition sometimes regardless of what anyone wants, so a system spanning multiple machines can't actually opt out of network failures — the meaningful choice is what happens when one occurs</button>
+        <button class="q-option" data-correct="false">Partition tolerance is a purely theoretical concern that never actually happens in production systems</button>
+        <button class="q-option" data-correct="false">Every real distributed system can simply choose to never experience a network partition</button>
+      </div>
+      <div class="q-explain">This is the key nuance often lost in oversimplified "pick 2 of 3" summaries — partition tolerance isn't a choice, which is exactly why CAP is really about the C-vs-A decision during a partition.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What gap in CAP theorem does PACELC specifically fill?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">CAP only describes behavior during a partition; PACELC adds that even during normal operation (no partition), a system still trades latency against consistency</button>
+        <button class="q-option" data-correct="false">PACELC completely replaces CAP theorem and makes it obsolete</button>
+        <button class="q-option" data-correct="false">PACELC and CAP theorem describe exactly the same trade-off with no additional insight</button>
+      </div>
+      <div class="q-explain">This is PACELC's genuine value-add — most of a system's actual runtime is spent in normal operation, not mid-partition, so this second trade-off is arguably more relevant day-to-day.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is Chapter 5.2's asynchronous replication decision specifically a PACELC trade-off rather than a CAP trade-off?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It was made during normal operation, with no network partition involved — a deliberate choice to favor faster writes (latency) over guaranteed up-to-date replicas (consistency)</button>
+        <button class="q-option" data-correct="false">Chapter 5.2's decision has no relationship to either CAP theorem or PACELC</button>
+        <button class="q-option" data-correct="false">Asynchronous replication only ever matters during an actual network partition</button>
+      </div>
+      <div class="q-explain">This grounds the abstract theorem in a concrete decision already made earlier in the track — recognizing which framework applies to a given real scenario is the actual skill being built.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — CAP and PACELC named explicitly as foundational Phase 1 data-tier vocabulary; system-design-primer (GitHub) — CAP theorem and consistency pattern trade-offs.</p>
+
+  <div class="pager">
+    <a href="11-2-rate-limiting-algorithms.html">&larr; 11.2 Rate limiting algorithms</a>
+    <a href="11-4-the-database-taxonomy.html">11.4 The database taxonomy &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CAP_CASES = {
+  ch5: { label: "Ch. 5.2: read replicas", detail: "PACELC, no partition: chose Latency over Consistency. Asynchronous replication means faster writes, at the cost of replicas briefly lagging behind — exactly the trade-off that caused 5.3's 'can't see my own post' bug." },
+  ch93: { label: "Ch. 9.3: multi-region", detail: "Both CAP and PACELC apply here. During normal operation: Latency over Consistency (local writes in each region, eventual cross-region sync). During an actual partition between regions: each region chose Availability (keep accepting local writes) over Consistency (refusing writes until reconnected)." },
+  banking: { label: "Hypothetical: a bank transfer", detail: "Would typically choose Consistency over Availability, even during a partition — better to briefly refuse a transaction than risk it happening incorrectly. This is why payment systems (Phase 13.4) often make different CAP choices than a social feed." },
+};
+document.getElementById('cap-tabs').innerHTML = Object.keys(CAP_CASES).map((k,i) =>
+  `<div class="cap-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${CAP_CASES[k].label}</div>`
+).join('');
+function renderCap(key) {
+  document.getElementById('cap-detail').textContent = CAP_CASES[key].detail;
+  document.querySelectorAll('.cap-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.cap-tab').forEach(t => t.addEventListener('click', () => renderCap(t.dataset.k)));
+renderCap('ch5');
+
+document.getElementById('fig-cap').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: CAP theorem triangle showing consistency, availability, and partition tolerance, with partition tolerance treated as mandatory, leaving a choice between consistency and availability during a partition">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <circle cx="150" cy="60" r="50" fill="#182238" stroke="#5b8cff" stroke-width="1.5" opacity="0.85"/><text x="150" y="65" text-anchor="middle" fill="#a9c1ff">Consistency</text>
+  <circle cx="400" cy="60" r="50" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5" opacity="0.85"/><text x="400" y="65" text-anchor="middle" fill="#3ecf8e">Availability</text>
+  <text x="275" y="20" text-anchor="middle" fill="#f5a623" font-size="10">← choose one, during a partition →</text>
+  <rect x="500" y="30" width="150" height="60" rx="8" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="575" y="55" text-anchor="middle" fill="#f5a623" font-size="8">Partition tolerance</text><text x="575" y="72" text-anchor="middle" fill="#c9a05f" font-size="7">not optional — a given</text>
+</svg>
+`;
+</script>
+</body>
+</html>

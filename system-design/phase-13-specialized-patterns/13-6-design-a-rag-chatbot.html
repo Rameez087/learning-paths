@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.6 Design a RAG chatbot | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.done-banner { background: linear-gradient(135deg, #2a1a10, #1a1008); border: 1px solid #f5a623; border-radius: var(--radius); padding: 24px; margin-top: 48px; text-align: center; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 13</a> &nbsp;/&nbsp; 13.6</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 13 · Specialized Patterns</div>
+  <h1>13.6 Design a RAG chatbot</h1>
+  <p class="subtitle">Chirp adds an AI assistant that answers questions using your own post history. The final capstone — and a direct bridge to your AI Engineering track.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: answer user questions grounded in their actual Chirp data (not the model's
+    general knowledge), stay current as new posts are made, respond fast, control cost. The
+    architecture is a genuine synthesis of nearly everything in this track: an embedding pipeline
+    (async, Chapter 7's workers) converts posts into vectors stored in a specialized vector index
+    (11.4's database taxonomy, extended one type further), a retrieval step finds relevant content
+    for a given question (11.5's search fundamentals, applied to semantic similarity instead of
+    exact-match), and the LLM generates an answer grounded in what was retrieved.
+  </div>
+
+  <h2>Try it: walk through the retrieval pipeline</h2>
+  <div class="metric-box" id="rag-pipeline"></div>
+
+  <h2>Why embedding generation is asynchronous, one more time</h2>
+  <p>
+    Recall Chapter 7.1: computing something expensive inside the critical request path blocks
+    everything else. Converting a new post into a vector embedding is exactly this kind of work —
+    it happens via a background worker (7.2) the moment a post is created, never inside the
+    user's actual posting request. By the time anyone asks a question referencing that post, its
+    embedding is already sitting in the vector index, ready to be retrieved instantly.
+  </p>
+
+  <div class="figure" id="fig-rag-arch"></div>
+
+  <h2>The deep-dive: keeping the index fresh without re-embedding everything</h2>
+  <p>
+    A new post needs its own new embedding — but recall Chapter 4.4's cache invalidation lesson:
+    when a post is edited or deleted, its old embedding needs to be updated or removed too, or the
+    chatbot will confidently answer using outdated information. This is the same targeted
+    invalidation instinct as 4.4, applied to a vector index instead of a Redis cache — invalidate
+    precisely what changed, not the whole index.
+  </p>
+
+  <h2>Cost control: rate limiting applied to a genuinely different resource</h2>
+  <p>
+    Unlike most of Chirp's features, each chatbot query has a real, non-trivial cost per request
+    (the LLM call itself). This makes Chapter 11.2's rate-limiting algorithms directly relevant
+    again, but for a new reason — not just protecting server capacity, but directly controlling
+    real dollar cost per user, a concern that barely existed anywhere else in this track.
+  </p>
+
+  <h2>Why this problem belongs at the very end of this track</h2>
+  <p>
+    A RAG chatbot isn't really one new technique — it's a genuine composition of nearly every
+    primitive covered across all thirteen phases: async processing (7), a specialized database
+    type (11.4), search fundamentals (11.5), targeted cache invalidation (4.4), and cost-aware
+    rate limiting (11.2), applied together toward a single new capability. Recognizing a complex,
+    unfamiliar-looking system as a composition of already-known primitives — rather than something
+    requiring entirely new knowledge — is the actual, final demonstration of everything this whole
+    track was built to teach.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does converting a new post into a vector embedding happen asynchronously rather than inside the post-creation request?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's genuinely expensive computation that shouldn't block the fast confirmation the user is waiting for — exactly Chapter 7.1's original insight about not doing slow, non-urgent work synchronously</button>
+        <button class="q-option" data-correct="false">Embedding generation is actually free and has no bearing on request latency</button>
+        <button class="q-option" data-correct="false">Asynchronous processing has no relationship to anything covered earlier in this track</button>
+      </div>
+      <div class="q-explain">This is a direct, explicit reuse of Chapter 7's core lesson applied to a genuinely new kind of expensive work — recognizing the same underlying pattern in a new domain.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does editing or deleting a post require updating the vector index, and which earlier chapter's principle does this echo?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Without updating it, the chatbot would confidently answer using outdated information — this echoes Chapter 4.4's targeted cache invalidation principle, applied to a vector index instead of a Redis cache</button>
+        <button class="q-option" data-correct="false">Vector indexes automatically stay current with no update mechanism needed</button>
+        <button class="q-option" data-correct="false">This concern is unique to RAG systems and has no parallel earlier in the track</button>
+      </div>
+      <div class="q-explain">This is the same "invalidate precisely what changed" instinct from 4.4, recognized in a new context — a durable pattern that generalizes well beyond its original caching use case.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What is described as the final, overall lesson this RAG chatbot capstone is meant to demonstrate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Recognizing a complex, unfamiliar-looking system as a composition of already-known primitives (async processing, specialized databases, search, invalidation, rate limiting) rather than something requiring entirely new knowledge</button>
+        <button class="q-option" data-correct="false">RAG chatbots require an entirely separate body of knowledge disconnected from everything else in this track</button>
+        <button class="q-option" data-correct="false">This capstone exists purely as an unrelated bonus topic with no connection to the rest of the track</button>
+      </div>
+      <div class="q-explain">This is the track's final, capstone-level payoff — the whole narrative approach was building toward exactly this kind of pattern recognition across a genuinely novel-looking problem.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — AI-augmented apps (RAG chatbots, vector databases, LLM cost management) named as an emerging canonical pattern; this topic also draws directly on your AI Engineering track's RAG material for the retrieval-generation mechanics themselves.</p>
+
+  <div class="done-banner">
+    <h2 style="margin-top:0; border:none; font-size:20px;">🎉 System Design track complete</h2>
+    <p style="margin-bottom:0;">
+      Thirteen phases, from a single server handling 500 users through ten real breaking points to
+      a globally distributed, resilient platform — then a formal toolbox of vocabulary, and twelve
+      fully worked interview problems each explicitly tracing its core trick back to the chapter
+      that taught it. 52 pages, one continuous story, grounded throughout in Design Gurus' actual
+      2026 curriculum structure. This track now joins AI Engineering, Data Science &amp; Engineering,
+      and Forward Deployed Engineering as the fourth complete track in your hub.
+    </p>
+  </div>
+
+  <div class="pager">
+    <a href="13-5-design-collaborative-editing.html">&larr; 13.5 Design collaborative editing</a>
+    <a href="../index.html">Back to overview</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('rag-pipeline').innerHTML = `
+  <div style="display:flex; flex-direction:column; gap:8px;">
+    <div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px;"><strong style="color:#5b8cff;">1. User asks:</strong> "What did I say about my weekend trip?"</div>
+    <div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px;"><strong style="color:#3ecf8e;">2. Question embedded</strong> into a vector, same technique as post embedding (async pipeline)</div>
+    <div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px;"><strong style="color:#f5a623;">3. Vector index searched</strong> for the user's posts most semantically similar to the question</div>
+    <div style="padding:10px 14px; background:var(--surface-2); border-radius:8px; font-size:12px;"><strong style="color:#a78bfa;">4. Retrieved posts + question</strong> sent to the LLM as context</div>
+    <div style="padding:10px 14px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:8px; font-size:12px; color:#3ecf8e;"><strong>5. Answer generated</strong>, grounded in the user's actual posts — not the model's general knowledge</div>
+  </div>
+`;
+
+document.getElementById('fig-rag-arch').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: new posts flowing asynchronously into an embedding pipeline and vector index, while user questions are embedded and matched against that index to retrieve relevant context for the LLM">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="15" width="130" height="30" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="85" y="34" text-anchor="middle">New post created</text>
+  <line x1="150" y1="30" x2="200" y2="30" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd30)"/>
+  <text x="175" y="20" fill="#f5a623" font-size="7">async (Ch.7)</text>
+  <rect x="200" y="15" width="130" height="30" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="265" y="34" text-anchor="middle" fill="#f5a623">Embed + store</text>
+  <line x1="330" y1="30" x2="380" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd30p)"/>
+  <rect x="380" y="55" width="140" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="450" y="74" text-anchor="middle" fill="#3ecf8e">Vector index</text>
+  <rect x="20" y="90" width="130" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="85" y="109" text-anchor="middle" fill="#a9c1ff">User's question</text>
+  <line x1="150" y1="105" x2="380" y2="75" stroke="#5b8cff" stroke-width="1.5" marker-end="url(#sd30b)"/>
+  <line x1="520" y1="70" x2="580" y2="45" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#sd30v)"/>
+  <rect x="580" y="15" width="90" height="35" rx="4" fill="#182238" stroke="#a78bfa"/><text x="625" y="37" text-anchor="middle" fill="#c4b5fd">LLM answer</text>
+  <defs>
+    <marker id="sd30" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd30p" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd30b" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5b8cff"/></marker>
+    <marker id="sd30v" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

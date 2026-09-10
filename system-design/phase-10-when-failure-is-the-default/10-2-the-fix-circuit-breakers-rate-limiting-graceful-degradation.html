@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.2 The fix: circuit breakers, rate limiting, graceful degradation | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · When Failure Is the Default &middot; ~50,000,000-100,000,000+ users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>10.2 The fix: circuit breakers, rate limiting, graceful degradation</h1>
+  <p class="subtitle">Three complementary defenses: stop calling what's failing, protect yourself from being overwhelmed, and keep working with less rather than not working at all.</p>
+
+  <div class="chirp-quote">
+    "Added circuit breakers on every inter-service call. Ran the exact same Notifications slowdown scenario in staging last week — this time, Feed detected the failures after a few seconds, stopped calling Notifications entirely, served feeds without the 'new notification' badge, and stayed completely healthy. No cascade." — you, after the fix shipped</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>circuit breaker</strong> wraps calls to a dependency and tracks recent failures —
+    after enough failures in a short window, it "trips open" and stops attempting calls entirely
+    for a cooldown period, failing fast instead of waiting on a slow dependency and directly
+    preventing 10.1's resource exhaustion. <strong>Rate limiting</strong> protects a service from
+    being overwhelmed by more requests than it can handle, from any source, including well-meaning
+    internal callers during a retry storm. <strong>Graceful degradation</strong> means designing
+    features to keep working, just with reduced functionality, when a dependency is unavailable —
+    Feed still loads without notification badges, rather than failing entirely.
+  </div>
+
+  <h2>Try it: watch a circuit breaker trip and recover</h2>
+  <div class="metric-box">
+    <div id="cb-state"></div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button id="cb-fail" style="padding:8px 16px; background:rgba(229,72,77,0.15); border:1px solid #e5484d; color:#ff8b8f; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Simulate a failed call</button>
+      <button id="cb-succeed" style="padding:8px 16px; background:rgba(62,207,142,0.15); border:1px solid #3ecf8e; color:#3ecf8e; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Simulate a successful call</button>
+    </div>
+  </div>
+
+  <h2>The circuit breaker's three states, and why the middle one matters most</h2>
+  <p>
+    <strong>Closed</strong> (normal): calls pass through freely, failures are tracked.
+    <strong>Open</strong> (tripped): calls fail immediately without even attempting the network
+    call, giving the struggling dependency room to recover instead of continuing to hammer it.
+    <strong>Half-open</strong> (testing recovery): after a cooldown, a small number of test calls
+    are allowed through — if they succeed, the circuit closes again; if they fail, it reopens.
+    This half-open state is what makes the whole mechanism self-healing rather than needing a human
+    to manually decide when it's safe to resume.
+  </p>
+
+  <div class="figure" id="fig-circuit-states"></div>
+
+  <h2>Rate limiting: protecting yourself, not just protecting others</h2>
+  <p>
+    Chapter 7.3's idempotency dealt with duplicate deliveries; this is different — rate limiting
+    caps how many requests a service accepts in a given window, rejecting the excess outright
+    rather than trying to process everything and collapsing under the volume. Critically, this
+    applies even to well-meaning internal traffic — a retry storm from many circuit breakers all
+    reopening and testing the same recovering service at once can itself overwhelm that service
+    all over again without a rate limit in place.
+  </p>
+
+  <h2>Graceful degradation: deciding in advance what's essential</h2>
+  <p>
+    The core design question: for any given feature, what's the minimum viable version if a
+    specific dependency is unavailable? Feed loading without notification badges is a reasonable
+    degraded experience — the feed itself, the actually essential part, still works. This requires
+    deciding, ahead of an actual incident, which parts of a feature are genuinely essential and
+    which are enhancements that can be silently dropped under stress.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. How does a circuit breaker directly prevent 10.1's resource exhaustion problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">After enough recent failures, it trips open and fails fast without even attempting the network call, instead of holding onto resources while waiting on a slow dependency</button>
+        <button class="q-option" data-correct="false">Circuit breakers guarantee the failing dependency will be fixed automatically</button>
+        <button class="q-option" data-correct="false">Circuit breakers work by increasing the timeout duration for slow calls</button>
+      </div>
+      <div class="q-explain">This is the direct mechanism — failing fast instead of waiting is exactly what prevents the resource-holding pattern that caused 10.1's cascade in the first place.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is the circuit breaker's half-open state important for the mechanism to be self-healing?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It allows a small number of test calls through after a cooldown, automatically closing the circuit again if they succeed or reopening it if they fail — without needing a human to manually decide when recovery is safe</button>
+        <button class="q-option" data-correct="false">The half-open state permanently keeps the circuit breaker open regardless of test results</button>
+        <button class="q-option" data-correct="false">Half-open and closed states behave identically in every respect</button>
+      </div>
+      <div class="q-explain">This automatic recovery testing is what distinguishes a genuinely self-healing system from one that requires manual intervention every time a dependency recovers.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does rate limiting need to apply even to well-meaning internal traffic, not just external abuse?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A retry storm from many circuit breakers reopening and testing the same recovering service simultaneously can itself overwhelm that service again, without any malicious intent involved</button>
+        <button class="q-option" data-correct="false">Internal traffic is technically incapable of ever overwhelming a service</button>
+        <button class="q-option" data-correct="false">Rate limiting is only ever relevant for defending against malicious external attacks</button>
+      </div>
+      <div class="q-explain">This is a genuinely important, non-obvious detail — the very mechanism designed to help (circuit breakers testing recovery) can itself become a source of overwhelming load without a rate limit as a backstop.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: system-design-primer (GitHub) — circuit breaker pattern, rate limiting, and graceful degradation as core resilience patterns; Design Gurus "How to Learn System Design?" (2026) — fault tolerance and resilience as canonical senior-level topics.</p>
+
+  <div class="pager">
+    <a href="10-1-the-bottleneck-one-slow-dependency-takes-down-everything.html">&larr; 10.1 The bottleneck: one slow dependency takes down everything</a>
+    <a href="10-3-the-mindset-designing-for-failure.html">10.3 The mindset: designing for failure &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let cbState = "closed";
+let cbFailCount = 0;
+function renderCb() {
+  const colors = { closed: '#3ecf8e', open: '#e5484d', "half-open": '#f2b84b' };
+  const labels = { closed: "CLOSED (normal — calls pass through)", open: "OPEN (tripped — failing fast, not calling dependency)", "half-open": "HALF-OPEN (testing recovery with one call)" };
+  document.getElementById('cb-state').innerHTML = `
+    <div style="padding:20px; text-align:center; background:var(--surface-2); border-radius:8px; border:2px solid ${colors[cbState]};">
+      <div style="font-size:16px; font-weight:700; color:${colors[cbState]};">${labels[cbState]}</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">Recent consecutive failures: ${cbFailCount}</div>
+    </div>
+  `;
+}
+renderCb();
+document.getElementById('cb-fail').addEventListener('click', () => {
+  if (cbState === 'open') return;
+  cbFailCount++;
+  if (cbState === 'half-open' || cbFailCount >= 3) {
+    cbState = 'open';
+    cbFailCount = 3;
+    setTimeout(() => { cbState = 'half-open'; renderCb(); }, 2500);
+  }
+  renderCb();
+});
+document.getElementById('cb-succeed').addEventListener('click', () => {
+  if (cbState === 'open') return;
+  if (cbState === 'half-open') {
+    cbState = 'closed';
+    cbFailCount = 0;
+  } else {
+    cbFailCount = Math.max(0, cbFailCount - 1);
+  }
+  renderCb();
+});
+
+document.getElementById('fig-circuit-states').innerHTML = `
+<svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Diagram: circuit breaker state machine cycling between closed, open, and half-open states based on call success and failure">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <circle cx="120" cy="70" r="55" fill="#1a2029" stroke="#3ecf8e" stroke-width="2"/><text x="120" y="65" text-anchor="middle" fill="#3ecf8e">CLOSED</text><text x="120" y="80" text-anchor="middle" fill="#5fb98a" font-size="7">calls flow normally</text>
+  <circle cx="340" cy="70" r="55" fill="#1a2029" stroke="#e5484d" stroke-width="2"/><text x="340" y="65" text-anchor="middle" fill="#ff8b8f">OPEN</text><text x="340" y="80" text-anchor="middle" fill="#d98f92" font-size="7">fail fast, no calls made</text>
+  <circle cx="560" cy="70" r="55" fill="#1a2029" stroke="#f2b84b" stroke-width="2"/><text x="560" y="65" text-anchor="middle" fill="#f2b84b">HALF-OPEN</text><text x="560" y="80" text-anchor="middle" fill="#c9a05f" font-size="7">testing recovery</text>
+  <line x1="175" y1="55" x2="285" y2="55" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#sd18)"/><text x="230" y="45" text-anchor="middle" fill="#f2b84b" font-size="7">too many failures</text>
+  <line x1="505" y1="85" x2="395" y2="85" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd18g)"/><text x="450" y="105" text-anchor="middle" fill="#3ecf8e" font-size="7">test succeeds</text>
+  <line x1="560" y1="15" x2="340" y2="15" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd18r)"/><text x="450" y="10" text-anchor="middle" fill="#ff8b8f" font-size="7">test fails, reopen</text>
+  <defs>
+    <marker id="sd18" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+    <marker id="sd18g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd18r" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

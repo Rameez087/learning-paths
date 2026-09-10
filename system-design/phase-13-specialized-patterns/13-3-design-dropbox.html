@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.3 Design Dropbox | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 13</a> &nbsp;/&nbsp; 13.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 13 · Specialized Patterns</div>
+  <h1>13.3 Design Dropbox</h1>
+  <p class="subtitle">File sync at scale — genuinely the same core idea as Chapter 5's replication, applied to files a user actively edits on multiple devices instead of database rows.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: keep files in sync across a user's devices, upload efficiently, handle offline
+    edits. The core technique is <strong>chunking</strong>: split each file into fixed-size blocks,
+    hash each block, and only upload blocks that have actually changed — editing one paragraph of
+    a large document re-uploads a few KB, not the whole file. This directly reuses 11.5's hashing
+    instinct (a bloom filter's cheap existence check) for a genuinely different purpose: cheaply
+    detecting which specific parts of a large file are actually new.
+  </div>
+
+  <h2>Try it: see chunking avoid re-uploading unchanged data</h2>
+  <div class="metric-box" id="chunk-demo"></div>
+
+  <h2>Why chunk-level, not file-level, change detection</h2>
+  <p>
+    Re-uploading an entire 500MB video file because one 10KB metadata field changed would be a
+    genuinely wasteful design — chunking breaks the file into smaller pieces specifically so only
+    the pieces that actually changed need to move over the network. This is the same underlying
+    principle as Chapter 4's caching (avoid redoing work that's already correct) applied at the
+    level of file content instead of computed query results.
+  </p>
+
+  <div class="figure" id="fig-dropbox-arch"></div>
+
+  <h2>The deep-dive: conflict resolution when the same file changes on two devices while offline</h2>
+  <p>
+    Recall Chapter 9.3's cross-region conflict: two writable copies of the same data can diverge.
+    File sync has almost the exact same shape — a laptop and a phone both edit the same file
+    while offline, then both reconnect. A real system typically keeps both versions (creating a
+    "conflicted copy" file) rather than silently discarding one — the same honest acknowledgment
+    from 9.3 that automatic conflict resolution can't always determine the "right" answer, so
+    surfacing the conflict to the user is sometimes the more honest choice than guessing.
+  </p>
+
+  <h2>Metadata vs. content: two different storage problems, cleanly separated</h2>
+  <p>
+    File content (the actual bytes) is naturally suited to object storage optimized for large
+    blobs. File metadata (name, folder structure, sharing permissions, version history) is
+    naturally relational — clear structure, relationships between files and folders, exactly
+    Chirp's default database type from 11.4. Separating these, rather than cramming file bytes
+    into a relational database, mirrors Chapter 8's principle of matching each piece of data to
+    the storage that actually fits its shape.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does Dropbox-style sync split files into chunks rather than re-uploading the entire file on every change?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Chunking lets only the specific pieces that actually changed be re-uploaded, avoiding the waste of re-transmitting an entire large file when only a small part of it was edited</button>
+        <button class="q-option" data-correct="false">Chunking always uploads the entire file regardless of what changed</button>
+        <button class="q-option" data-correct="false">Chunk-based and whole-file uploads have identical bandwidth costs</button>
+      </div>
+      <div class="q-explain">This is the core efficiency mechanism the whole topic is built around — detecting and transmitting only genuine changes, applying Chapter 4's "don't redo unchanged work" principle to file content specifically.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does the offline-edit conflict scenario in file sync relate to Chapter 9.3's cross-region consistency problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Both involve two independently-writable copies of the same data diverging — a laptop and phone editing the same file offline is structurally the same shape as two regions accepting independent local writes</button>
+        <button class="q-option" data-correct="false">File sync conflicts and cross-region consistency are completely unrelated problems</button>
+        <button class="q-option" data-correct="false">File sync never experiences any conflicts, unlike cross-region database replication</button>
+      </div>
+      <div class="q-explain">This is a genuine structural parallel across very different-seeming domains — recognizing the same underlying "multiple writable copies diverge" shape in a new context.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does keeping both versions as a "conflicted copy" often make more sense than automatically picking one to discard?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Automatic conflict resolution can't always reliably determine which version the user actually wants — surfacing the conflict honestly is sometimes better than silently guessing wrong and losing real work</button>
+        <button class="q-option" data-correct="false">Keeping both versions is always technically impossible in a real file sync system</button>
+        <button class="q-option" data-correct="false">There is always a clearly correct version to keep, making conflicted copies unnecessary</button>
+      </div>
+      <div class="q-explain">This echoes 9.3's honest acknowledgment that not every consistency conflict has an obviously correct automatic resolution — sometimes surfacing ambiguity to a human is the more honest design choice.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — Designing Dropbox named as a canonical senior-level system design pattern; system-design-primer (GitHub) — chunked file sync and content-addressable storage fundamentals.</p>
+
+  <div class="pager">
+    <a href="13-2-design-a-notification-system.html">&larr; 13.2 Design a notification system</a>
+    <a href="13-4-design-a-payment-system.html">13.4 Design a payment system &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CHUNKS_BEFORE = ["a3f9", "b21c", "9d4e", "77aa", "e0f1"];
+const CHUNKS_AFTER =  ["a3f9", "b21c", "CHANGED", "77aa", "e0f1"];
+document.getElementById('chunk-demo').innerHTML = `
+  <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">A 5-chunk document. One paragraph (chunk 3) gets edited:</p>
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:6px;">
+    ${CHUNKS_AFTER.map((c,i) => {
+      const changed = c !== CHUNKS_BEFORE[i];
+      return `<div style="text-align:center; padding:12px 4px; border-radius:6px; background:${changed?'rgba(245,166,35,0.15)':'rgba(62,207,142,0.1)'}; border:1px solid ${changed?'#f5a623':'#3ecf8e'};">
+        <div style="font-size:10px; color:var(--text-muted);">Chunk ${i+1}</div>
+        <div style="font-size:10px; font-family:var(--font-mono); margin-top:2px; color:${changed?'#f5a623':'#3ecf8e'};">${changed?'re-upload':'unchanged'}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <p style="font-size:12px; color:#f5a623; margin-top:10px;">Only chunk 3 needs to be re-uploaded — 4 of 5 chunks stay exactly as they were.</p>
+`;
+
+document.getElementById('fig-dropbox-arch').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: file content stored in object storage while metadata (folder structure, permissions) is stored separately in a relational database">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="60" y="30" width="220" height="55" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/><text x="170" y="55" text-anchor="middle" fill="#3ecf8e">Object storage (chunks)</text><text x="170" y="72" text-anchor="middle" fill="#5fb98a" font-size="8">large binary blobs, content-addressed</text>
+  <rect x="400" y="30" width="220" height="55" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/><text x="510" y="55" text-anchor="middle" fill="#a9c1ff">Relational DB (metadata)</text><text x="510" y="72" text-anchor="middle" fill="#7891c9" font-size="8">folders, names, permissions, versions</text>
+</svg>
+`;
+</script>
+</body>
+</html>

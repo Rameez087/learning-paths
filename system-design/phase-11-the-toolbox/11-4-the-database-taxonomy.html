@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.4 The database taxonomy | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.4 The database taxonomy</h1>
+  <p class="subtitle">Chirp used Postgres for everything. Real systems often don't — different data shapes genuinely want different databases.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Relational (SQL)</strong> — structured, related tables with strong consistency
+    guarantees; Chirp's default choice throughout this track. <strong>Document stores</strong>
+    (MongoDB) — flexible, nested JSON-like records, good when data doesn't fit a rigid schema.
+    <strong>Key-value stores</strong> (Redis, DynamoDB) — extremely fast lookups by a single key;
+    Chirp's cache since Chapter 4 is exactly this. <strong>Wide-column</strong> (Cassandra) —
+    built for massive write throughput across many machines. <strong>Graph databases</strong>
+    (Neo4j) — optimized for relationship-heavy queries, like "friends of friends." <strong>Time-series</strong>
+    (InfluxDB) — optimized for timestamped metrics data, like the very dashboards used throughout
+    this track's incident banners.
+  </div>
+
+  <h2>Try it: match a data shape to its natural database type</h2>
+  <div class="metric-box">
+    <div id="db-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="db-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why Chirp could get away with "just Postgres" for so long</h2>
+  <p>
+    Relational databases are genuinely flexible generalists — capable of reasonably handling most
+    of Chirp's actual data shapes (posts, users, follows) without needing a specialized database
+    for each. The specialized types earn their place specifically when a workload's shape becomes
+    extreme enough that a generalist database's trade-offs start to hurt — massive write volume
+    (wide-column), deeply relationship-heavy queries at scale (graph), or genuinely
+    schema-flexible data (document).
+  </p>
+
+  <div class="figure" id="fig-db-map"></div>
+
+  <h2>Where Chirp actually would benefit from a specialized database, honestly</h2>
+  <p>
+    The social graph (who follows whom) is exactly the kind of data a graph database handles more
+    naturally than relational joins — "find mutual follows" or "suggest people you might know"
+    queries get expensive in pure SQL as the graph grows, and get more natural in a database built
+    specifically for graph traversal. This is a genuine, honest gap in Chirp's story worth naming:
+    the narrative simplified to Postgres throughout, but a real system at Chirp's scale would very
+    plausibly introduce a graph database specifically for the social graph.
+  </p>
+
+  <h2>The actual decision framework, not just a lookup table</h2>
+  <p>
+    The real question for any dataset: what's the dominant access pattern? Looking up one record
+    by a known key (key-value)? Complex queries across related structured data (relational)?
+    Traversing relationships (graph)? Extremely high write volume with simpler queries
+    (wide-column)? Matching the database to the actual dominant pattern, rather than defaulting to
+    whatever's already in use, is the transferable skill — not memorizing which specific product
+    name goes with which label.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why could Chirp reasonably use "just Postgres" for most of its data throughout this entire track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Relational databases are flexible generalists capable of reasonably handling most common data shapes — specialized databases earn their place only when a workload's shape becomes extreme enough that a generalist's trade-offs start to genuinely hurt</button>
+        <button class="q-option" data-correct="false">Relational databases are always strictly better than every specialized database type in every situation</button>
+        <button class="q-option" data-correct="false">Chirp's data never had any characteristics that a specialized database could have handled better</button>
+      </div>
+      <div class="q-explain">This is an honest, balanced framing — generalist tools cover most needs reasonably well, and specialization is a response to genuinely extreme workload shapes, not a universal upgrade.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does the material specifically flag Chirp's social graph (follows) as a case where a graph database would genuinely help?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Relationship-heavy queries like "mutual follows" or "people you might know" get expensive in pure SQL as the graph grows, while a graph database is built specifically for efficient relationship traversal</button>
+        <button class="q-option" data-correct="false">Graph databases are strictly better than relational databases for every type of query, not just relationship traversal</button>
+        <button class="q-option" data-correct="false">The social graph has no meaningful difference from Chirp's other data types</button>
+      </div>
+      <div class="q-explain">This is an honest acknowledgment of a real simplification in the narrative, while still teaching the genuine underlying principle — matching database type to actual access pattern.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What is described as the actual transferable skill in choosing a database type, rather than just memorizing a type-to-product lookup table?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Identifying the dataset's dominant access pattern (single-key lookup, complex relational queries, relationship traversal, high write volume) and matching the database to that actual pattern</button>
+        <button class="q-option" data-correct="false">Always choosing whichever database technology is currently most popular or trending</button>
+        <button class="q-option" data-correct="false">Database choice should always default to whatever is already in use elsewhere in the system</button>
+      </div>
+      <div class="q-explain">This is the durable, transferable framework — reasoning from actual access patterns generalizes far better than memorizing which named product fits which named category.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — database taxonomy as named foundational data-tier vocabulary; system-design-primer (GitHub) — SQL vs. NoSQL and specialized database trade-offs.</p>
+
+  <div class="pager">
+    <a href="11-3-cap-theorem-and-pacelc.html">&larr; 11.3 CAP theorem &amp; PACELC</a>
+    <a href="11-5-indexes-bloom-filters-and-search-basics.html">11.5 Indexes, bloom filters &amp; search basics &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const DB_TYPES = {
+  relational: { label: "Relational (SQL)", detail: "Structured tables, foreign keys, strong consistency (ACID transactions). Chirp's core posts and users data throughout this track. Best for: data with clear relationships and a need for strict consistency." },
+  document: { label: "Document store", detail: "Flexible, nested JSON-like records without a rigid predefined schema. Good for: content with varying structure, like a CMS with wildly different content types per page." },
+  keyvalue: { label: "Key-value store", detail: "Extremely fast lookups by a single key. Chirp's Redis cache since Chapter 4, and its session store since Chapter 3.4, are both this. Best for: caching, session storage, simple fast lookups." },
+  widecolumn: { label: "Wide-column", detail: "Built for massive write throughput distributed across many machines, at the cost of more limited query flexibility. Best for: huge-volume time-series or event data, like IoT sensor logs." },
+  graph: { label: "Graph database", detail: "Optimized for traversing relationships — 'friends of friends,' 'shortest path between two nodes.' Best for: social graphs, recommendation engines, fraud-detection networks." },
+  timeseries: { label: "Time-series", detail: "Optimized for timestamped metrics data with efficient time-range queries and aggregation. Best for: the exact monitoring dashboards referenced throughout this track's incident banners." },
+};
+document.getElementById('db-tabs').innerHTML = Object.keys(DB_TYPES).map((k,i) =>
+  `<div class="db-tab" data-k="${k}" style="padding:8px 12px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:11px; font-weight:600;">${DB_TYPES[k].label}</div>`
+).join('');
+function renderDb(key) {
+  document.getElementById('db-detail').textContent = DB_TYPES[key].detail;
+  document.querySelectorAll('.db-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.db-tab').forEach(t => t.addEventListener('click', () => renderDb(t.dataset.k)));
+renderDb('relational');
+
+document.getElementById('fig-db-map').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram mapping six database types to their dominant access pattern">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="10" y="20" width="105" height="55" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="62" y="42" text-anchor="middle" fill="#a9c1ff">Relational</text><text x="62" y="58" text-anchor="middle" fill="#7891c9" font-size="7">structured joins</text>
+  <rect x="125" y="20" width="105" height="55" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="177" y="42" text-anchor="middle" fill="#f5a623">Document</text><text x="177" y="58" text-anchor="middle" fill="#c9a05f" font-size="7">flexible schema</text>
+  <rect x="240" y="20" width="105" height="55" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="292" y="42" text-anchor="middle" fill="#3ecf8e">Key-value</text><text x="292" y="58" text-anchor="middle" fill="#5fb98a" font-size="7">fast single lookup</text>
+  <rect x="355" y="20" width="105" height="55" rx="6" fill="#1a2029" stroke="#a78bfa"/><text x="407" y="42" text-anchor="middle" fill="#c4b5fd">Wide-column</text><text x="407" y="58" text-anchor="middle" fill="#9d8ac2" font-size="7">massive writes</text>
+  <rect x="470" y="20" width="105" height="55" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="522" y="42" text-anchor="middle" fill="#ff8b8f">Graph</text><text x="522" y="58" text-anchor="middle" fill="#d98f92" font-size="7">relationships</text>
+  <rect x="585" y="20" width="90" height="55" rx="6" fill="#1a2029" stroke="#6b7386"/><text x="630" y="42" text-anchor="middle">Time-series</text><text x="630" y="58" text-anchor="middle" font-size="7">timestamped metrics</text>
+</svg>
+`;
+</script>
+</body>
+</html>

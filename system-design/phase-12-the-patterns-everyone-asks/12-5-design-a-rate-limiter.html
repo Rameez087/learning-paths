@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.5 Design a rate limiter | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · The Patterns Everyone Asks</div>
+  <h1>12.5 Design a rate limiter</h1>
+  <p class="subtitle">Chapter 11.2 covered the algorithms. This is the harder question interviewers actually ask next: where does the counter live when there are 8 app servers, not 1?</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: limit each user (or API key) to N requests per time window, enforced correctly
+    across every one of Chirp's app servers (Chapter 3) — not per-server, which would let a user
+    get N times the intended limit just by having requests spread across the load balancer. This
+    means the token bucket's state (11.2) can't live in any single app server's local memory —
+    exactly Chapter 3.4's statelessness lesson, applied to rate limiting specifically: the counter
+    needs to live in a shared, fast store every app server can check and update atomically.
+  </div>
+
+  <h2>Try it: watch a distributed counter stay correct across servers</h2>
+  <div class="metric-box">
+    <div id="dc-servers"></div>
+    <p id="dc-log" style="font-size:12px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>Why Redis specifically, and the atomicity requirement</h2>
+  <p>
+    Redis is the natural fit — it's already Chirp's shared, fast key-value store (Chapter 4), and
+    critically, it supports atomic increment operations. Atomicity matters precisely because two
+    app servers could receive requests from the same user at nearly the same instant; without an
+    atomic "increment and check" operation, both servers could read the counter as "9 of 10 used,"
+    both allow the request, and the user ends up making 11 requests against a limit of 10 — a
+    classic race condition this design has to specifically prevent.
+  </p>
+
+  <div class="figure" id="fig-ratelimiter-arch"></div>
+
+  <h2>Where to enforce it: API gateway vs. each individual service</h2>
+  <p>
+    Recall Chapter 8's service split — should rate limiting live in a central API gateway (one
+    place, consistent enforcement, but a potential bottleneck of its own) or in each individual
+    service (more resilient to the gateway itself failing, but duplicated logic and configuration
+    across every service)? Most real systems choose the gateway for user-facing limits and add
+    service-level limits specifically for internal protection — directly echoing 10.2's point that
+    rate limiting protects against internal traffic storms too, not just external abuse.
+  </p>
+
+  <h2>The response contract: telling the client what happened</h2>
+  <p>
+    A rate-limited request should return <code>429 Too Many Requests</code> (11.1's status code
+    conventions) along with a <code>Retry-After</code> header telling the client exactly how long
+    to wait — letting a well-behaved client back off intelligently instead of immediately
+    retrying and making the situation worse, which connects directly back to 10.2's concern about
+    retry storms.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't a rate limiter's counter live in each app server's local memory, given Chirp's load-balanced architecture from Chapter 3?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A user's requests get spread across multiple app servers by the load balancer — a per-server local counter would let them get N times the intended limit, one N per server, rather than one shared N total</button>
+        <button class="q-option" data-correct="false">Local memory counters would enforce the rate limit correctly regardless of how many app servers exist</button>
+        <button class="q-option" data-correct="false">This problem is unrelated to anything covered in Chapter 3</button>
+      </div>
+      <div class="q-explain">This directly reapplies Chapter 3.4's statelessness lesson to a new specific case — shared, external state is required whenever correctness depends on a value that must be consistent across every server.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does the counter increment operation specifically need to be atomic?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Without atomicity, two servers could both read the counter at nearly the same instant, both see room under the limit, and both allow a request — letting the user exceed the intended limit through a race condition</button>
+        <button class="q-option" data-correct="false">Atomicity is a nice-to-have that has no real bearing on the rate limiter's correctness</button>
+        <button class="q-option" data-correct="false">Race conditions are impossible in any distributed counter regardless of atomicity</button>
+      </div>
+      <div class="q-explain">This is a concrete, specific correctness requirement — non-atomic check-then-increment logic is a classic distributed systems bug this design has to explicitly guard against.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does returning a Retry-After header alongside a 429 status matter, beyond just rejecting the request?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It lets a well-behaved client back off intelligently and retry at the right time, rather than immediately retrying and potentially contributing to a retry storm, directly connecting to Chapter 10.2's concern</button>
+        <button class="q-option" data-correct="false">Retry-After headers have no actual effect on client behavior</button>
+        <button class="q-option" data-correct="false">A 429 status code alone provides identical information to including a Retry-After header</button>
+      </div>
+      <div class="q-explain">This connects the API contract detail (11.1) directly back to the retry-storm concern from 10.2 — a well-designed error response actively helps prevent the exact cascading problem circuit breakers guard against.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — API rate limiter as a canonical pattern (Designing an API Rate Limiter), covering rate limiting, webhooks, idempotency, and audit trails.</p>
+
+  <div class="pager">
+    <a href="12-4-design-ubers-dispatch-system.html">&larr; 12.4 Design Uber's dispatch system</a>
+    <a href="12-6-design-search-autocomplete.html">12.6 Design search autocomplete &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let sharedCounter = 0;
+const LIMIT = 10;
+function renderDc() {
+  document.getElementById('dc-servers').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px;">
+      ${[1,2,3,4].map(i => `
+        <button class="dc-server-btn" data-s="${i}" style="padding:14px 6px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-primary);">Server ${i}<br><span style="font-size:10px; color:var(--text-muted);">send request</span></button>
+      `).join('')}
+    </div>
+    <div style="padding:14px; background:var(--code-bg); border-radius:8px; text-align:center;">
+      <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Shared Redis counter (all servers see the same value)</div>
+      <div style="font-size:20px; font-weight:700; margin-top:4px; color:${sharedCounter>=LIMIT?'#e5484d':'#3ecf8e'};">${sharedCounter} / ${LIMIT}</div>
+    </div>
+  `;
+  document.querySelectorAll('.dc-server-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const log = document.getElementById('dc-log');
+      if (sharedCounter < LIMIT) {
+        sharedCounter++;
+        log.innerHTML = `<span style="color:#3ecf8e;">✓ Server ${btn.dataset.s}: request allowed. Shared counter incremented atomically.</span>`;
+      } else {
+        log.innerHTML = `<span style="color:#ff8b8f;">✗ Server ${btn.dataset.s}: request REJECTED (429). Limit already reached — correctly enforced across all servers.</span>`;
+      }
+      renderDc();
+    });
+  });
+}
+renderDc();
+
+document.getElementById('fig-ratelimiter-arch').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: four app servers all checking and updating one shared Redis counter atomically, ensuring the rate limit is enforced correctly regardless of which server handles a given request">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="20" width="100" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="70" y="39" text-anchor="middle" fill="#a9c1ff">App 1</text>
+  <rect x="140" y="20" width="100" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="190" y="39" text-anchor="middle" fill="#a9c1ff">App 2</text>
+  <rect x="260" y="20" width="100" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="310" y="39" text-anchor="middle" fill="#a9c1ff">App 3</text>
+  <rect x="380" y="20" width="100" height="30" rx="4" fill="#182238" stroke="#5b8cff"/><text x="430" y="39" text-anchor="middle" fill="#a9c1ff">App 4</text>
+  <line x1="70" y1="50" x2="290" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="190" y1="50" x2="290" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="310" y1="50" x2="290" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <line x1="430" y1="50" x2="290" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <rect x="200" y="85" width="180" height="30" rx="6" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="290" y="104" text-anchor="middle" fill="#f5a623">Shared Redis counter</text>
+</svg>
+`;
+</script>
+</body>
+</html>

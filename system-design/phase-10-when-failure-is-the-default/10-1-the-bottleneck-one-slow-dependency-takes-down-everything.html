@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.1 The bottleneck: one slow dependency takes down everything | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · When Failure Is the Default &middot; ~50,000,000-100,000,000+ users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>10.1 The bottleneck: one slow dependency takes down everything</h1>
+  <p class="subtitle">The Notifications service got slow — not down, just slow. Twenty minutes later, the entire Chirp platform was unreachable, including services that never even talk to Notifications directly.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    Notifications Service p99 latency climbed from 40ms to 12 seconds after a downstream email provider started timing out. Within 20 minutes, Feed Service, Profile Service, and the API gateway all became unresponsive — a single slow dependency cascaded into a total platform outage.
+  </div>
+
+  <div class="chirp-quote">
+    "This is the scariest incident we've had. Notifications wasn't even down — it was just slow. But every service that calls it kept threads waiting on those slow calls, ran out of available threads for anything else, and started timing out themselves. Then services that called THOSE services started failing too. One slow dependency, and twenty minutes later the whole platform is dark." — you, in the postmortem</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    At Chirp's current scale, with dozens of interdependent services (Chapter 8) calling each
+    other constantly, a single slow — not even fully down — dependency can trigger a
+    <strong>cascading failure</strong>: callers wait on slow responses, exhaust their own limited
+    resources (threads, connections) waiting, become slow or unresponsive themselves, and pass
+    that same failure mode on to whoever calls <em>them</em>. This is a genuinely new category of
+    risk that microservices specifically introduced — a monolith couldn't cascade quite this way,
+    because there was no network call chain for a slowdown to propagate across.
+  </div>
+
+  <h2>Try it: watch one slow service cascade through the system</h2>
+  <div class="metric-box">
+    <div id="cascade-sim"></div>
+    <button id="cascade-trigger" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Notifications Service becomes slow →</button>
+  </div>
+
+  <h2>Why "slow" is genuinely more dangerous than "down"</h2>
+  <p>
+    A service that's fully down fails fast — callers get an immediate error and can react (retry
+    elsewhere, show a fallback, whatever the situation calls for). A service that's merely slow is
+    more insidious: callers keep waiting, holding onto resources (a thread, a connection) for the
+    full timeout duration, for every single request, before eventually failing. Under real traffic
+    volume, this resource exhaustion happens far faster than most teams expect — and it's exactly
+    why "slow" deserves to be treated as seriously as "down," not as a lesser problem.
+  </p>
+
+  <div class="figure" id="fig-cascade"></div>
+
+  <h2>Why this is the natural, inevitable next chapter after Chapter 8</h2>
+  <p>
+    Every service added since Chapter 8's split is another dependency some other part of the
+    system relies on, and another potential source of a cascading failure. This isn't a flaw in
+    the microservices decision — it's the honest, deferred cost of that trade-off finally coming
+    due at real scale. Earlier in the track, failure modes were mostly contained to one component;
+    at this scale, with this many interdependent services, failure needs to be treated as the
+    default expectation, not a rare exception to plan for after the fact.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can a merely slow service be more dangerous to the overall system than a fully down one?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Callers keep waiting and holding onto limited resources (threads, connections) for the full timeout duration on every request, rather than failing fast and freeing those resources immediately</button>
+        <button class="q-option" data-correct="false">A slow service and a down service produce identical resource consumption patterns in callers</button>
+        <button class="q-option" data-correct="false">Slow services are always technically easier to detect than down services</button>
+      </div>
+      <div class="q-explain">This is the specific mechanism behind cascading failure — a fast, clean failure lets callers react quickly, while a slow failure quietly drains resources until the caller itself becomes unresponsive.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why couldn't this exact cascading failure pattern have happened back when Chirp was still a monolith?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">There was no network call chain between separate services for a slowdown to propagate across — everything ran in one shared process rather than communicating over the network</button>
+        <button class="q-option" data-correct="false">Monoliths are technically incapable of ever experiencing any kind of failure</button>
+        <button class="q-option" data-correct="false">This exact failure mode was equally possible in the monolith architecture</button>
+      </div>
+      <div class="q-explain">This connects directly back to Chapter 8 — cascading failure across a chain of network-calling services is a genuinely new risk category that microservices specifically introduced.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is this chapter framed as "the honest, deferred cost" of Chapter 8's microservices decision, rather than a flaw in that decision?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Every service added since the split is another potential dependency in a cascading failure chain — this risk was always an implicit part of the microservices trade-off, just not yet visible at earlier, smaller scale</button>
+        <button class="q-option" data-correct="false">Microservices were the wrong architectural choice and should be reversed</button>
+        <button class="q-option" data-correct="false">This risk has nothing to do with the number of interdependent services in the system</button>
+      </div>
+      <div class="q-explain">This is consistent with the track's recurring theme — a real trade-off accepted earlier (independent deployability) has a real cost that surfaces later, at the scale where it actually becomes visible.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: system-design-primer (GitHub) — cascading failure and resilience patterns in distributed systems; Design Gurus "How to Learn System Design?" (2026) — resilience, redundancy, and fault tolerance as canonical senior-level topics.</p>
+
+  <div class="pager">
+    <a href="../phase-09-the-other-side-of-the-world/9-3-the-new-problem-whose-copy-of-the-data-is-right.html">&larr; 9.3 The new problem: whose copy of the data is right?</a>
+    <a href="10-2-the-fix-circuit-breakers-rate-limiting-graceful-degradation.html">10.2 The fix: circuit breakers, rate limiting, graceful degradation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CASCADE_STAGES = [
+  { services: [{n:"Notifications", s:"slow"},{n:"Feed",s:"ok"},{n:"Profile",s:"ok"},{n:"API Gateway",s:"ok"}], label: "T+0min: Notifications becomes slow" },
+  { services: [{n:"Notifications", s:"slow"},{n:"Feed",s:"slow"},{n:"Profile",s:"ok"},{n:"API Gateway",s:"ok"}], label: "T+5min: Feed's threads exhausted waiting on Notifications" },
+  { services: [{n:"Notifications", s:"slow"},{n:"Feed",s:"slow"},{n:"Profile",s:"slow"},{n:"API Gateway",s:"ok"}], label: "T+12min: Profile also calls Notifications — same fate" },
+  { services: [{n:"Notifications", s:"slow"},{n:"Feed",s:"down"},{n:"Profile",s:"down"},{n:"API Gateway",s:"down"}], label: "T+20min: API Gateway itself exhausted — total platform outage" },
+];
+let cascadeIdx = 0;
+function renderCascade() {
+  const stage = CASCADE_STAGES[cascadeIdx];
+  const colors = { ok: '#3ecf8e', slow: '#f2b84b', down: '#e5484d' };
+  let html = '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">';
+  stage.services.forEach(sv => {
+    html += `<div style="text-align:center; padding:12px 6px; border-radius:8px; background:var(--surface-2); border:2px solid ${colors[sv.s]};">
+      <div style="font-size:11px; font-weight:700;">${sv.n}</div>
+      <div style="font-size:10px; color:${colors[sv.s]}; margin-top:4px; text-transform:uppercase;">${sv.s}</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += `<div style="margin-top:10px; padding:10px 12px; background:var(--code-bg); border-radius:6px; font-size:12px; color:var(--text-secondary);">${stage.label}</div>`;
+  document.getElementById('cascade-sim').innerHTML = html;
+}
+renderCascade();
+document.getElementById('cascade-trigger').addEventListener('click', function() {
+  if (cascadeIdx < CASCADE_STAGES.length - 1) {
+    cascadeIdx++;
+    renderCascade();
+  }
+  if (cascadeIdx === CASCADE_STAGES.length - 1) {
+    this.textContent = "Total outage reached";
+    this.disabled = true;
+    this.style.opacity = "0.5";
+  }
+});
+
+document.getElementById('fig-cascade').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: a slow notifications service causing threads in calling services to be held waiting, which exhausts their own capacity and propagates the slowdown further up the call chain">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="85" y="69" text-anchor="middle" fill="#f2b84b">Notifications (slow)</text>
+  <line x1="150" y1="65" x2="200" y2="65" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd17)"/>
+  <text x="175" y="55" fill="#ff8b8f" font-size="7">threads wait, pile up</text>
+  <rect x="200" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="265" y="69" text-anchor="middle" fill="#ff8b8f">Feed (now slow too)</text>
+  <line x1="330" y1="65" x2="380" y2="65" stroke="#e5484d" stroke-width="1.5" marker-end="url(#sd17)"/>
+  <rect x="380" y="45" width="130" height="40" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="445" y="69" text-anchor="middle" fill="#ff8b8f">API Gateway</text>
+  <text x="445" y="105" text-anchor="middle" fill="#9aa4b5" font-size="8">the failure keeps propagating up the call chain</text>
+  <defs><marker id="sd17" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e5484d"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.1 Design a URL shortener | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · The Patterns Everyone Asks</div>
+  <h1>12.1 Design a URL shortener</h1>
+  <p class="subtitle">The "hello world" of system design interviews — and a genuinely good test of whether you reach for Chirp's actual toolkit or overcomplicate a fundamentally simple problem.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: given a long URL, generate a short, unique code (<code>chirp.ly/a8F3k1</code>)
+    that redirects to it; reads (redirects) vastly outnumber writes (new short URLs), the same
+    read-heavy shape as Chapter 4.1. Core design: a key-generation service produces unique short
+    codes (base62-encoded, avoiding predictable sequential IDs), stored in a key-value database
+    (11.4) mapping short code → long URL, with Chapter 4's caching in front for the hot redirects,
+    and a CDN-adjacent edge layer for genuinely global low-latency redirects (Chapter 9's pattern).
+  </div>
+
+  <h2>Try it: generate a short code from base62 encoding</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">Numeric ID</label>
+      <input type="number" id="url-id" value="125000000000" style="flex:1; padding:8px 12px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text-primary); font-family:var(--font-mono);">
+    </div>
+    <div id="url-result" style="margin-top:12px;"></div>
+  </div>
+
+  <h2>Why base62 encoding, specifically</h2>
+  <p>
+    A monotonically increasing integer ID (from a database auto-increment, or a distributed ID
+    generator) is simple to guarantee unique — but encoding it directly in decimal would make URLs
+    unnecessarily long. Base62 (using 0-9, a-z, A-Z — 62 characters) packs the same unique number
+    into far fewer characters: a 6-character base62 string can represent over 56 billion unique
+    values, comfortably covering realistic scale while staying short and shareable.
+  </p>
+
+  <div class="figure" id="fig-url-arch"></div>
+
+  <h2>The deep-dive: avoiding a single point of ID generation, Chapter 6's lesson applied</h2>
+  <p>
+    A single database auto-increment column is simple but becomes exactly Chapter 6.1's storage
+    and write-throughput bottleneck at real scale, and Chapter 2's single point of failure risk.
+    The practical fix mirrors Chapter 6.2 directly: pre-allocate blocks of IDs to different
+    servers (server A gets IDs 1-1000, server B gets 1001-2000), so ID generation itself is
+    sharded and doesn't require a single coordinated counter for every single request.
+  </p>
+
+  <h2>Trade-offs worth stating explicitly (the "Evaluate" step from 11.8)</h2>
+  <ul>
+    <li><strong>Sequential vs. random short codes:</strong> sequential IDs are simpler but let anyone guess how many URLs exist and enumerate them; random codes need a collision check but avoid this leak.</li>
+    <li><strong>Custom aliases:</strong> supporting user-chosen short codes ("chirp.ly/my-launch") means checking availability against the same key-value store — directly reusing 11.5's bloom-filter-as-cheap-gatekeeper pattern.</li>
+    <li><strong>Redirect type:</strong> a 301 (permanent) redirect lets browsers cache it, reducing load but making click analytics harder to track; a 302 (temporary) redirect hits the server every time, the opposite trade-off.</li>
+  </ul>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does base62 encoding produce a much shorter URL than encoding the same numeric ID in decimal?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Base62 uses 62 possible characters per digit instead of 10, so the same unique numeric value can be represented in far fewer characters</button>
+        <button class="q-option" data-correct="false">Base62 encoding actually produces longer strings than decimal for the same number</button>
+        <button class="q-option" data-correct="false">Base62 and decimal encoding always produce identical string lengths</button>
+      </div>
+      <div class="q-explain">This is the direct mathematical reason — more possible symbols per position means fewer positions needed to represent the same range of values.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a single database auto-increment column for ID generation become a real problem at scale, and what earlier chapter's fix applies?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It becomes a single point of failure and a write-throughput bottleneck, exactly Chapter 6.1's problem — the fix mirrors 6.2's sharding by pre-allocating ID blocks to different servers</button>
+        <button class="q-option" data-correct="false">Auto-increment columns have no scaling limitations at any traffic volume</button>
+        <button class="q-option" data-correct="false">This problem is unrelated to anything covered earlier in the track</button>
+      </div>
+      <div class="q-explain">This is the whole point of Phase 12 — applying the track's actual toolkit to a new named problem, rather than treating it as an unrelated fresh challenge.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the real trade-off between using a 301 versus a 302 redirect for a shortened URL?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A 301 lets browsers cache the redirect, reducing server load, but makes click analytics harder to track; a 302 hits the server every time, enabling analytics at the cost of more load</button>
+        <button class="q-option" data-correct="false">301 and 302 redirects are functionally identical with no meaningful difference</button>
+        <button class="q-option" data-correct="false">302 redirects are always strictly better than 301 redirects in every scenario</button>
+      </div>
+      <div class="q-explain">This is a genuine, real product trade-off — caching efficiency versus analytics visibility, with no universally correct answer.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — URL shortener as the canonical junior/entry-level system design question; system-design-primer (GitHub) — URL shortener design and base62 encoding conventions.</p>
+
+  <div class="pager">
+    <a href="../phase-11-the-toolbox/11-8-the-system-design-interview-framework.html">&larr; 11.8 The system design interview framework</a>
+    <a href="12-2-design-a-social-feed.html">12.2 Design a social feed &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function toBase62(num) {
+  const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  if (num === 0) return "0";
+  let result = "";
+  while (num > 0) {
+    result = chars[num % 62] + result;
+    num = Math.floor(num / 62);
+  }
+  return result;
+}
+function renderUrl() {
+  const id = parseInt(document.getElementById('url-id').value, 10) || 0;
+  const code = toBase62(id);
+  document.getElementById('url-result').innerHTML = `
+    <div style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;">
+      ID <code>${id.toLocaleString()}</code> → <code>chirp.ly/<strong style="color:#f5a623;">${code}</strong></code>
+    </div>
+  `;
+}
+document.getElementById('url-id').addEventListener('input', renderUrl);
+renderUrl();
+
+document.getElementById('fig-url-arch').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: request flow through a cache, then key-value store, for a URL shortener redirect, mirroring Chapter 4's caching pattern">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="120" height="40" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="80" y="64" text-anchor="middle">User clicks link</text>
+  <line x1="140" y1="60" x2="190" y2="60" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd22)"/>
+  <rect x="190" y="40" width="120" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="250" y="64" text-anchor="middle" fill="#3ecf8e">Redis cache</text>
+  <line x1="310" y1="60" x2="360" y2="60" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd22y)"/>
+  <text x="335" y="50" fill="#f5a623" font-size="7">miss</text>
+  <rect x="360" y="40" width="140" height="40" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="430" y="64" text-anchor="middle" fill="#f5a623">Key-value store</text>
+  <line x1="500" y1="60" x2="550" y2="60" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd22g)"/>
+  <rect x="550" y="40" width="110" height="40" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="605" y="64" text-anchor="middle" fill="#a9c1ff">301 redirect</text>
+  <defs>
+    <marker id="sd22" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd22y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd22g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

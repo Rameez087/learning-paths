@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.4 Design Uber's dispatch system | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · The Patterns Everyone Asks</div>
+  <h1>12.4 Design Uber's dispatch system</h1>
+  <p class="subtitle">Not a Chirp feature this time — a genuinely different domain, testing whether the underlying toolkit actually transfers to a problem shaped nothing like a social app.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: match riders to nearby available drivers, track live driver locations, handle
+    constant location updates efficiently. The central new challenge is <strong>geospatial
+    indexing</strong> — finding "drivers near this point" is a fundamentally different query shape
+    than anything in Chirp's story, and a normal database index (11.5) doesn't handle 2D proximity
+    well at all. <strong>Geohashing</strong> solves this by encoding latitude/longitude into a
+    string where nearby locations naturally share string prefixes, turning a proximity search into
+    a fast prefix lookup — the same underlying instinct as an inverted index (11.5), applied to
+    physical space instead of text.
+  </div>
+
+  <h2>Try it: see how geohashing groups nearby locations</h2>
+  <div class="metric-box" id="geo-demo"></div>
+
+  <h2>Why constant location updates are exactly Chapter 7's problem, relocated</h2>
+  <p>
+    Every active driver's app sends a location update every few seconds — at scale, this is a
+    genuinely massive write volume, structurally identical to Chapter 7's realization that some
+    work doesn't need to happen synchronously. Location updates flow through a message queue
+    (7.2's pattern exactly) into a fast-write-optimized store (11.4's wide-column type is a
+    natural fit here, given the write-heavy, simpler-query shape), rather than blocking anything
+    on the critical matching path.
+  </p>
+
+  <div class="figure" id="fig-geohash"></div>
+
+  <h2>The deep-dive: matching as a multi-objective, not just "nearest"</h2>
+  <p>
+    A naive design matches the geographically closest driver — but a real system weighs multiple
+    factors: driver rating, current trip completion time, fairness (avoiding always picking the
+    same top driver), and surge pricing zones. This is worth naming explicitly as a real,
+    additional layer of complexity beyond pure proximity search — the geospatial index narrows
+    candidates to "nearby drivers," and a separate scoring step picks the actual best match among
+    those candidates.
+  </p>
+
+  <h2>Consistency requirements here look different from Chirp's</h2>
+  <p>
+    Recall 11.3's CAP/PACELC framework: a social feed can tolerate serving slightly stale data
+    (Chirp's actual choices throughout this track). A ride match generally can't — two riders
+    being matched to the same driver simultaneously is a genuinely bad outcome, not a
+    minor inconsistency. This pushes dispatch's core matching decision toward favoring
+    consistency, even at some latency cost, a different point on the same trade-off spectrum
+    Chirp navigated differently throughout its own story.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why doesn't a normal database index handle "find drivers near this point" well, and what does geohashing do differently?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A normal index isn't built for 2D proximity queries; geohashing encodes coordinates into strings where nearby locations share prefixes, turning proximity search into a fast prefix lookup</button>
+        <button class="q-option" data-correct="false">Normal database indexes handle geospatial proximity queries exactly as well as geohashing does</button>
+        <button class="q-option" data-correct="false">Geohashing has no relationship to indexing concepts covered earlier in the track</button>
+      </div>
+      <div class="q-explain">This connects geohashing directly back to 11.5's inverted index concept — both apply the same underlying instinct (mapping into a structure that groups related things together) to different domains.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do constant driver location updates get routed through a message queue rather than processed synchronously?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The massive write volume from constant updates is structurally identical to Chapter 7's realization that non-urgent, high-volume work shouldn't block the critical request path</button>
+        <button class="q-option" data-correct="false">Location updates have no relationship to any pattern covered in Chapter 7</button>
+        <button class="q-option" data-correct="false">Message queues are only useful for notification and video processing, never location data</button>
+      </div>
+      <div class="q-explain">This is a direct application of Chapter 7's async pattern to a genuinely new domain — recognizing the same underlying shape (high-volume, non-blocking work) in a different context.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does Uber's dispatch matching generally favor consistency over availability, unlike Chirp's typical choices throughout this track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Two riders being matched to the same driver simultaneously is a genuinely bad outcome, not a minor inconsistency like a slightly stale feed — this pushes the trade-off toward consistency even at some latency cost</button>
+        <button class="q-option" data-correct="false">Dispatch matching has no meaningful consistency requirements at all</button>
+        <button class="q-option" data-correct="false">Uber's dispatch system always makes identical trade-off choices to Chirp's feed</button>
+      </div>
+      <div class="q-explain">This is a genuine, honest application of 11.3's CAP/PACELC framework — the right trade-off point depends on what a specific inconsistency actually costs, and double-booking a driver costs much more than a stale feed entry.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — geospatial dispatch named as a canonical senior-level pattern (Designing Uber, Designing Yelp), covering location update pipelines, geohashing, and multi-objective matching.</p>
+
+  <div class="pager">
+    <a href="12-3-design-a-chat-app.html">&larr; 12.3 Design a chat app</a>
+    <a href="12-5-design-a-rate-limiter.html">12.5 Design a rate limiter &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const GEO_POINTS = [
+  { name: "Driver A", hash: "9q8yy" },
+  { name: "Driver B", hash: "9q8yz" },
+  { name: "Driver C", hash: "9q8yx" },
+  { name: "Driver D (far away)", hash: "dr5ru" },
+];
+document.getElementById('geo-demo').innerHTML = `
+  <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Riders looking for drivers near geohash prefix <code style="color:#f5a623;">9q8y</code>:</p>
+  ${GEO_POINTS.map(p => {
+    const match = p.hash.startsWith("9q8y");
+    return `<div style="display:flex; justify-content:space-between; padding:10px 14px; background:${match?'rgba(62,207,142,0.1)':'var(--surface-2)'}; border:1px solid ${match?'#3ecf8e':'var(--border-strong)'}; border-radius:8px; margin-bottom:6px; font-size:13px;">
+      <span>${p.name}</span><code style="color:${match?'#3ecf8e':'var(--text-muted)'};">${p.hash}</code><span style="color:${match?'#3ecf8e':'var(--text-muted)'};">${match?'✓ match':'no match'}</span>
+    </div>`;
+  }).join('')}
+`;
+
+document.getElementById('fig-geohash').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: driver location updates flowing through a message queue into a geospatially indexed store, from which nearby-driver queries are served fast">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="35" width="140" height="35" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="90" y="57" text-anchor="middle" fill="#a9c1ff">Driver app (GPS)</text>
+  <line x1="160" y1="52" x2="220" y2="52" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd25)"/>
+  <rect x="220" y="35" width="140" height="35" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="290" y="57" text-anchor="middle" fill="#f5a623">Message queue</text>
+  <line x1="360" y1="52" x2="420" y2="52" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd25g)"/>
+  <rect x="420" y="35" width="150" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="495" y="57" text-anchor="middle" fill="#3ecf8e">Geo-indexed store</text>
+  <line x1="570" y1="52" x2="640" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd25p)"/>
+  <text x="640" y="35" fill="#9aa4b5" font-size="7">rider query</text>
+  <defs>
+    <marker id="sd25" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd25g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd25p" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

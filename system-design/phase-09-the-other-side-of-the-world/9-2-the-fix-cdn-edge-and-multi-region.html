@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2 The fix: CDN edge & multi-region | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · The Other Side of the World &middot; ~10,000,000-50,000,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>9.2 The fix: CDN edge & multi-region</h1>
+  <p class="subtitle">Can't beat the speed of light — so put a real copy of Chirp physically closer to where the speed of light needs to travel less far.</p>
+
+  <div class="chirp-quote">
+    "Stood up a full regional deployment in Singapore — app servers, a database region, the works — plus expanded our CDN's edge presence for media. Southeast Asia median latency dropped from 560ms to 95ms. Basically the whole distance problem, gone." — you, after the rollout</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Two complementary fixes, operating at different layers. Expanding Chapter 4's CDN to more
+    edge locations worldwide handles static content (images, video, CSS) — genuinely simple,
+    since that content is identical for everyone regardless of region. <strong>Multi-region
+    deployment</strong> goes further: standing up complete, independent copies of Chirp's actual
+    application infrastructure (app servers, and eventually databases) in multiple geographic
+    regions, so a Singapore user's dynamic requests — not just their images — get served from
+    nearby infrastructure instead of traveling to Virginia every time.
+  </div>
+
+  <h2>Try it: route users to their nearest region</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:110px;">User location</label>
+    </div>
+    <div id="region-routing"></div>
+  </div>
+
+  <h2>Why static content was the easy part</h2>
+  <p>
+    A CDN caching a profile picture is straightforward precisely because that image is identical
+    regardless of who requests it or from where — there's no personalization, no per-user logic,
+    nothing that needs to check a database. Expanding CDN edge coverage to more of the world was
+    genuinely the simple half of this fix, largely an extension of Chapter 4's existing pattern to
+    more locations.
+  </p>
+
+  <div class="figure" id="fig-multiregion"></div>
+
+  <h2>Why dynamic, personalized requests are the genuinely hard half</h2>
+  <p>
+    A feed request isn't identical for everyone — it depends on who's asking, who they follow, and
+    data that has to actually be looked up. Serving that from a nearby region means that region
+    needs its own copy of the relevant application logic <em>and</em> its own access to the
+    relevant data — which raises a real question this page is about to leave open on purpose: does
+    each region get its own independent database, or do all regions somehow share one? Either
+    answer has real consequences, and the next page picks up exactly this tension.
+  </p>
+
+  <h2>DNS-based routing: how a user actually reaches their nearest region</h2>
+  <p>
+    A specific mechanism worth naming: geo-aware DNS resolves <code>chirp.com</code> to a
+    different IP address depending on where the request is coming from — a Singapore user's DNS
+    lookup returns the Singapore region's address, a Virginia user's returns Virginia's. This
+    happens transparently before the user's request even leaves their device, routing them to
+    nearby infrastructure automatically.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why was expanding CDN edge coverage described as the "easy half" of this fix?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Static content like images is identical regardless of who requests it or from where, requiring no personalization or database lookups — genuinely simple to cache at edge locations worldwide</button>
+        <button class="q-option" data-correct="false">CDN expansion is technically impossible to actually implement at scale</button>
+        <button class="q-option" data-correct="false">Static content and dynamic content present identical technical challenges when serving them from multiple regions</button>
+      </div>
+      <div class="q-explain">This distinction sets up why multi-region deployment for dynamic content is the genuinely harder half — personalized data can't just be replicated identically everywhere the way a static image can.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does serving a personalized feed request from a nearby region raise a harder question than serving a static image does?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A feed request depends on who's asking and requires looking up real, per-user data — raising the open question of whether each region gets its own independent database or somehow shares one</button>
+        <button class="q-option" data-correct="false">Feed requests and image requests require exactly the same infrastructure to serve regionally</button>
+        <button class="q-option" data-correct="false">Personalized requests can always be served identically to how static content is cached</button>
+      </div>
+      <div class="q-explain">This is the genuine open tension the chapter deliberately leaves unresolved here — it directly sets up the next page's "whose copy of the data is right" problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does geo-aware DNS route a user to their nearest regional deployment?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It resolves the same domain name to a different IP address depending on where the request is coming from, routing the user to nearby infrastructure transparently before their request even leaves their device</button>
+        <button class="q-option" data-correct="false">DNS routing requires the user to manually select their preferred region</button>
+        <button class="q-option" data-correct="false">All regions share exactly one IP address regardless of user location</button>
+      </div>
+      <div class="q-explain">This is the specific, concrete mechanism that makes multi-region deployment actually work transparently for users, without requiring any client-side configuration.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "expand your CDN and consider multi-region deployment for global users"; system-design-primer (GitHub) — geo-DNS and multi-region architecture patterns.</p>
+
+  <div class="pager">
+    <a href="9-1-the-bottleneck-chirp-is-slow-far-from-home.html">&larr; 9.1 The bottleneck: Chirp is slow far from home</a>
+    <a href="9-3-the-new-problem-whose-copy-of-the-data-is-right.html">9.3 The new problem: whose copy of the data is right? &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const REGIONS = [
+  { user: "Singapore", region: "Singapore region", latency: "38ms" },
+  { user: "London", region: "Ireland region", latency: "22ms" },
+  { user: "São Paulo", region: "Virginia region (nearest)", latency: "115ms" },
+  { user: "Sydney", region: "Singapore region (nearest)", latency: "95ms" },
+];
+document.getElementById('region-routing').innerHTML = REGIONS.map(r => `
+  <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--surface-2); border-radius:8px; margin-bottom:6px; font-size:13px;">
+    <span>📍 ${r.user}</span>
+    <span style="color:#6b7386;">→</span>
+    <span style="color:#f5a623; font-weight:600;">${r.region}</span>
+    <span style="color:#3ecf8e; font-weight:700;">${r.latency}</span>
+  </div>
+`).join('');
+
+document.getElementById('fig-multiregion').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: two independent regional deployments, Virginia and Singapore, each with their own app servers, serving nearby users directly">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="40" y="30" width="220" height="70" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/><text x="150" y="50" text-anchor="middle" fill="#a9c1ff">Virginia region</text><text x="150" y="68" text-anchor="middle" fill="#7891c9" font-size="8">serves US, South America</text>
+  <rect x="420" y="30" width="220" height="70" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/><text x="530" y="50" text-anchor="middle" fill="#3ecf8e">Singapore region</text><text x="530" y="68" text-anchor="middle" fill="#5fb98a" font-size="8">serves Asia-Pacific</text>
+  <text x="340" y="70" text-anchor="middle" fill="#f5a623" font-size="9">geo-DNS routes each user to their nearest region</text>
+</svg>
+`;
+</script>
+</body>
+</html>

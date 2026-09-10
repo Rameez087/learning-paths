@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.2 The fix: message queues & workers | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Everything's on Fire at Once &middot; ~5,000,000-10,000,000 users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>7.2 The fix: message queues & workers</h1>
+  <p class="subtitle">Save the post. Hand off everything else to someone who isn't in a hurry. Respond immediately.</p>
+
+  <div class="chirp-quote">
+    "Post-creation endpoint now responds in 180ms flat, video or not. Transcoding and notifications happen on a separate pool of workers pulling from a queue. Users don't notice or care that their video takes a few extra seconds to actually finish processing in the background." — you, after the deploy</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>message queue</strong> sits between the app server and the slow work. Instead of
+    doing transcoding and notification fan-out itself, the app server drops a small message
+    ("process this video," "notify these followers") onto the queue and responds to the user
+    immediately — the post is saved, the confirmation is real, and everything else happens
+    afterward. A separate pool of <strong>background workers</strong>, decoupled entirely from the
+    app servers handling live requests, continuously pulls messages off the queue and does the
+    actual slow work, at whatever pace the queue and worker pool can sustain.
+  </div>
+
+  <h2>Try it: watch the queue absorb a burst of video uploads</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Video uploads/sec</label>
+      <input type="range" id="mq-uploads" min="1" max="40" value="1" style="flex:1;">
+      <span id="mq-uploads-val" style="font-weight:700; min-width:30px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Response time (user sees)</span><div class="metric-bar-track"><div class="metric-bar-fill" style="width:5%; background:#3ecf8e;"></div></div><span style="min-width:70px; text-align:right; font-weight:700; font-size:12px; color:#3ecf8e;">180ms</span></div>
+    <div class="metric-row"><span class="metric-label">Queue depth (invisible to user)</span><div class="metric-bar-track"><div class="metric-bar-fill" id="mq-queue" style="background:#3ecf8e;"></div></div><span id="mq-queue-val" style="min-width:90px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+  <p style="font-size:12px; color:var(--text-secondary);">Notice: response time stays flat at 180ms no matter how many uploads arrive. The queue absorbs the burst — actual video processing might just take a little longer to start during a spike, invisibly to the user who already got their confirmation.</p>
+
+  <h2>The code shape of this fix</h2>
+  <pre><code>def create_post(user_id, content, video_file=None):
+    post_id = database.save_post(user_id, content)
+
+    if video_file:
+        queue.publish("video-processing", {"post_id": post_id, "file": video_file})
+    queue.publish("notification-fanout", {"post_id": post_id, "author_id": user_id})
+
+    return {"status": "created", "post_id": post_id}  # respond immediately
+
+# Running separately, on dedicated worker machines:
+def video_worker():
+    while True:
+        message = queue.consume("video-processing")
+        transcode_video(message["file"])  # takes as long as it takes
+        queue.ack(message)</code></pre>
+
+  <div class="figure" id="fig-queue-arch"></div>
+
+  <h2>Why this is genuinely different from 3.4's statelessness fix, though related</h2>
+  <p>
+    Both fixes are about not tying urgent, fast work to slow, non-urgent work — but 3.4 was about
+    where data <em>lives</em> (session state needing to be shared across servers). This is about
+    <em>when</em> work happens (deferring non-urgent work to later, on separate infrastructure).
+    They're complementary ideas from the same broader family — decoupling concerns that don't
+    actually need to be coupled — rather than the same fix reapplied.
+  </p>
+
+  <h2>The scaling benefit this quietly delivers</h2>
+  <p>
+    Worker count and app server count can now scale completely independently. A surge of video
+    uploads doesn't need more app servers (which handle the fast, cheap "save the post" work) — it
+    needs more workers (which handle the slow, expensive transcoding). This separation lets each
+    layer scale based on its own actual bottleneck, rather than being forced to scale together
+    just because they used to be the same process.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does the user-facing response time stay flat at 180ms regardless of how many video uploads arrive at once?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The app server only needs to save the post and publish a message to the queue before responding — the actual slow processing happens later, on separate workers, invisible to the response time the user experiences</button>
+        <button class="q-option" data-correct="false">Video processing happens instantly regardless of the queue's current depth</button>
+        <button class="q-option" data-correct="false">Response time only stays flat because uploads are being rejected during high load</button>
+      </div>
+      <div class="q-explain">This is the entire point of the fix — decoupling the fast, must-happen-now work from the slow, can-happen-later work means the user-facing latency is no longer coupled to processing time at all.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does this fix differ from 3.4's session externalization, despite both being about decoupling?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">3.4 was about where data lives (shared session state across servers); this fix is about when work happens (deferring non-urgent work to later, on separate infrastructure) — related but distinct ideas</button>
+        <button class="q-option" data-correct="false">The two fixes solve the exact same underlying problem with identical mechanisms</button>
+        <button class="q-option" data-correct="false">3.4 and this fix have no conceptual relationship to each other at all</button>
+      </div>
+      <div class="q-explain">This distinction matters for building genuine pattern recognition — both are instances of "decoupling concerns that don't need to be coupled," but applied to genuinely different dimensions (data location vs. work timing).</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does separating app servers from background workers let each scale independently?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A surge in video uploads needs more workers (handling slow transcoding), not necessarily more app servers (handling fast post-saving) — each layer can now scale based on its own actual bottleneck</button>
+        <button class="q-option" data-correct="false">App servers and workers must always scale in exact lockstep with each other</button>
+        <button class="q-option" data-correct="false">Independent scaling was already possible before this fix was introduced</button>
+      </div>
+      <div class="q-explain">This is a genuine structural benefit of the decoupling — resource allocation can now match the actual source of load, rather than being forced to scale two very different workloads together.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — message queue and background worker pattern for offloading time-consuming tasks; system-design-primer (GitHub) — asynchronism and queueing patterns.</p>
+
+  <div class="pager">
+    <a href="7-1-the-bottleneck-notifications-and-video-blocking-everything.html">&larr; 7.1 The bottleneck: notifications &amp; video blocking everything</a>
+    <a href="7-3-the-new-problem-the-double-notification-bug.html">7.3 The new problem: the double-notification bug &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderMq() {
+  const uploads = parseInt(document.getElementById('mq-uploads').value, 10);
+  document.getElementById('mq-uploads-val').textContent = uploads + '/s';
+  const workerCapacity = 8; // workers can process 8/s sustained
+  const depth = Math.max(0, (uploads - workerCapacity) * 12);
+  document.getElementById('mq-queue').style.width = Math.min(100, depth / 3) + '%';
+  document.getElementById('mq-queue').style.background = depth > 200 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('mq-queue-val').textContent = Math.round(depth) + ' queued';
+}
+document.getElementById('mq-uploads').addEventListener('input', renderMq);
+renderMq();
+
+document.getElementById('fig-queue-arch').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: app server saves the post and publishes a message to a queue, responding immediately, while separate workers pull from the queue and do the slow processing independently">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="45" width="130" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="85" y="69" text-anchor="middle" fill="#a9c1ff">App server</text>
+  <line x1="150" y1="55" x2="200" y2="30" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd13)"/>
+  <text x="230" y="20" fill="#3ecf8e" font-size="8">instant response</text>
+  <line x1="150" y1="75" x2="230" y2="75" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd13y)"/>
+  <rect x="230" y="60" width="140" height="35" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="300" y="82" text-anchor="middle" fill="#f5a623" font-size="8">Message queue</text>
+  <line x1="370" y1="65" x2="440" y2="40" stroke="#6b7386" stroke-width="1"/>
+  <line x1="370" y1="80" x2="440" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="370" y1="95" x2="440" y2="115" stroke="#6b7386" stroke-width="1"/>
+  <rect x="440" y="25" width="120" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="500" y="42" text-anchor="middle" font-size="8">Worker 1</text>
+  <rect x="440" y="65" width="120" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="500" y="82" text-anchor="middle" font-size="8">Worker 2</text>
+  <rect x="440" y="105" width="120" height="25" rx="4" fill="#1a2029" stroke="#262d3a"/><text x="500" y="122" text-anchor="middle" font-size="8">Worker 3</text>
+  <defs>
+    <marker id="sd13" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd13y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

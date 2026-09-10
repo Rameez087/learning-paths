@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.3 The new problem: when three services have to agree | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · One Codebase, One Team, One Outage &middot; ~10,000,000+ users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>8.3 The new problem: when three services have to agree</h1>
+  <p class="subtitle">Deleting an account used to be one database transaction. Now it's three separate services, each doing their own part — and one of them just failed halfway through.</p>
+
+  <div class="chirp-quote">
+    "User requested account deletion. Profile Service deleted the account. Feed Service deleted their posts. Search Service... timed out. Now there's a user with no profile and no posts, but their old content is still fully searchable. That's a real, visible inconsistency, and there's no single database transaction that could have prevented it anymore." — you, filing a bug</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Before microservices, an operation touching multiple pieces of data could be one atomic
+    database transaction — either everything succeeds together, or nothing does, guaranteed by
+    the database itself. Once that data is owned by separate services with separate databases
+    (8.2), there's no single transaction spanning all of them anymore — each service's part
+    either succeeds or fails independently, and a failure partway through leaves the overall
+    operation in a genuinely inconsistent state. The <strong>saga pattern</strong> is the standard
+    answer: instead of one atomic transaction, a sequence of local transactions, each with a
+    defined <strong>compensating action</strong> that undoes it if a later step fails.
+  </div>
+
+  <h2>Try it: walk through a saga handling a failure</h2>
+  <div class="metric-box">
+    <div id="saga-steps"></div>
+    <button id="saga-next" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Run next step</button>
+  </div>
+
+  <h2>Compensating actions: undoing, not just retrying</h2>
+  <p>
+    When Search Service's deletion step fails, the saga doesn't simply retry forever — it triggers
+    compensating actions for every step that already succeeded: Feed Service restores the
+    deleted posts, Profile Service restores the account. The system deliberately moves back toward
+    a consistent state rather than being left in an ambiguous, half-finished one. This is
+    meaningfully different from Chapter 7.3's idempotency fix — that was about safely handling
+    duplicate delivery of the same action; this is about safely undoing a partially-completed
+    sequence of different actions across different services.
+  </p>
+
+  <div class="figure" id="fig-saga"></div>
+
+  <h2>Why this is a genuinely harder problem than anything earlier in the track</h2>
+  <p>
+    Every fix through Chapter 7 kept a single source of truth for any given piece of data, even
+    when that data was replicated (Chapter 5) or sharded (Chapter 6) — there was always one
+    authoritative place. Microservices deliberately give up a single, unified transaction boundary
+    in exchange for independent deployability (8.2's real benefit) — and the saga pattern is the
+    honest, practical cost of that trade-off: coordinating consistency across services takes real,
+    deliberate design work that a single database used to provide for free.
+  </p>
+
+  <h2>The two saga styles, briefly</h2>
+  <p>
+    A <strong>choreographed saga</strong> has each service listen for events and decide its own
+    next action independently — no central coordinator, but harder to reason about as steps grow.
+    An <strong>orchestrated saga</strong> has one central coordinator explicitly calling each
+    service in sequence and triggering compensations on failure — easier to reason about and
+    debug, at the cost of that coordinator becoming an important, carefully-designed piece of
+    infrastructure in its own right.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why did splitting Chirp into microservices eliminate the possibility of one atomic transaction spanning multi-service operations?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Once data is owned by separate services with separate databases, there's no single database transaction that can span all of them — each service's part succeeds or fails independently</button>
+        <button class="q-option" data-correct="false">Atomic transactions are technically impossible in any database system</button>
+        <button class="q-option" data-correct="false">Microservices actually preserve the exact same transaction guarantees as a monolith</button>
+      </div>
+      <div class="q-explain">This is the direct, honest cost of 8.2's fix — data ownership independence is exactly what breaks the single-transaction guarantee a monolith's shared database used to provide for free.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What does a compensating action actually do when a later step in a saga fails?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It explicitly undoes an already-completed step, moving the system deliberately back toward a consistent state rather than leaving it in an ambiguous, half-finished condition</button>
+        <button class="q-option" data-correct="false">A compensating action simply retries the failed step indefinitely until it eventually succeeds</button>
+        <button class="q-option" data-correct="false">Compensating actions are identical to idempotency checks from Chapter 7.3</button>
+      </div>
+      <div class="q-explain">This distinguishes the saga pattern from 7.3's idempotency fix — one is about safely handling duplicate delivery of the same action, the other is about safely reversing a partially-completed multi-step sequence.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the key trade-off between choreographed and orchestrated sagas?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Choreographed sagas have no central coordinator but are harder to reason about as steps grow; orchestrated sagas are easier to reason about and debug, at the cost of the coordinator becoming an important piece of infrastructure itself</button>
+        <button class="q-option" data-correct="false">Choreographed and orchestrated sagas provide identical guarantees with no meaningful difference</button>
+        <button class="q-option" data-correct="false">Orchestrated sagas never require any compensating actions to be defined</button>
+      </div>
+      <div class="q-explain">This is a genuine architectural choice with real trade-offs on both sides, not a strictly-better-or-worse comparison.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: system-design-primer (GitHub) — distributed transaction patterns and the saga pattern for microservices; Design Gurus "How to Learn System Design?" (2026) — cross-system data consistency as a senior-level deep-dive topic.</p>
+
+  <div class="pager">
+    <a href="8-2-the-fix-breaking-chirp-into-services.html">&larr; 8.2 The fix: breaking Chirp into services</a>
+    <a href="../phase-09-the-other-side-of-the-world/9-1-the-bottleneck-chirp-is-slow-far-from-home.html">Phase 9: The Other Side of the World &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SAGA_STEPS = [
+  { text: "1. Profile Service: delete account", status: "success" },
+  { text: "2. Feed Service: delete user's posts", status: "success" },
+  { text: "3. Search Service: remove from search index", status: "fail" },
+  { text: "4. Compensate: Feed Service restores posts", status: "compensate" },
+  { text: "5. Compensate: Profile Service restores account", status: "compensate" },
+];
+let sagaIdx = 0;
+function renderSaga() {
+  document.getElementById('saga-steps').innerHTML = SAGA_STEPS.slice(0, sagaIdx).map(s => {
+    const color = s.status === 'success' ? '#3ecf8e' : s.status === 'fail' ? '#e5484d' : '#f5a623';
+    const icon = s.status === 'success' ? '✓' : s.status === 'fail' ? '✗' : '↩';
+    return `<div style="padding:8px 12px; background:${s.status==='fail'?'rgba(229,72,77,0.1)':'var(--surface-2)'}; border:1px solid ${color}; border-radius:6px; margin-bottom:6px; font-size:12px; color:${color};">${icon} ${s.text}</div>`;
+  }).join('');
+  const btn = document.getElementById('saga-next');
+  if (sagaIdx >= SAGA_STEPS.length) {
+    btn.textContent = "Saga complete — system restored to consistent state";
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+  }
+}
+renderSaga();
+document.getElementById('saga-next').addEventListener('click', () => {
+  sagaIdx++;
+  renderSaga();
+});
+
+document.getElementById('fig-saga').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: a sequence of local transactions across three services, with a failure at the third step triggering compensating actions that reverse the first two steps">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="90" y="42" text-anchor="middle" fill="#3ecf8e">1. Profile: delete ✓</text>
+  <line x1="160" y1="37" x2="220" y2="37" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd15)"/>
+  <rect x="220" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="290" y="42" text-anchor="middle" fill="#3ecf8e">2. Feed: delete ✓</text>
+  <line x1="360" y1="37" x2="420" y2="37" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd15)"/>
+  <rect x="420" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="490" y="42" text-anchor="middle" fill="#ff8b8f">3. Search: FAILS ✗</text>
+  <line x1="420" y1="55" x2="290" y2="85" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd15y)"/>
+  <line x1="220" y1="85" x2="90" y2="55" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd15y)"/>
+  <rect x="150" y="90" width="280" height="30" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="290" y="110" text-anchor="middle" fill="#f5a623" font-size="8">Compensating actions restore both prior steps</text>
+  <defs>
+    <marker id="sd15" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd15y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.8 The system design interview framework | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.8</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.8 The system design interview framework</h1>
+  <p class="subtitle">Ten chapters of Chirp's story, informally. Here's the same process, formalized into the four-step structure a real 45-60 minute interview actually rewards.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Clarify</strong> (~10%): ask about scope, scale, and edge cases before designing
+    anything — this is graded, not preamble. <strong>Decompose</strong> (~20%): produce a
+    defensible high-level architecture, 5-8 components, before drilling into any one of them —
+    exactly Chirp's "meet the whole system" chapter openings. <strong>Deep-dive</strong> (~60%):
+    protect this time for the one or two hardest problems (a specific bottleneck, a specific
+    trade-off) rather than spreading shallow attention everywhere — this is where Chirp's actual
+    "bottleneck → fix → new problem" pattern happens. <strong>Evaluate</strong> (~10%): name
+    trade-offs and failure modes explicitly, the way every "New Problem" page in this track did.
+  </div>
+
+  <h2>Try it: see how the time budget actually breaks down</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:130px;">Total interview time</label>
+      <input type="range" id="fw-time" min="30" max="60" value="50" style="flex:1;">
+      <span id="fw-time-val" style="font-weight:700; min-width:50px;"></span>
+    </div>
+    <div id="fw-breakdown" style="margin-top:14px;"></div>
+  </div>
+
+  <h2>Why "clarify" is graded, not just polite preamble</h2>
+  <p>
+    Recall Chapter 1.1's framing: "design Chirp" could mean ten different systems depending on
+    scope, scale, and edge cases. A candidate who immediately starts drawing boxes is skipping a
+    step interviewers explicitly watch for — the ability to scope an ambiguous problem before
+    solving it. This maps directly onto how this whole track's discovery worked implicitly: every
+    chapter started by understanding the actual current pain before reaching for a fix.
+  </p>
+
+  <div class="figure" id="fig-framework"></div>
+
+  <h2>Why deep-dive time is protected, specifically</h2>
+  <p>
+    A candidate who spends equal time on every component of a design ends up shallow everywhere —
+    the weaker pattern. A candidate who identifies the hardest 1-2 problems (say, "how do we
+    handle the celebrity/hot-shard problem" from 6.4, or "how do we keep the feed fast while
+    staying consistent" from 5.3) and genuinely goes deep there demonstrates real understanding.
+    This is precisely why this track dedicated entire chapters to specific hard problems — Chapter
+    6's consistent hashing, Chapter 8's saga pattern — rather than a shallow survey of every
+    concept in equal measure.
+  </p>
+
+  <h2>Evaluate: stating trade-offs before being asked</h2>
+  <p>
+    Every single "New Problem" page in this entire track modeled this exact behavior — after
+    proposing a fix, immediately and honestly naming what it costs. Chapter 4.2 didn't wait to be
+    asked "what happens if a user edits and sees stale data" — it made explicit the trade-off
+    being made. Doing this unprompted in an actual interview is precisely the "name failure modes
+    before being asked" signal that distinguishes stronger candidates.
+  </p>
+
+  <h2>Closing this phase</h2>
+  <p>
+    Phase 11 has now formalized everything Chirp's story taught implicitly — the vocabulary, the
+    primitives, and the process. Phases 12 and 13 apply all of it, directly, to the classic named
+    problems — each one an opportunity to run this exact four-step framework against a genuinely
+    new scenario, with the reasoning skill this whole track has been building finally put to its
+    real test.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is the "clarify" step at the start of a system design interview actually graded, rather than being unimportant preamble?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Interviewers explicitly watch for the ability to scope an ambiguous problem (like "design Chirp," which could mean many different systems) before jumping to a solution — skipping it is a real, negative signal</button>
+        <button class="q-option" data-correct="false">Clarifying questions are purely a formality that has no bearing on interview evaluation</button>
+        <button class="q-option" data-correct="false">Interviewers prefer candidates who begin designing architecture immediately without asking any questions</button>
+      </div>
+      <div class="q-explain">This connects back to Chapter 1.1's framing — an ambiguous prompt genuinely needs scoping, and doing so visibly is part of what's being evaluated.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is protecting deep-dive time for the hardest 1-2 problems considered stronger than spreading equal attention across every component?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Going deep on the genuinely hard problems (like a hot-shard issue or a consistency trade-off) demonstrates real understanding, while spreading shallow attention everywhere ends up shallow across the board</button>
+        <button class="q-option" data-correct="false">Every component of a system design deserves exactly equal time regardless of its actual difficulty</button>
+        <button class="q-option" data-correct="false">Deep-diving on hard problems is a technique that has no bearing on interview performance</button>
+      </div>
+      <div class="q-explain">This mirrors why this entire track dedicated full chapters to specific hard problems (consistent hashing, the saga pattern) rather than a shallow survey — depth on what's genuinely hard is the stronger signal.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What behavior did every "New Problem" page in this track model that maps directly onto the "evaluate" step of the interview framework?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Immediately and honestly naming what a proposed fix costs, without waiting to be asked — exactly the "name failure modes before being asked" signal that distinguishes stronger candidates</button>
+        <button class="q-option" data-correct="false">Waiting for an interviewer to specifically ask about trade-offs before ever mentioning them</button>
+        <button class="q-option" data-correct="false">Presenting every fix as having no real downsides or costs</button>
+      </div>
+      <div class="q-explain">This is the track's own consistent narrative pattern, made explicit as an interview technique — proactive honesty about trade-offs, not just reactive answers to direct questions.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — the four-step framework (clarify, decompose, deep-dive, evaluate) and its 10/20/60/10 time allocation, and the interviewer-scoring signals named throughout their guide.</p>
+
+  <div class="pager">
+    <a href="11-7-back-of-envelope-estimation.html">&larr; 11.7 Back-of-envelope estimation</a>
+    <a href="../phase-12-the-patterns-everyone-asks/12-1-design-a-url-shortener.html">Phase 12: The Patterns Everyone Asks &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderFw() {
+  const total = parseInt(document.getElementById('fw-time').value, 10);
+  document.getElementById('fw-time-val').textContent = total + ' min';
+  const clarify = Math.round(total * 0.10);
+  const decompose = Math.round(total * 0.20);
+  const deepdive = Math.round(total * 0.60);
+  const evaluate = total - clarify - decompose - deepdive;
+  document.getElementById('fw-breakdown').innerHTML = `
+    <div style="display:flex; height:36px; border-radius:6px; overflow:hidden;">
+      <div style="width:${clarify/total*100}%; background:#5b8cff; display:flex; align-items:center; justify-content:center; font-size:9px; color:#0b0e14; font-weight:700;">${clarify}m</div>
+      <div style="width:${decompose/total*100}%; background:#3ecf8e; display:flex; align-items:center; justify-content:center; font-size:9px; color:#0b0e14; font-weight:700;">${decompose}m</div>
+      <div style="width:${deepdive/total*100}%; background:#f5a623; display:flex; align-items:center; justify-content:center; font-size:10px; color:#0b0e14; font-weight:700;">${deepdive}m</div>
+      <div style="width:${evaluate/total*100}%; background:#a78bfa; display:flex; align-items:center; justify-content:center; font-size:9px; color:#0b0e14; font-weight:700;">${evaluate}m</div>
+    </div>
+    <div style="display:flex; font-size:10px; color:var(--text-muted); margin-top:6px;">
+      <div style="width:${clarify/total*100}%;">Clarify</div><div style="width:${decompose/total*100}%; text-align:center;">Decompose</div><div style="width:${deepdive/total*100}%; text-align:center;">Deep-dive</div><div style="width:${evaluate/total*100}%; text-align:right;">Evaluate</div>
+    </div>
+  `;
+}
+document.getElementById('fw-time').addEventListener('input', renderFw);
+renderFw();
+
+document.getElementById('fig-framework').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: the four-step interview framework, clarify, decompose, deep-dive, evaluate, applied in sequence">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="10" y="30" width="150" height="45" rx="6" fill="#182238" stroke="#5b8cff"/><text x="85" y="57" text-anchor="middle" fill="#a9c1ff">1. Clarify</text>
+  <line x1="160" y1="52" x2="190" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd21)"/>
+  <rect x="190" y="30" width="150" height="45" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="265" y="57" text-anchor="middle" fill="#3ecf8e">2. Decompose</text>
+  <line x1="340" y1="52" x2="370" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd21)"/>
+  <rect x="370" y="30" width="150" height="45" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="445" y="57" text-anchor="middle" fill="#f5a623">3. Deep-dive</text>
+  <line x1="520" y1="52" x2="550" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd21)"/>
+  <rect x="550" y="30" width="120" height="45" rx="6" fill="#1a2029" stroke="#a78bfa"/><text x="610" y="57" text-anchor="middle" fill="#c4b5fd">4. Evaluate</text>
+  <defs><marker id="sd21" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

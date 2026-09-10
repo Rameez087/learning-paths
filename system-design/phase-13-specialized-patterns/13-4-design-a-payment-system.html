@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.4 Design a payment system | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 13</a> &nbsp;/&nbsp; 13.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 13 · Specialized Patterns</div>
+  <h1>13.4 Design a payment system</h1>
+  <p class="subtitle">Chirp sells premium subscriptions now. This is the one domain in this entire track where "eventually consistent" is genuinely not an acceptable answer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: process a payment exactly once, never double-charge, never lose a transaction,
+    even under network failures and retries. This is Chapter 7.3's idempotency lesson at its
+    highest possible stakes — every payment request carries an idempotency key, and the system
+    guarantees that retrying the same key never results in a second charge. Unlike nearly every
+    other design in this track, a payment system deliberately chooses consistency over
+    availability (11.3's CAP framework) at almost every decision point — better to briefly reject
+    a request than risk an incorrect charge.
+  </div>
+
+  <h2>Try it: watch idempotent payment handling prevent a double charge</h2>
+  <div class="metric-box">
+    <div id="pay-log"></div>
+    <button id="pay-retry" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Client times out and retries the SAME payment</button>
+  </div>
+
+  <h2>Why this domain flips nearly every trade-off made throughout the track</h2>
+  <p>
+    Chirp's feed happily served slightly stale data (4.2), replicas happily lagged behind their
+    primary (5.2), regions happily disagreed briefly (9.3) — all deliberate, reasonable choices for
+    a social app. A payment can't "eventually" be correct — a user needs to know definitively
+    whether they were charged, and the system needs to guarantee it happened exactly once. This
+    isn't a criticism of any earlier chapter's choices; it's the same CAP/PACELC framework (11.3)
+    producing a genuinely different answer because the actual cost of an error is categorically
+    different here.
+  </p>
+
+  <div class="figure" id="fig-payment-flow"></div>
+
+  <h2>The deep-dive: the saga pattern, applied to money instead of account deletion</h2>
+  <p>
+    A purchase often touches multiple systems: charge the payment provider, grant the subscription
+    entitlement, send a receipt — genuinely the same multi-step saga shape from Chapter 8.3, just
+    with a much higher cost of getting the compensating action wrong. If granting the entitlement
+    fails after the charge succeeds, the compensating action (refunding the charge) has to be
+    exactly as reliable as the original charge — this is precisely why payment sagas are
+    considered one of the hardest real-world instances of the pattern.
+  </p>
+
+  <h2>Working with a payment processor: someone else's system of record</h2>
+  <p>
+    Unlike every other design in this track, Chirp doesn't own the actual money-movement
+    infrastructure — a third-party payment processor (Stripe-like) does. This means the idempotency
+    key has to be honored not just by Chirp's own services, but by the processor's API too,
+    extending 11.1's idempotent API design principle across an organizational boundary, not just
+    an internal one.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does a payment system generally choose consistency over availability, unlike most of Chirp's other design decisions throughout this track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The actual cost of an error is categorically different — a user needs a definitive answer about whether they were charged, unlike a social feed where brief staleness is an acceptable trade-off</button>
+        <button class="q-option" data-correct="false">Payment systems are technically incapable of ever choosing availability under the CAP framework</button>
+        <button class="q-option" data-correct="false">This choice contradicts and invalidates the CAP/PACELC framework covered in Chapter 11.3</button>
+      </div>
+      <div class="q-explain">This is the same framework (11.3) producing a different, equally valid answer — the right trade-off always depends on what a specific error actually costs, not a universal rule.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is a payment saga's compensating action (refunding a charge) considered especially high-stakes compared to Chapter 8.3's account-deletion saga?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The compensating action has to be exactly as reliable as the original charge — getting a refund wrong has direct financial consequences, a much higher cost of error than 8.3's account deletion scenario</button>
+        <button class="q-option" data-correct="false">Payment sagas don't actually use compensating actions at all, unlike 8.3's example</button>
+        <button class="q-option" data-correct="false">The saga pattern doesn't apply to payment systems in any way</button>
+      </div>
+      <div class="q-explain">This is the same pattern (8.3's saga) reapplied to a domain where the cost of getting the compensation wrong is dramatically higher — the mechanism is identical, the stakes are not.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does idempotency need to extend to the third-party payment processor's API, not just Chirp's own internal services?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Chirp doesn't own the actual money-movement infrastructure — the idempotency key has to be honored across an organizational boundary, extending 11.1's idempotent API principle beyond just internal service calls</button>
+        <button class="q-option" data-correct="false">Third-party payment processors never need to support idempotency at all</button>
+        <button class="q-option" data-correct="false">Idempotency only ever matters for internal service-to-service calls, never external APIs</button>
+      </div>
+      <div class="q-explain">This is a genuine, practical extension of the idempotency principle into a real-world constraint — depending on external systems means the guarantee has to hold across that boundary too.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — API platforms (Stripe, Twilio) named as a canonical pattern covering rate limiting, webhooks, idempotency, and audit trails.</p>
+
+  <div class="pager">
+    <a href="13-3-design-dropbox.html">&larr; 13.3 Design Dropbox</a>
+    <a href="13-5-design-collaborative-editing.html">13.5 Design collaborative editing &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let payAttempted = false;
+function renderPayLog() {
+  document.getElementById('pay-log').innerHTML = payAttempted
+    ? `<div style="padding:10px 12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; font-size:12px; color:#3ecf8e; margin-bottom:6px;">Original request (idempotency key: pay_a8f3): charge processed, $9.99 charged once.</div>
+       <div style="padding:10px 12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; font-size:12px; color:#3ecf8e;">Retry with SAME key: system recognizes it, returns the original result. NO second charge occurs.</div>`
+    : `<div style="padding:10px 12px; background:var(--code-bg); border-radius:6px; font-size:12px; color:var(--text-secondary);">Client sends a payment request with idempotency key "pay_a8f3". Network times out before the client sees the response — but the charge actually succeeded server-side.</div>`;
+}
+renderPayLog();
+document.getElementById('pay-retry').addEventListener('click', () => {
+  payAttempted = true;
+  renderPayLog();
+});
+
+document.getElementById('fig-payment-flow').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: a payment saga charging the payment provider, granting a subscription entitlement, and sending a receipt, with compensating actions if any step fails">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="30" width="150" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="95" y="52" text-anchor="middle" fill="#3ecf8e">1. Charge processor ✓</text>
+  <line x1="170" y1="47" x2="220" y2="47" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd28)"/>
+  <rect x="220" y="30" width="180" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="310" y="52" text-anchor="middle" fill="#3ecf8e">2. Grant entitlement ✓</text>
+  <line x1="400" y1="47" x2="450" y2="47" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd28)"/>
+  <rect x="450" y="30" width="150" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="525" y="52" text-anchor="middle" fill="#3ecf8e">3. Send receipt ✓</text>
+  <text x="310" y="90" text-anchor="middle" fill="#f5a623" font-size="8">any step failing triggers a compensating refund + entitlement revocation — as reliable as the original charge</text>
+  <defs><marker id="sd28" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

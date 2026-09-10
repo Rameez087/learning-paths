@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.1 The bottleneck: notifications and video blocking everything | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Everything's on Fire at Once &middot; ~5,000,000-10,000,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>7.1 The bottleneck: notifications and video blocking everything</h1>
+  <p class="subtitle">Chirp added video posts last quarter. A user uploads a 30-second clip — and the app server that received the upload sits there, doing nothing else, for 4 full seconds while it processes it.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    p99 latency on the post-creation endpoint has climbed to 3.8 seconds — dominated entirely by video transcoding and notification fan-out happening synchronously, inside the same request that's supposed to just confirm "your post was created."
+  </div>
+
+  <div class="chirp-quote">
+    "A user uploads a video, and the request handling that upload doesn't return until we've transcoded it AND fanned out a notification to all their followers. One popular user posting a video ties up an app server thread for 4+ seconds doing work that has nothing to do with 'did the post save successfully.'" — you, staring at a flame graph</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Some of Chirp's work genuinely doesn't need to happen before responding to the user —
+    transcoding an uploaded video into multiple resolutions, sending push notifications to
+    followers, generating a thumbnail — but it's currently all running synchronously, inside the
+    exact same request-response cycle that's supposed to just confirm the post was saved. Every
+    app server thread doing this slow work is a thread not available to handle anyone else's
+    request in the meantime, which is a genuinely different bottleneck than anything sharding or
+    caching addresses: it's not too much data or too many identical queries, it's requests taking
+    far too long because they're doing work that was never actually urgent.
+  </div>
+
+  <h2>Try it: see what's actually inside that 3.8-second request</h2>
+  <div class="metric-box" id="fire-timeline"></div>
+
+  <h2>Why this specific problem didn't exist before video</h2>
+  <p>
+    A text-only post is nearly instant to save — a single fast database write, done. Video
+    processing (transcoding to multiple resolutions and bitrates for different devices and
+    connection speeds) is genuinely computationally expensive, taking seconds rather than
+    milliseconds. Notification fan-out — writing a "new post" entry into every follower's
+    notification feed — also scales with follower count, and for a popular account can mean
+    touching millions of rows. Neither of these existed as a meaningful cost when Chirp was
+    text-only; both arrived together as real product features with real, unavoidable computational
+    weight.
+  </p>
+
+  <div class="figure" id="fig-blocking-request"></div>
+
+  <h2>The question that reveals the fix: does the user need to wait for this?</h2>
+  <p>
+    A user posting a video needs to know their post was accepted — that has to be fast. They do
+    not need the transcoding or the notification fan-out to be <em>done</em> before seeing "post
+    created" — they need those things to happen <em>eventually</em>, correctly, without blocking
+    the confirmation they're actually waiting on. This distinction — what must complete before
+    responding, versus what can happen afterward — is the entire design question the next page's
+    fix is built around.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is this bottleneck genuinely different from the database bottlenecks covered in earlier chapters?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">This is about individual requests taking far too long because they're doing slow, non-urgent work synchronously — not about too much data or too many identical redundant queries</button>
+        <button class="q-option" data-correct="false">This bottleneck is caused by the exact same underlying mechanism as the database sharding problem from Chapter 6</button>
+        <button class="q-option" data-correct="false">Video processing and notifications have no meaningful computational cost of their own</button>
+      </div>
+      <div class="q-explain">This is a genuinely new category of problem in the track — request duration caused by doing work that doesn't need to happen synchronously, distinct from capacity or storage bottlenecks.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why did this specific problem only emerge after Chirp added video posts, not when it was text-only?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Text posts are nearly instant to save, while video transcoding and large-scale notification fan-out are genuinely computationally expensive, taking seconds rather than milliseconds</button>
+        <button class="q-option" data-correct="false">Text posts and video posts have identical processing costs</button>
+        <button class="q-option" data-correct="false">Notification fan-out only became a cost once video was added, unrelated to follower count</button>
+      </div>
+      <div class="q-explain">This grounds the bottleneck in a real, specific cause — new product features introducing genuinely expensive synchronous work, not a a general "things got slow" hand-wave.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the key question this page identifies as revealing the actual fix?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Whether the user needs to wait for a specific piece of work to complete before receiving their response, versus that work simply needing to happen eventually and correctly</button>
+        <button class="q-option" data-correct="false">Whether the work is technically possible to perform at all</button>
+        <button class="q-option" data-correct="false">Whether the video was uploaded in a supported file format</button>
+      </div>
+      <div class="q-explain">This distinction — must-complete-before-responding versus can-happen-afterward — is exactly the design question the next page's asynchronous fix directly answers.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — "offload time-consuming tasks (video processing, sending emails) to background workers using a message queue"; blog.algomaster.io "How to Scale a System from 0 to 10 million+ Users" (2026).</p>
+
+  <div class="pager">
+    <a href="../phase-06-the-database-ceiling/6-4-the-new-problem-celebrities-and-cross-shard-search.html">&larr; 6.4 The new problem: celebrities &amp; cross-shard search</a>
+    <a href="7-2-the-fix-message-queues-and-workers.html">7.2 The fix: message queues &amp; workers &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('fire-timeline').innerHTML = `
+  <div style="display:flex; height:36px; border-radius:6px; overflow:hidden;">
+    <div style="width:5%; background:#3ecf8e; display:flex; align-items:center; justify-content:center; font-size:9px; color:#0b0e14; font-weight:700;">0.2s</div>
+    <div style="width:70%; background:#e5484d; display:flex; align-items:center; justify-content:center; font-size:10px; color:#0b0e14; font-weight:700;">Video transcoding — 2.7s</div>
+    <div style="width:20%; background:#f2b84b; display:flex; align-items:center; justify-content:center; font-size:9px; color:#0b0e14; font-weight:700;">Notification fan-out — 0.8s</div>
+    <div style="width:5%; background:#3ecf8e; display:flex; align-items:center; justify-content:center; font-size:9px; color:#0b0e14; font-weight:700;">0.1s</div>
+  </div>
+  <div style="display:flex; font-size:10px; color:var(--text-muted); margin-top:6px;">
+    <div style="width:5%;">save</div><div style="width:70%; text-align:center;">not what the user is waiting for</div><div style="width:20%; text-align:center;"></div><div style="width:5%; text-align:right;">done</div>
+  </div>
+  <p style="font-size:12px; color:var(--text-secondary); margin-top:12px;">Total: 3.8 seconds. Only the first 0.2s (saving the post) and the last 0.1s (confirming) actually need to happen before the user gets a response.</p>
+`;
+
+document.getElementById('fig-blocking-request').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: one app server thread occupied for 3.8 seconds handling transcoding and notifications synchronously, unavailable to serve any other request during that time">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="640" height="40" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/>
+  <text x="340" y="65" text-anchor="middle" fill="#ff8b8f">One thread, blocked for 3.8 seconds — unavailable for anything else</text>
+  <text x="340" y="100" text-anchor="middle" fill="#9aa4b5" font-size="9">Multiply by every video post happening concurrently — real capacity disappears fast</text>
+</svg>
+`;
+</script>
+</body>
+</html>

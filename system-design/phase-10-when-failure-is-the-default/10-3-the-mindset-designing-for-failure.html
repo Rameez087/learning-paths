@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.3 The mindset: designing for failure | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+<style>
+.recap-item { padding: 10px 14px; background: var(--surface-2); border-radius: 8px; margin-bottom: 6px; font-size: 12.5px; border-left: 3px solid #f5a623; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 · When Failure Is the Default &middot; ~50,000,000-100,000,000+ users</div>
+  <h1>10.3 The mindset: designing for failure</h1>
+  <p class="subtitle">Ten chapters ago, Chirp ran on one server and a crash was an accepted, occasional risk. Now, at 80 million users, failure isn't an edge case to handle — it's the normal operating condition to design around.</p>
+
+  <div class="chirp-quote">
+    "We used to ask 'what happens if this breaks?' as an afterthought, late in a design review. Now it's the first question, before we write a line of code. Something, somewhere in this system, is failing literally all the time — the only real question is whether the rest of the system notices." — you, in this quarter's engineering all-hands</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    At Chirp's current scale — dozens of services, multiple regions, sharded databases, thousands
+    of machines — some component is statistically, constantly experiencing a failure at any given
+    moment, simply due to the sheer number of moving parts. <strong>Chaos engineering</strong>
+    takes this seriously by deliberately injecting failure into production (killing a random
+    service instance, simulating network latency) to verify resilience mechanisms actually work,
+    rather than discovering during a real incident that a circuit breaker was misconfigured. This
+    is the final, honest mindset shift this whole track has been building toward: from "avoid
+    failure" to "assume failure and design for it to be survivable."
+  </div>
+
+  <h2>Try it: audit Chirp's current resilience posture</h2>
+  <div class="metric-box" id="resilience-checklist"></div>
+
+  <h2>Why deliberately breaking your own production system is the responsible move, not a reckless one</h2>
+  <p>
+    A resilience mechanism that's never actually been triggered is an untested assumption, not a
+    verified safeguard. Chaos engineering — most famously associated with Netflix's "Chaos
+    Monkey," which randomly terminates production service instances — exists precisely to convert
+    "we believe our circuit breakers work" into "we've verified our circuit breakers work, under
+    controlled conditions, on a schedule we chose," rather than finding out for the first time
+    during an actual customer-facing incident.
+  </p>
+
+  <div class="figure" id="fig-journey"></div>
+
+  <h2>The whole story, looking back</h2>
+  <p>
+    Chirp went from one server to a system spanning multiple regions, dozens of services, sharded
+    and replicated databases, message queues, and deliberate failure injection — and every single
+    step was a direct, specific response to a real, concrete pain, never an abstract "best
+    practice" applied for its own sake. That's the actual skill this track has been building: not
+    memorizing a list of technologies, but recognizing what a system's <em>current</em> pain
+    actually is, and reaching for the fix that pain specifically calls for — the same judgment
+    call as Chapter 1.1's "starting simple is correct," now demonstrated ten times over at
+    ten completely different scales.
+  </p>
+
+  <h2>What's next</h2>
+  <p>
+    Phase 11 consolidates the vocabulary this whole story has been building implicitly — CAP
+    theorem, database taxonomy, rate-limiting algorithms in full, and the formal interview
+    framework — into clean reference form. Phases 12 and 13 then apply everything learned here to
+    the classic named interview problems: a URL shortener, a chat app, Uber's dispatch system, and
+    more, each one explicitly pointing back at which chapter of Chirp's story its core trick came
+    from.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does Chirp's current scale make "some component is failing right now" a statistical certainty rather than a rare event?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">With dozens of services, multiple regions, and thousands of machines, the sheer number of moving parts means some component is constantly experiencing a failure simply due to scale</button>
+        <button class="q-option" data-correct="false">Failure only becomes statistically likely once a system exceeds 1 billion users</button>
+        <button class="q-option" data-correct="false">This is a claim specific to poorly-built systems, not an inherent property of scale</button>
+      </div>
+      <div class="q-explain">This is the core mindset shift this chapter is built around — at real scale, constant partial failure is the normal condition, not an exceptional one.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is deliberately injecting failure into a production system (chaos engineering) considered the responsible choice rather than a reckless one?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">An untested resilience mechanism is just an assumption — deliberately triggering it under controlled conditions converts "we believe this works" into "we've verified this works," rather than discovering a gap during a real incident</button>
+        <button class="q-option" data-correct="false">Chaos engineering guarantees a system will never experience a real, unplanned outage</button>
+        <button class="q-option" data-correct="false">Deliberately breaking production has no relationship to verifying resilience mechanisms</button>
+      </div>
+      <div class="q-explain">This reframes controlled failure injection as genuine verification work, not recklessness — the alternative is finding out a safeguard doesn't work at the worst possible moment.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What is described as the actual, durable skill this entire ten-chapter narrative has been building?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Recognizing what a system's current, actual pain is and reaching for the fix that pain specifically calls for — not memorizing a list of technologies to apply regardless of context</button>
+        <button class="q-option" data-correct="false">Memorizing the exact sequence of ten fixes Chirp happened to apply, in this exact order, for any system</button>
+        <button class="q-option" data-correct="false">Learning that every system should eventually adopt every technology covered in this track</button>
+      </div>
+      <div class="q-explain">This is the track's central pedagogical thesis, stated explicitly at its conclusion — motivated, context-driven reasoning, not a memorized checklist, is the actual transferable skill.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: system-design-primer (GitHub) — chaos engineering and resilience verification practices; Netflix Technology Blog concepts on Chaos Monkey as a widely-cited, foundational chaos engineering example.</p>
+
+  <div class="pager">
+    <a href="10-2-the-fix-circuit-breakers-rate-limiting-graceful-degradation.html">&larr; 10.2 The fix: circuit breakers, rate limiting, graceful degradation</a>
+    <a href="../phase-11-the-toolbox/11-1-api-design-principles.html">Phase 11: The Toolbox &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const CHECKLIST = [
+  "Circuit breakers on every inter-service call (10.2)",
+  "Rate limits protecting every service, including from internal retry storms (10.2)",
+  "A defined degraded-mode experience for every feature with an external dependency (10.2)",
+  "Read replicas and multi-region failover tested, not just configured (Ch. 5, 9)",
+  "Regular chaos engineering exercises, not just a one-time resilience review",
+  "Postmortems that update runbooks, not just get filed away (Ch. 5.3 discipline, applied here)",
+];
+document.getElementById('resilience-checklist').innerHTML = `
+  <div id="rc-items"></div>
+  <div id="rc-progress" style="margin-top:12px; padding:12px; background:var(--code-bg); border-radius:8px; text-align:center; font-weight:600;"></div>
+`;
+document.getElementById('rc-items').innerHTML = CHECKLIST.map((item, i) => `
+  <div class="recap-item" data-i="${i}" style="cursor:pointer; display:flex; align-items:center; gap:10px;">
+    <span class="rc-check" style="width:18px; height:18px; border-radius:4px; border:1px solid var(--border-strong); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px;"></span>
+    <span>${item}</span>
+  </div>
+`).join('');
+document.querySelectorAll('#rc-items > div').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('checked-item');
+    const check = el.querySelector('.rc-check');
+    const isChecked = el.classList.contains('checked-item');
+    check.textContent = isChecked ? '✓' : '';
+    check.style.background = isChecked ? '#3ecf8e' : 'transparent';
+    check.style.color = '#0b0e14';
+    el.style.borderLeftColor = isChecked ? '#3ecf8e' : '#f5a623';
+    updateRcProgress();
+  });
+});
+function updateRcProgress() {
+  const checked = document.querySelectorAll('.checked-item').length;
+  document.getElementById('rc-progress').textContent = `${checked} / ${CHECKLIST.length} resilience practices in place`;
+}
+updateRcProgress();
+
+document.getElementById('fig-journey').innerHTML = `
+<svg viewBox="0 0 680 100" width="100%" role="img" aria-label="Diagram: the full journey from one server to a globally distributed, resilient system across ten chapters">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <line x1="30" y1="50" x2="650" y2="50" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="30" cy="50" r="6" fill="#5b8cff"/><text x="30" y="70" text-anchor="middle">Ch.1: 1 server</text>
+  <circle cx="170" cy="50" r="6" fill="#5b8cff"/><text x="170" y="30" text-anchor="middle">Ch.3-5: horizontal + replicas</text>
+  <circle cx="340" cy="50" r="6" fill="#5b8cff"/><text x="340" y="70" text-anchor="middle">Ch.6-7: sharding + async</text>
+  <circle cx="500" cy="50" r="6" fill="#5b8cff"/><text x="500" y="30" text-anchor="middle">Ch.8-9: services + regions</text>
+  <circle cx="650" cy="50" r="7" fill="#f5a623"/><text x="640" y="70" text-anchor="end" fill="#f5a623">Ch.10: designed for failure</text>
+</svg>
+`;
+</script>
+</body>
+</html>

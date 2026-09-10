@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.5 Design collaborative editing | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 13</a> &nbsp;/&nbsp; 13.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 13 · Specialized Patterns</div>
+  <h1>13.5 Design collaborative editing</h1>
+  <p class="subtitle">Two people editing the same Chirp draft post simultaneously — genuinely the hardest consistency problem in this entire track, made concrete.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: multiple users edit the same document simultaneously, with every user seeing a
+    consistent, correctly-merged result in real time (Google Docs, Figma). Unlike Chapter 9.3's
+    conflict resolution (pick a winner, or surface a conflict to the user), collaborative editing
+    needs to <em>merge</em> genuinely simultaneous, character-level edits automatically and
+    correctly. The two real techniques: <strong>Operational Transformation (OT)</strong>,
+    transforming each incoming edit against every other edit that happened concurrently so they
+    compose correctly, and <strong>CRDTs</strong> (Conflict-free Replicated Data Types), data
+    structures mathematically designed so concurrent edits always merge consistently, no matter
+    what order they arrive in.
+  </div>
+
+  <h2>Try it: watch two simultaneous edits merge correctly</h2>
+  <div class="metric-box" id="ot-demo"></div>
+
+  <h2>Why this problem is harder than every earlier consistency challenge in this track</h2>
+  <p>
+    Chapter 9.3's cross-region conflicts were resolved by picking a winner or surfacing an
+    explicit conflict — acceptable because losing or delaying a bio update is low-stakes. Losing a
+    sentence someone just typed into a shared document is a fundamentally worse outcome. This is
+    precisely why collaborative editing needs a genuinely different class of technique — not
+    picking a winner, but mathematically guaranteeing both edits survive and compose correctly.
+  </p>
+
+  <div class="figure" id="fig-ot"></div>
+
+  <h2>The deep-dive: why transforming edits, not just timestamping them, is necessary</h2>
+  <p>
+    If User A inserts a word at position 5, and User B simultaneously deletes text at position 3,
+    naively applying both edits in arrival order corrupts the document — B's delete was computed
+    against a document that didn't yet include A's insert. Operational Transformation solves this
+    by mathematically adjusting each incoming operation's position based on what else happened
+    concurrently, so applying them in either order still produces the same, correct final
+    document — a property called convergence.
+  </p>
+
+  <h2>Why real-time collaborative editing still needs Chapter 12.3's WebSockets</h2>
+  <p>
+    Every edit needs to reach every other collaborator's screen the instant it happens — exactly
+    the persistent, bidirectional connection requirement from Chapter 12.3's chat design. This is
+    a genuine, direct reuse of an earlier capstone's networking model, not a coincidence: any
+    feature requiring instant multi-user synchronization tends to need the same underlying
+    connection type.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can't collaborative editing use the same "pick a winner" conflict resolution approach from Chapter 9.3?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Losing a sentence someone just typed is a much worse outcome than briefly stale bio data — collaborative editing needs both concurrent edits to survive and merge correctly, not have one discarded</button>
+        <button class="q-option" data-correct="false">Picking a winner would actually work perfectly fine for collaborative editing too</button>
+        <button class="q-option" data-correct="false">Collaborative editing and cross-region conflicts are identical problems requiring identical solutions</button>
+      </div>
+      <div class="q-explain">This is the key distinction driving the need for a fundamentally different technique — the cost of discarding one side of a conflict is much higher here than in 9.3's scenario.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does naively applying two concurrent edits in arrival order risk corrupting the document?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each edit was computed against the document state before the other edit happened — applying them naively in arrival order means one edit's position references may no longer match the document it's actually being applied to</button>
+        <button class="q-option" data-correct="false">Arrival order has no effect on how edits combine in a shared document</button>
+        <button class="q-option" data-correct="false">Concurrent edits never actually reference the same document positions</button>
+      </div>
+      <div class="q-explain">This is the concrete mechanical problem Operational Transformation solves — mathematically adjusting each edit's position based on what else happened concurrently, so the result is correct regardless of arrival order.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does collaborative editing reuse Chapter 12.3's WebSocket-based networking model?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Every edit needs to reach every collaborator's screen instantly, which requires the same persistent, bidirectional connection that real-time chat delivery needs</button>
+        <button class="q-option" data-correct="false">WebSockets are only useful for chat applications and have no application elsewhere</button>
+        <button class="q-option" data-correct="false">Collaborative editing uses a completely different, unrelated networking model than chat</button>
+      </div>
+      <div class="q-explain">This is a genuine, direct reuse of an earlier capstone's core technique — recognizing that "instant multi-user synchronization" is the same underlying requirement in both domains.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — collaborative editing named as a canonical pattern (Google Docs, Figma), covering conflict resolution, operational transforms, and real-time sync.</p>
+
+  <div class="pager">
+    <a href="13-4-design-a-payment-system.html">&larr; 13.4 Design a payment system</a>
+    <a href="13-6-design-a-rag-chatbot.html">13.6 Design a RAG chatbot &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('ot-demo').innerHTML = `
+  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">Original text: <code>"Chirp is great"</code></div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+    <div style="padding:10px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;"><strong style="color:#5b8cff;">User A</strong> inserts "really " at position 9:<br><code>"Chirp is really great"</code></div>
+    <div style="padding:10px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;"><strong style="color:#3ecf8e;">User B</strong> deletes "is " at position 6:<br><code>"Chirp great"</code></div>
+  </div>
+  <div style="margin-top:12px; padding:12px; background:rgba(245,166,35,0.1); border:1px solid #f5a623; border-radius:8px; font-size:12px; color:#f5c168;">
+    <strong>Naive merge (broken):</strong> applying both literally would produce garbled or lost text.<br>
+    <strong>With OT/CRDT (correct):</strong> <code>"Chirp really great"</code> — both edits' intent preserved, positions transformed correctly against each other.
+  </div>
+`;
+
+document.getElementById('fig-ot').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: two concurrent edits from different users both transformed against each other before being applied, converging to the same correct final document regardless of arrival order">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="15" width="180" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="110" y="37" text-anchor="middle" fill="#a9c1ff">User A's edit</text>
+  <rect x="20" y="65" width="180" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="110" y="87" text-anchor="middle" fill="#3ecf8e">User B's edit</text>
+  <line x1="200" y1="32" x2="280" y2="52" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd29)"/>
+  <line x1="200" y1="82" x2="280" y2="62" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd29)"/>
+  <rect x="280" y="35" width="180" height="45" rx="6" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="370" y="55" text-anchor="middle" fill="#f5a623">Transform against each other</text>
+  <line x1="460" y1="57" x2="510" y2="57" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd29g)"/>
+  <rect x="510" y="35" width="150" height="45" rx="6" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/><text x="585" y="61" text-anchor="middle" fill="#3ecf8e">Same result for both</text>
+  <defs>
+    <marker id="sd29" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd29g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

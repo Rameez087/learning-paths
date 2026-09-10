@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.2 Rate limiting algorithms | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.2 Rate limiting algorithms</h1>
+  <p class="subtitle">Chapter 10.2 introduced rate limiting conceptually. Here's what's actually inside the box — four real algorithms, each with a genuinely different trade-off.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Token bucket</strong>: a bucket refills with tokens at a steady rate; each request
+    consumes one; allows controlled bursts up to the bucket's capacity. <strong>Leaky bucket</strong>:
+    requests queue and are processed at a strictly fixed rate, smoothing out bursts entirely.
+    <strong>Fixed window counter</strong>: count requests in discrete time windows (e.g., per
+    minute); simple, but allows a burst right at a window boundary. <strong>Sliding window</strong>:
+    a more precise (and more expensive) version that avoids the boundary-burst problem by
+    considering a continuously moving time window rather than fixed buckets.
+  </div>
+
+  <h2>Try it: watch a token bucket allow bursts, then throttle</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:70px;">Bucket</label>
+      <div style="flex:1; height:24px; background:var(--surface-2); border-radius:12px; overflow:hidden;"><div id="tb-fill" style="height:100%; background:#3ecf8e; width:100%; transition:width 0.3s;"></div></div>
+      <span id="tb-tokens" style="min-width:60px; text-align:right; font-weight:700; font-size:12px;">10/10</span>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button id="tb-request" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Send a request</button>
+      <button id="tb-refill" style="padding:8px 16px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); color:var(--text-secondary);">Simulate 1 second passing (+2 tokens)</button>
+    </div>
+    <p id="tb-log" style="font-size:12px; color:var(--text-secondary); margin-top:10px;">Bucket starts full (10 tokens). Each request costs 1 token. Refills at 2 tokens/second.</p>
+  </div>
+
+  <h2>Token bucket in code</h2>
+  <pre><code>class TokenBucket:
+    def __init__(self, capacity, refill_rate):
+        self.capacity = capacity
+        self.tokens = capacity
+        self.refill_rate = refill_rate  # tokens per second
+        self.last_refill = time.now()
+
+    def allow_request(self):
+        now = time.now()
+        elapsed = now - self.last_refill
+        self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
+        self.last_refill = now
+
+        if self.tokens >= 1:
+            self.tokens -= 1
+            return True
+        return False  # rate limited</code></pre>
+
+  <div class="figure" id="fig-algorithms"></div>
+
+  <h2>Why token bucket is the common default, and when the alternatives win</h2>
+  <p>
+    Token bucket's ability to absorb a reasonable burst (a user rapid-clicking a few times) while
+    still enforcing a steady average rate makes it a good general-purpose default. Leaky bucket is
+    preferred when strict, perfectly smooth output is genuinely required — protecting a fragile
+    downstream system that can't handle any burst at all, even a small one. Fixed window is the
+    simplest to implement and reason about, appropriate when perfect precision at window
+    boundaries doesn't matter much. Sliding window log or counter is chosen when boundary bursts
+    are a real, unacceptable risk and the extra implementation cost is worth it.
+  </p>
+
+  <h2>The fixed-window boundary problem, made concrete</h2>
+  <p>
+    A fixed window allowing 100 requests/minute could theoretically allow 100 requests at
+    11:59:59 and another 100 at 12:00:00 — 200 requests in two seconds, technically compliant with
+    "100 per minute" in each window, but clearly not the actual intent. This specific weakness is
+    exactly what sliding window algorithms exist to close.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the key behavioral difference between token bucket and leaky bucket?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Token bucket allows controlled bursts up to the bucket's capacity; leaky bucket processes requests at a strictly fixed rate, smoothing out bursts entirely</button>
+        <button class="q-option" data-correct="false">Token bucket and leaky bucket produce identical throttling behavior in every scenario</button>
+        <button class="q-option" data-correct="false">Leaky bucket allows unlimited bursts while token bucket never allows any burst at all</button>
+      </div>
+      <div class="q-explain">This distinction is exactly why each algorithm fits a different real scenario — burst tolerance versus strict output smoothing are genuinely different requirements.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What specific weakness does the fixed-window counter have that sliding window algorithms solve?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A burst can occur right at a window boundary — nearly double the intended rate limit can pass through in a short span if requests cluster around the boundary between two windows</button>
+        <button class="q-option" data-correct="false">Fixed-window counters are incapable of limiting any requests at all</button>
+        <button class="q-option" data-correct="false">Fixed-window and sliding-window algorithms behave identically at window boundaries</button>
+      </div>
+      <div class="q-explain">This is the specific, concrete failure mode that motivates the more complex (and more expensive) sliding window approach when boundary precision genuinely matters.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why might leaky bucket be preferred over token bucket for protecting a genuinely fragile downstream system?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Leaky bucket enforces a strictly smooth output rate with no bursts at all, which matters when the downstream system can't tolerate even a small burst that token bucket's capacity would otherwise allow</button>
+        <button class="q-option" data-correct="false">Leaky bucket always processes more total requests than token bucket over the same time period</button>
+        <button class="q-option" data-correct="false">There's no meaningful difference in burst tolerance between the two algorithms</button>
+      </div>
+      <div class="q-explain">This is the genuine trade-off driving algorithm choice — matching the algorithm's burst behavior to what the protected system can actually tolerate.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This deep dive reflects standard, foundational rate limiting algorithm theory (token bucket, leaky bucket, fixed/sliding window) — stable concepts underlying most production API gateways and rate limiter implementations.</p>
+
+  <div class="pager">
+    <a href="11-1-api-design-principles.html">&larr; 11.1 API design principles</a>
+    <a href="11-3-cap-theorem-and-pacelc.html">11.3 CAP theorem &amp; PACELC &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let tbTokens = 10;
+const TB_CAPACITY = 10;
+function renderTb() {
+  document.getElementById('tb-fill').style.width = (tbTokens / TB_CAPACITY * 100) + '%';
+  document.getElementById('tb-fill').style.background = tbTokens < 3 ? '#e5484d' : tbTokens < 6 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('tb-tokens').textContent = tbTokens.toFixed(1) + '/' + TB_CAPACITY;
+}
+renderTb();
+document.getElementById('tb-request').addEventListener('click', () => {
+  const log = document.getElementById('tb-log');
+  if (tbTokens >= 1) {
+    tbTokens -= 1;
+    log.textContent = "✓ Request allowed. 1 token consumed.";
+    log.style.color = "#3ecf8e";
+  } else {
+    log.textContent = "✗ Rate limited — no tokens available.";
+    log.style.color = "#ff8b8f";
+  }
+  renderTb();
+});
+document.getElementById('tb-refill').addEventListener('click', () => {
+  tbTokens = Math.min(TB_CAPACITY, tbTokens + 2);
+  document.getElementById('tb-log').textContent = "1 second passed — bucket refilled by 2 tokens.";
+  document.getElementById('tb-log').style.color = "var(--text-secondary)";
+  renderTb();
+});
+
+document.getElementById('fig-algorithms').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram comparing four rate limiting algorithms: token bucket allowing bursts, leaky bucket smoothing output, fixed window with a boundary risk, and sliding window avoiding it">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="10" y="20" width="155" height="60" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="87" y="42" text-anchor="middle" fill="#3ecf8e">Token bucket</text><text x="87" y="60" text-anchor="middle" fill="#5fb98a" font-size="7">allows bursts</text>
+  <rect x="175" y="20" width="155" height="60" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="252" y="42" text-anchor="middle" fill="#a9c1ff">Leaky bucket</text><text x="252" y="60" text-anchor="middle" fill="#7891c9" font-size="7">strictly smooth</text>
+  <rect x="340" y="20" width="155" height="60" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="417" y="42" text-anchor="middle" fill="#f2b84b">Fixed window</text><text x="417" y="60" text-anchor="middle" fill="#c9a05f" font-size="7">boundary risk</text>
+  <rect x="505" y="20" width="165" height="60" rx="6" fill="#1a2029" stroke="#a78bfa"/><text x="587" y="42" text-anchor="middle" fill="#c4b5fd">Sliding window</text><text x="587" y="60" text-anchor="middle" fill="#9d8ac2" font-size="7">precise, costlier</text>
+</svg>
+`;
+</script>
+</body>
+</html>

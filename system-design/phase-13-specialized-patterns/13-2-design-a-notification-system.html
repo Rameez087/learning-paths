@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.2 Design a notification system | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 13</a> &nbsp;/&nbsp; 13.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 13 · Specialized Patterns</div>
+  <h1>13.2 Design a notification system</h1>
+  <p class="subtitle">Chirp's Notifications service (Chapter 7 and 8) as a standalone, general-purpose interview problem — plus the parts the narrative simplified past.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: send notifications across multiple channels (push, email, SMS) triggered by
+    many different events, respecting each user's preferences, without overwhelming anyone.
+    Architecturally this is Chapter 7.2's message queue and workers pattern directly — but a
+    general-purpose notification system needs one more layer: a preference and throttling check
+    <em>before</em> fan-out, since a user might want push notifications for DMs but not for every
+    like, and definitely doesn't want 50 separate notifications in five minutes.
+  </div>
+
+  <h2>Try it: route a notification through preference and throttle checks</h2>
+  <div class="metric-box">
+    <div id="notif-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="notif-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why preference checking has to happen before fan-out, not after</h2>
+  <p>
+    Checking preferences after generating a notification wastes the fan-out work Chapter 7.2 was
+    specifically designed to make efficient. The correct order: check the user's channel
+    preferences and current throttle state first (a fast key-value lookup, 11.4), and only publish
+    to the queue for channels the user actually wants and hasn't been over-notified through — the
+    same "cheap gatekeeper before expensive work" instinct as 11.5's bloom filter pattern, applied
+    to a different kind of check.
+  </p>
+
+  <div class="figure" id="fig-notif-arch"></div>
+
+  <h2>The deep-dive: batching and digesting, not just sending or not sending</h2>
+  <p>
+    Beyond a binary on/off preference, real notification systems batch related notifications — "5
+    people liked your post" instead of 5 separate pushes — computed by a short delay window before
+    sending (accumulate events for a few minutes, then send one combined notification). This adds
+    a small amount of latency in exchange for a dramatically better user experience, a genuinely
+    different trade-off shape than most of this track's latency-vs-consistency choices.
+  </p>
+
+  <h2>Delivery across channels: not all channels are equally reliable</h2>
+  <p>
+    Push notifications can silently fail (an uninstalled app, an expired device token) with no
+    error the sending system necessarily sees immediately. Email and SMS have real per-message
+    costs and stricter rate limits from third-party providers. A robust design tracks delivery
+    status per channel and can retry-with-idempotency (7.3's pattern again) or fall back to a
+    different channel if the preferred one seems to be failing silently.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why must preference and throttle checks happen before fan-out rather than after?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Checking after fan-out would waste the exact work Chapter 7.2's queue and worker pattern was designed to make efficient — filtering first avoids doing expensive fan-out work for notifications that will just be discarded</button>
+        <button class="q-option" data-correct="false">Checking order has no real impact on system efficiency</button>
+        <button class="q-option" data-correct="false">Preference checks are only relevant after a notification has already been delivered</button>
+      </div>
+      <div class="q-explain">This is a genuine efficiency point, and directly reuses the "cheap gatekeeper before expensive work" pattern from bloom filters (11.5), applied to a preference lookup instead.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does batching related notifications ("5 people liked your post") represent a different kind of trade-off than most of this track's latency-vs-consistency choices?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It deliberately adds a small delay in exchange for a better user experience (fewer, more useful notifications), rather than trading data freshness for reduced system load like most earlier examples</button>
+        <button class="q-option" data-correct="false">Batching notifications provides no benefit and should always be avoided</button>
+        <button class="q-option" data-correct="false">This trade-off is identical in every respect to the caching trade-offs from Chapter 4</button>
+      </div>
+      <div class="q-explain">This is a genuinely distinct trade-off shape worth noting — not every design decision in this space is about staleness versus load; some are about UX quality versus responsiveness.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does a robust notification system need to track delivery status per channel and potentially fall back to a different channel?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Different channels have different reliability characteristics — push notifications can silently fail with no immediate error, so tracking delivery and falling back intelligently avoids notifications simply disappearing unnoticed</button>
+        <button class="q-option" data-correct="false">All notification channels are equally reliable, making delivery tracking unnecessary</button>
+        <button class="q-option" data-correct="false">Delivery tracking has no relationship to the idempotency concepts covered in Chapter 7.3</button>
+      </div>
+      <div class="q-explain">This is an honest, practical acknowledgment that real-world delivery channels have genuinely different failure characteristics, requiring active handling rather than an assumption of uniform reliability.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — notification systems named as a canonical pattern (Designing a Notification System), covering fan-out, delivery guarantees, and throttling.</p>
+
+  <div class="pager">
+    <a href="13-1-design-a-video-streaming-service.html">&larr; 13.1 Design a video streaming service</a>
+    <a href="13-3-design-dropbox.html">13.3 Design Dropbox &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const NOTIF_SCENARIOS = {
+  allowed: { label: "User wants push for DMs", detail: "Preference check: push enabled for DMs. Throttle check: 2 notifications in the last hour, under the limit. Result: published to queue, delivered via push immediately." },
+  muted: { label: "User muted like notifications", detail: "Preference check: 'likes' notifications disabled for this user. Result: discarded before fan-out — no queue publish, no wasted work." },
+  throttled: { label: "User got 12 notifications in 5 min", detail: "Preference check: passes. Throttle check: exceeds the configured limit. Result: queued into a batching window instead of sent immediately — will combine with related events into one digest notification." },
+};
+document.getElementById('notif-tabs').innerHTML = Object.keys(NOTIF_SCENARIOS).map((k,i) =>
+  `<div class="notif-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${NOTIF_SCENARIOS[k].label}</div>`
+).join('');
+function renderNotif(key) {
+  document.getElementById('notif-detail').textContent = NOTIF_SCENARIOS[key].detail;
+  document.querySelectorAll('.notif-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.notif-tab').forEach(t => t.addEventListener('click', () => renderNotif(t.dataset.k)));
+renderNotif('allowed');
+
+document.getElementById('fig-notif-arch').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: an event triggering a preference and throttle check before fan-out to a message queue, which distributes to push, email, and SMS workers">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="10" y="35" width="110" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="65" y="57" text-anchor="middle">Event occurs</text>
+  <line x1="120" y1="52" x2="170" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd27)"/>
+  <rect x="170" y="35" width="140" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="240" y="57" text-anchor="middle" fill="#3ecf8e">Preference + throttle check</text>
+  <line x1="310" y1="52" x2="360" y2="52" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd27y)"/>
+  <rect x="360" y="35" width="110" height="35" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="415" y="57" text-anchor="middle" fill="#f5a623">Message queue</text>
+  <line x1="470" y1="45" x2="520" y2="20" stroke="#6b7386" stroke-width="1"/>
+  <line x1="470" y1="52" x2="520" y2="52" stroke="#6b7386" stroke-width="1"/>
+  <line x1="470" y1="59" x2="520" y2="85" stroke="#6b7386" stroke-width="1"/>
+  <text x="600" y="24" font-size="8">Push</text><text x="600" y="56" font-size="8">Email</text><text x="600" y="90" font-size="8">SMS</text>
+  <defs>
+    <marker id="sd27" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+    <marker id="sd27y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

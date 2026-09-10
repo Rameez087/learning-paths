@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.1 API design principles | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.1 API design principles</h1>
+  <p class="subtitle">Chirp's services (Chapter 8) talk to each other constantly. What they say to each other, and how they say it, is its own design discipline.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>REST</strong> models everything as resources (<code>/posts/123</code>) manipulated via
+    HTTP verbs (GET, POST, PUT, DELETE) — simple, cacheable, and the default choice for most
+    public APIs. <strong>GraphQL</strong> lets a client specify exactly which fields it needs
+    across multiple resources in one request — powerful for complex, varied client needs, at the
+    cost of losing simple HTTP caching. <strong>gRPC</strong> uses a strict binary protocol and
+    generated code for fast, efficient service-to-service calls — the common choice for internal
+    communication between services like Chirp's, where both ends are code you control. None is
+    universally "best" — each fits a different communication shape.
+  </div>
+
+  <h2>Try it: compare the three for a specific scenario</h2>
+  <div class="metric-box">
+    <div id="api-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="api-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Resource naming and status codes: the REST conventions worth internalizing</h2>
+  <p>
+    Resources are nouns, not verbs: <code>/posts</code> and <code>/posts/123</code>, never
+    <code>/getPost?id=123</code>. HTTP status codes carry real meaning a client can act on
+    programmatically: <code>200</code> success, <code>201</code> created, <code>400</code> bad
+    request (client's fault), <code>404</code> not found, <code>429</code> rate limited (directly
+    relevant to 11.2), <code>500</code> server error. Getting these right means a client can
+    handle errors correctly without parsing response bodies just to figure out what went wrong.
+  </p>
+
+  <div class="figure" id="fig-api-styles"></div>
+
+  <h2>Idempotent API design: extending 7.3's lesson to the API layer directly</h2>
+  <p>
+    Recall Chapter 7.3: at-least-once delivery means a request might arrive more than once — a
+    client's network call times out, they retry, but the first request actually succeeded. A
+    well-designed API supports an <strong>idempotency key</strong>: the client generates a unique
+    ID for a logical operation (like "create this post") and sends it with every retry attempt;
+    the server recognizes a repeated key and returns the original result instead of creating a
+    duplicate. This is the exact same principle from 7.3, applied at the API contract level rather
+    than inside a queue consumer.
+  </p>
+  <pre><code>POST /posts
+Idempotency-Key: a1b2c3d4-...
+
+def create_post(request):
+    key = request.headers["Idempotency-Key"]
+    if redis.exists(f"idem:{key}"):
+        return redis.get(f"idem:{key}")  # return original result, don't recreate
+
+    result = database.create_post(request.body)
+    redis.set(f"idem:{key}", result, expire_seconds=86400)
+    return result</code></pre>
+
+  <h2>Versioning: designing for the API to change without breaking clients</h2>
+  <p>
+    An API used by external developers (or even other internal teams) can't change its contract
+    freely without warning — a common approach is embedding a version in the URL
+    (<code>/v1/posts</code>, <code>/v2/posts</code>) or a header, allowing old and new versions to
+    run simultaneously while clients migrate. Skipping this and changing behavior silently is a
+    frequent, avoidable source of production incidents.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is gRPC typically the preferred choice for service-to-service communication within a system like Chirp's, rather than REST or GraphQL?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Its strict binary protocol and generated code are fast and efficient, which fits internal communication well since both ends of the call are code the team controls</button>
+        <button class="q-option" data-correct="false">gRPC is strictly superior to REST and GraphQL for every possible use case, including public APIs</button>
+        <button class="q-option" data-correct="false">REST and GraphQL are technically incapable of being used between internal services</button>
+      </div>
+      <div class="q-explain">This is about matching the tool to the communication shape — internal, code-controlled communication has different priorities (speed, efficiency) than a public-facing API (broad compatibility, human readability).</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does an idempotency key solve the same underlying problem as Chapter 7.3's message deduplication, at a different layer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Both let the receiving side recognize a repeated logical operation and return the original result instead of performing the action again — 7.3 applied this inside a queue consumer, idempotency keys apply it at the API contract level</button>
+        <button class="q-option" data-correct="false">Idempotency keys and message deduplication solve completely unrelated problems</button>
+        <button class="q-option" data-correct="false">Idempotency keys only work for GraphQL APIs, never REST or gRPC</button>
+      </div>
+      <div class="q-explain">This is the same pattern-recognition skill emphasized throughout this track — recognizing that "handle duplicate delivery safely" recurs in different disguises across different layers of a system.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does API versioning matter for an API with external or cross-team consumers?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It allows old and new versions to run simultaneously while clients migrate, rather than changing behavior silently and breaking whoever depends on the previous contract</button>
+        <button class="q-option" data-correct="false">Versioning is only relevant for internal APIs, never public-facing ones</button>
+        <button class="q-option" data-correct="false">A well-designed API never needs to change once it's initially published</button>
+      </div>
+      <div class="q-explain">This is a practical, common real-world discipline — unversioned APIs that change silently are a frequent, avoidable cause of production incidents for anyone depending on that contract.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — API design and idempotency as named Phase 1 foundational vocabulary; system-design-primer (GitHub) — REST, GraphQL, and gRPC comparison and API design conventions.</p>
+
+  <div class="pager">
+    <a href="../phase-10-when-failure-is-the-default/10-3-the-mindset-designing-for-failure.html">&larr; 10.3 The mindset: designing for failure</a>
+    <a href="11-2-rate-limiting-algorithms.html">11.2 Rate limiting algorithms &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const API_STYLES = {
+  rest: { label: "REST", detail: "GET /posts/123 returns the full post object. Simple, cacheable by standard HTTP caches, human-readable. Downside: a client needing data from three related resources makes three separate requests (or gets over-fetched data)." },
+  graphql: { label: "GraphQL", detail: "One request specifies exactly which fields are needed across posts, author, and comments together. Powerful for a mobile client with limited bandwidth wanting precise data. Downside: harder to cache with standard HTTP tools, more complex server-side implementation." },
+  grpc: { label: "gRPC", detail: "Feed Service calls Notifications Service using a strictly-typed, generated client — fast binary serialization, strong contracts enforced at compile time. Downside: not human-readable in a browser, harder for external third-party developers to consume." },
+};
+document.getElementById('api-tabs').innerHTML = Object.keys(API_STYLES).map((k,i) =>
+  `<div class="api-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">${API_STYLES[k].label}</div>`
+).join('');
+function renderApi(key) {
+  document.getElementById('api-detail').textContent = API_STYLES[key].detail;
+  document.querySelectorAll('.api-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.api-tab').forEach(t => t.addEventListener('click', () => renderApi(t.dataset.k)));
+renderApi('rest');
+
+document.getElementById('fig-api-styles').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: REST for simple resource access, GraphQL for flexible client-specified queries, gRPC for fast internal service-to-service calls">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="20" width="200" height="60" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/><text x="120" y="45" text-anchor="middle" fill="#a9c1ff">REST</text><text x="120" y="63" text-anchor="middle" fill="#7891c9" font-size="8">public APIs, simple resources</text>
+  <rect x="240" y="20" width="200" height="60" rx="8" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="340" y="45" text-anchor="middle" fill="#f5a623">GraphQL</text><text x="340" y="63" text-anchor="middle" fill="#c9a05f" font-size="8">complex, varied client needs</text>
+  <rect x="460" y="20" width="200" height="60" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/><text x="560" y="45" text-anchor="middle" fill="#3ecf8e">gRPC</text><text x="560" y="63" text-anchor="middle" fill="#5fb98a" font-size="8">internal service-to-service</text>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.6 Design search autocomplete | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 12</a> &nbsp;/&nbsp; 12.6</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 12 · The Patterns Everyone Asks</div>
+  <h1>12.6 Design search autocomplete</h1>
+  <p class="subtitle">Closing the loop on Chapter 6.4's cross-shard search problem — and a genuinely different data structure than anything used so far.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: as a user types, suggest completions in real time (under ~100ms), ranked by
+    popularity. This isn't the same problem as 11.5's inverted index (finding documents containing
+    a word) — it's specifically about efficiently finding all known terms that start with a given
+    prefix. A <strong>trie</strong> (prefix tree) is the natural fit: each node represents one
+    character, and walking down the tree following the typed characters lands exactly on the
+    branch containing every valid completion — turning "find all terms starting with 'chi'" into a
+    single tree traversal instead of scanning anything.
+  </div>
+
+  <h2>Try it: walk a trie character by character</h2>
+  <div class="metric-box">
+    <input id="trie-input" type="text" placeholder="Type: c, h, i..." style="width:100%; padding:10px 14px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text-primary); font-family:var(--font-mono); font-size:14px;">
+    <div id="trie-suggestions" style="margin-top:14px;"></div>
+  </div>
+
+  <h2>Why this finally, honestly resolves 6.4's cross-shard search problem</h2>
+  <p>
+    Recall Chapter 6.4 explicitly deferring this: scatter-gather search across every shard doesn't
+    scale, and the real fix was "a separate, purpose-built search index." This is that fix, made
+    concrete: a dedicated trie (or a similar prefix structure) built and maintained independently
+    of Chirp's sharded transactional database, updated asynchronously (Chapter 7's pattern) as new
+    popular search terms emerge, rather than querying the actual sharded post data on every
+    keystroke.
+  </p>
+
+  <div class="figure" id="fig-trie"></div>
+
+  <h2>The deep-dive: ranking suggestions, not just finding them</h2>
+  <p>
+    A trie efficiently finds all valid completions, but showing the top 5 by actual popularity
+    requires each node to also track aggregate popularity of everything beneath it — precomputed
+    and cached (Chapter 4's caching principle, applied to a different data structure) rather than
+    calculated fresh on every keystroke, since recomputing popularity rankings in real time for
+    every character typed would reintroduce exactly the kind of unnecessary repeated work Chapter
+    4.1 originally solved.
+  </p>
+
+  <h2>Keeping suggestions fresh without querying live data</h2>
+  <p>
+    Popular search terms change over time — a background job (Chapter 7's async workers again)
+    periodically rebuilds or updates the trie from recent search logs, rather than the trie being
+    perfectly real-time accurate. This is the same acceptable-staleness trade-off from Chapters 4.2
+    and 5.2, applied once more: slightly-stale suggestions are a fine trade for consistently fast
+    response times on every keystroke.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is a trie a better fit for autocomplete than the inverted index covered in Chapter 11.5?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Autocomplete needs to efficiently find all terms starting with a given prefix, which a trie does via direct tree traversal — a genuinely different query shape than an inverted index's word-to-documents lookup</button>
+        <button class="q-option" data-correct="false">Tries and inverted indexes solve the exact same problem in the exact same way</button>
+        <button class="q-option" data-correct="false">Inverted indexes are always strictly better than tries for every search-related use case</button>
+      </div>
+      <div class="q-explain">This distinguishes two genuinely different search-adjacent data structures, each fit to its own specific query shape — prefix matching versus full-text document search.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does this topic directly resolve the cross-shard search problem left open in Chapter 6.4?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's the concrete implementation of the "separate, purpose-built search index" 6.4 deferred to — a dedicated trie maintained independently of the sharded transactional database, avoiding scatter-gather entirely</button>
+        <button class="q-option" data-correct="false">This topic has no relationship to the cross-shard search problem from Chapter 6.4</button>
+        <button class="q-option" data-correct="false">Autocomplete still requires querying every shard directly on each keystroke</button>
+      </div>
+      <div class="q-explain">This is a deliberate narrative payoff — a problem explicitly left unresolved earlier in the track gets its concrete answer here, rather than being forgotten.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is it acceptable for autocomplete suggestions to be built from periodically-updated search logs rather than perfectly real-time data?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Slightly-stale suggestions are a fine trade for consistently fast response times on every keystroke — the same acceptable-staleness trade-off pattern already used in Chapters 4.2 and 5.2</button>
+        <button class="q-option" data-correct="false">Real-time accuracy has no bearing on autocomplete's usefulness in any way</button>
+        <button class="q-option" data-correct="false">Perfectly real-time suggestion data is always achievable at no cost</button>
+      </div>
+      <div class="q-explain">This is the same recurring trade-off theme from throughout the track — deliberately accepting bounded staleness in exchange for consistent performance, applied once more to a new context.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — Designing Typeahead Suggestion named as a canonical search-pattern interview question; system-design-primer (GitHub) — trie-based autocomplete and prefix-search fundamentals.</p>
+
+  <div class="pager">
+    <a href="12-5-design-a-rate-limiter.html">&larr; 12.5 Design a rate limiter</a>
+    <a href="../phase-13-specialized-patterns/13-1-design-a-video-streaming-service.html">Phase 13: Specialized Patterns &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TERMS = ["chirp", "chirping", "chirpy", "chicago", "chicken", "children", "chess", "chef", "checklist"];
+function renderTrie() {
+  const prefix = document.getElementById('trie-input').value.toLowerCase();
+  const matches = prefix ? TERMS.filter(t => t.startsWith(prefix)) : [];
+  document.getElementById('trie-suggestions').innerHTML = matches.length ? matches.map(m => `
+    <div style="padding:8px 14px; background:var(--surface-2); border-radius:6px; margin-bottom:4px; font-size:13px;">
+      <span style="color:#f5a623; font-weight:700;">${m.slice(0,prefix.length)}</span>${m.slice(prefix.length)}
+    </div>
+  `).join('') : (prefix ? '<div style="font-size:12px; color:var(--text-muted);">No matches in this small demo trie.</div>' : '');
+}
+document.getElementById('trie-input').addEventListener('input', renderTrie);
+
+document.getElementById('fig-trie').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: a trie structure where each level represents one typed character, with the path from root to a highlighted node representing the prefix chi leading to multiple valid completions">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:10px; font-weight:600; } </style>
+  <circle cx="60" cy="65" r="18" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/><text x="60" y="69" text-anchor="middle" fill="#a9c1ff">root</text>
+  <line x1="78" y1="65" x2="140" y2="65" stroke="#f5a623" stroke-width="1.5"/>
+  <circle cx="160" cy="65" r="18" fill="#182238" stroke="#f5a623" stroke-width="2"/><text x="160" y="69" text-anchor="middle" fill="#f5a623">c</text>
+  <line x1="178" y1="65" x2="240" y2="65" stroke="#f5a623" stroke-width="1.5"/>
+  <circle cx="260" cy="65" r="18" fill="#182238" stroke="#f5a623" stroke-width="2"/><text x="260" y="69" text-anchor="middle" fill="#f5a623">h</text>
+  <line x1="278" y1="65" x2="340" y2="65" stroke="#f5a623" stroke-width="1.5"/>
+  <circle cx="360" cy="65" r="18" fill="#182238" stroke="#f5a623" stroke-width="2"/><text x="360" y="69" text-anchor="middle" fill="#f5a623">i</text>
+  <line x1="378" y1="55" x2="440" y2="25" stroke="#3ecf8e" stroke-width="1.5"/>
+  <line x1="378" y1="65" x2="440" y2="65" stroke="#3ecf8e" stroke-width="1.5"/>
+  <line x1="378" y1="75" x2="440" y2="105" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="470" y="28" fill="#3ecf8e" font-size="9">→ chirp</text>
+  <text x="470" y="68" fill="#3ecf8e" font-size="9">→ chirping</text>
+  <text x="470" y="108" fill="#3ecf8e" font-size="9">→ chirpy</text>
+</svg>
+`;
+</script>
+</body>
+</html>

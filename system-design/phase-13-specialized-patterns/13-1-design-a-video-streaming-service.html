@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.1 Design a video streaming service | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 13</a> &nbsp;/&nbsp; 13.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 13 · Specialized Patterns</div>
+  <h1>13.1 Design a video streaming service</h1>
+  <p class="subtitle">Chirp's video posts (Chapter 7.1) at YouTube/Netflix scale — the same transcoding problem, now with the actual delivery pipeline built out fully.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Requirements: upload a video once, let it stream smoothly to viewers with wildly different
+    connection speeds and devices. The core technique is <strong>adaptive bitrate streaming</strong>:
+    transcode (Chapter 7.1's exact process) each video into multiple quality versions (240p up to
+    4K), split into short chunks, and let the viewer's player automatically switch quality
+    mid-stream based on their real-time connection speed — never fully buffering the highest
+    quality if the network can't sustain it.
+  </div>
+
+  <h2>Try it: watch adaptive bitrate respond to connection speed</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Viewer's connection speed</label>
+      <input type="range" id="abr-speed" min="1" max="8" value="4" style="flex:1;">
+      <span id="abr-speed-val" style="font-weight:700; min-width:80px;"></span>
+    </div>
+    <div id="abr-result" style="margin-top:14px;"></div>
+  </div>
+
+  <h2>Why transcoding into multiple versions upfront, not on demand</h2>
+  <p>
+    Transcoding is genuinely expensive (7.1's exact bottleneck) — doing it once per upload, into a
+    fixed set of quality tiers, asynchronously via background workers (7.2's pattern), means every
+    subsequent view is just serving pre-computed files, never repeating that expensive work per
+    viewer. This is the same "don't recompute what hasn't changed" instinct from Chapter 4.2's
+    caching, applied to computation instead of database queries.
+  </p>
+
+  <div class="figure" id="fig-streaming-arch"></div>
+
+  <h2>The deep-dive: CDN placement is almost the whole game here</h2>
+  <p>
+    Recall Chapter 9's core lesson: physical distance has a real, unavoidable latency floor.
+    Video is enormously bandwidth-heavy compared to Chirp's text posts, which makes CDN edge
+    placement (9.2) even more critical here than for any other pattern in this track — the
+    overwhelming majority of a streaming service's engineering effort in practice goes into CDN
+    strategy and chunk caching, not the transcoding pipeline itself.
+  </p>
+
+  <h2>View counting: a deceptively tricky consistency problem</h2>
+  <p>
+    A view counter seems trivial but has a real design question hiding in it: should it update in
+    real time (expensive at scale, exactly 4.1's original read-storm problem if done naively) or
+    batch-update periodically (cheaper, but counts lag behind reality)? Most real platforms batch
+    view count updates — the same acceptable-staleness trade-off from 4.2 and 12.6, chosen once
+    again for the same underlying reason.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does adaptive bitrate streaming transcode a video into multiple quality versions rather than serving one fixed quality to everyone?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Viewers have wildly different connection speeds and devices — pre-computing multiple quality tiers lets each viewer's player switch based on their real-time connection, without ever fully committing to a quality the network can't sustain</button>
+        <button class="q-option" data-correct="false">All viewers have identical connection speeds, making multiple quality tiers unnecessary</button>
+        <button class="q-option" data-correct="false">Adaptive bitrate streaming always serves the highest available quality regardless of connection speed</button>
+      </div>
+      <div class="q-explain">This is the core technique the whole topic is built around — accommodating real-world variance in viewer conditions rather than assuming uniform playback conditions.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does transcoding happen once, upfront, per upload rather than being computed fresh for each viewer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Transcoding is genuinely expensive (Chapter 7.1's exact bottleneck) — doing it once asynchronously via background workers means every subsequent view just serves pre-computed files, never repeating that expensive work</button>
+        <button class="q-option" data-correct="false">Transcoding costs nothing regardless of how many times it's performed</button>
+        <button class="q-option" data-correct="false">Per-viewer transcoding would actually be more efficient than upfront batch transcoding</button>
+      </div>
+      <div class="q-explain">This directly reuses the "don't recompute what hasn't changed" principle from Chapter 4.2's caching discussion, applied to computation rather than database reads.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why do most real video platforms batch-update view counts rather than updating them in true real time?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Real-time updates at scale would recreate Chapter 4.1's original read-storm problem — batching is the same acceptable-staleness trade-off used in 4.2 and 12.6, chosen again for the same underlying reason</button>
+        <button class="q-option" data-correct="false">View counts have no relationship to any load or scaling concern covered earlier in the track</button>
+        <button class="q-option" data-correct="false">Real-time view count updates are always cheaper than batched updates</button>
+      </div>
+      <div class="q-explain">This is another instance of the track's recurring staleness-for-performance trade-off, applied to yet another new context — reinforcing that this isn't a one-off decision but a general, reusable pattern.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — video streaming named as a canonical pattern (Designing YouTube or Netflix), covering CDN architecture, transcoding pipelines, and view counting.</p>
+
+  <div class="pager">
+    <a href="../phase-12-the-patterns-everyone-asks/12-6-design-search-autocomplete.html">&larr; 12.6 Design search autocomplete</a>
+    <a href="13-2-design-a-notification-system.html">13.2 Design a notification system &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ABR_TIERS = [
+  { speed: "0.5 Mbps", quality: "240p", color: "#e5484d" },
+  { speed: "1 Mbps", quality: "360p", color: "#e5484d" },
+  { speed: "2.5 Mbps", quality: "480p", color: "#f2b84b" },
+  { speed: "5 Mbps", quality: "720p", color: "#f2b84b" },
+  { speed: "8 Mbps", quality: "1080p", color: "#3ecf8e" },
+  { speed: "15 Mbps", quality: "1440p", color: "#3ecf8e" },
+  { speed: "25 Mbps", quality: "4K", color: "#3ecf8e" },
+  { speed: "50+ Mbps", quality: "4K (max)", color: "#3ecf8e" },
+];
+function renderAbr() {
+  const tier = parseInt(document.getElementById('abr-speed').value, 10);
+  const t = ABR_TIERS[tier-1];
+  document.getElementById('abr-speed-val').textContent = t.speed;
+  document.getElementById('abr-result').innerHTML = `
+    <div style="padding:16px; background:var(--code-bg); border-radius:8px; text-align:center;">
+      <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Player automatically selects</div>
+      <div style="font-size:22px; font-weight:700; margin-top:6px; color:${t.color};">${t.quality}</div>
+    </div>
+  `;
+}
+document.getElementById('abr-speed').addEventListener('input', renderAbr);
+renderAbr();
+
+document.getElementById('fig-streaming-arch').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: video upload transcoded asynchronously into multiple quality tiers, stored and distributed via CDN edge locations to viewers">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="35" width="110" height="35" rx="6" fill="#1a2029" stroke="#262d3a"/><text x="75" y="57" text-anchor="middle">Video upload</text>
+  <line x1="130" y1="52" x2="180" y2="52" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd26)"/>
+  <rect x="180" y="35" width="130" height="35" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="245" y="57" text-anchor="middle" fill="#f5a623">Async transcoding</text>
+  <line x1="310" y1="52" x2="360" y2="52" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd26g)"/>
+  <rect x="360" y="35" width="130" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="425" y="57" text-anchor="middle" fill="#3ecf8e">CDN edge storage</text>
+  <line x1="490" y1="52" x2="540" y2="52" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd26p)"/>
+  <rect x="540" y="35" width="120" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="600" y="57" text-anchor="middle" fill="#a9c1ff">Viewer (adaptive)</text>
+  <defs>
+    <marker id="sd26" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd26g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd26p" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

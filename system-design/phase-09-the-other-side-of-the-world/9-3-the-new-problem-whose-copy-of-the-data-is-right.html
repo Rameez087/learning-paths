@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.3 The new problem: whose copy of the data is right? | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · The Other Side of the World &middot; ~10,000,000-50,000,000 users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>9.3 The new problem: whose copy of the data is right?</h1>
+  <p class="subtitle">A user in Singapore updates their bio. Their friend in Virginia, viewing their profile a second later, sees the old one. Both regions are healthy. Neither is technically wrong.</p>
+
+  <div class="chirp-quote">
+    "This is basically Chapter 5's replication lag problem again, except now the 'replica' is an entire region on the other side of the planet, and the lag isn't milliseconds — it can be a genuinely noticeable fraction of a second, sometimes more under real network conditions." — you, recognizing the pattern immediately</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    9.2 deliberately left open whether regions share one database or each get their own — and
+    either answer creates a real consistency challenge. If each region has its own writable
+    database (needed for fast local writes), the same profile update made in Singapore has to
+    eventually reach Virginia's copy — and until it does, the two regions genuinely disagree about
+    the current truth. This is Chapter 5.3's replication lag problem, reappearing at a much larger
+    scale: not milliseconds between two machines in the same data center, but a real, sometimes
+    substantial delay between machines on opposite sides of the planet.
+  </div>
+
+  <h2>Try it: watch a cross-region update propagate</h2>
+  <div class="metric-box" id="region-timeline"></div>
+
+  <h2>Why this can't be fixed the same simple way as 5.3</h2>
+  <p>
+    5.3's fix — route a user's own recent reads back to the primary — worked because there was
+    one clear primary to route back to. If both Virginia and Singapore accept writes locally (the
+    whole reason multi-region deployment helps write latency, not just reads), there's no single
+    "the real one" to fall back to anymore. Both regions' databases are simultaneously legitimate
+    sources of truth for their own local writes — this is a genuinely harder problem than 5.3's,
+    not just a bigger version of it.
+  </p>
+
+  <div class="figure" id="fig-multiregion-conflict"></div>
+
+  <h2>Three real approaches, each with a real trade-off</h2>
+  <ul>
+    <li><strong>Single-region writes, multi-region reads</strong> — only Virginia accepts writes; Singapore serves fast local reads but forwards writes back to Virginia. Simple and consistent, but Singapore users get slow writes (defeating part of the original point).</li>
+    <li><strong>Multi-region writes with conflict resolution</strong> — both regions accept local writes, and a defined rule (like "most recent timestamp wins") resolves disagreements when they're detected. Fast writes everywhere, but genuinely possible to lose an update if two conflicting writes happen close together.</li>
+    <li><strong>Accept eventual consistency explicitly</strong> — let both regions temporarily disagree, guarantee they'll converge given enough time, and design the product to tolerate brief disagreement gracefully (much like 4.4 and 5.3's targeted, narrow fixes rather than eliminating the underlying lag entirely).</li>
+  </ul>
+
+  <h2>Why Chirp chooses the third option, for now</h2>
+  <p>
+    For most of Chirp's data — bios, posts, follower counts — being briefly, slightly stale across
+    regions is an acceptable trade-off, the same reasoning from 4.2 and 5.2 applied at a larger
+    scale. The genuinely hard cases (payment processing, account security settings) would need the
+    first, more conservative approach — a reminder that "the right consistency model" isn't one
+    global answer, it's a decision made per type of data, based on how much a brief disagreement
+    actually costs.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is this cross-region consistency problem harder than 5.3's replication lag problem, not just a bigger version of it?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">5.3 had one clear primary database to route recent reads back to; here, both regions can legitimately accept local writes, so there's no single "the real one" to fall back to anymore</button>
+        <button class="q-option" data-correct="false">The two problems are actually identical in every respect, just occurring at different physical distances</button>
+        <button class="q-option" data-correct="false">This problem only occurs when a region has zero users</button>
+      </div>
+      <div class="q-explain">This is the genuine structural difference — multi-writer regions create simultaneous, equally legitimate sources of truth, which 5.3's single-primary-based fix has no equivalent for.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. What's the real trade-off with the "multi-region writes with conflict resolution" approach?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It enables fast writes everywhere, but makes it genuinely possible to lose an update if two conflicting writes to the same data happen close together in time across different regions</button>
+        <button class="q-option" data-correct="false">This approach guarantees zero possibility of any data loss under any circumstances</button>
+        <button class="q-option" data-correct="false">Conflict resolution rules eliminate the need for any consistency trade-off at all</button>
+      </div>
+      <div class="q-explain">This is a genuinely real cost, not a theoretical one — timestamp-based (or similar) conflict resolution rules can and do occasionally discard a legitimate concurrent update.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does Chirp choose different consistency approaches for different types of data (bios vs. payment processing) rather than one universal answer?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The right consistency model depends on how much a brief disagreement actually costs for that specific type of data — acceptable for a bio, unacceptable for payment or security-critical data</button>
+        <button class="q-option" data-correct="false">All types of data require exactly the same consistency guarantees regardless of what they represent</button>
+        <button class="q-option" data-correct="false">Consistency model choice has no real connection to what kind of data is being stored</button>
+      </div>
+      <div class="q-explain">This reinforces the track's recurring theme — trade-offs are chosen deliberately based on actual cost, not applied uniformly regardless of context, echoing the same reasoning from 4.2 and 5.2.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">This chapter reflects standard, foundational distributed systems theory around multi-region replication, conflict resolution, and eventual consistency — the same trade-off space formalized more fully in Phase 11's CAP theorem and consistency models deep dive.</p>
+
+  <div class="pager">
+    <a href="9-2-the-fix-cdn-edge-and-multi-region.html">&larr; 9.2 The fix: CDN edge &amp; multi-region</a>
+    <a href="../phase-10-when-failure-is-the-default/10-1-the-bottleneck-one-slow-dependency-takes-down-everything.html">Phase 10: When Failure Is the Default &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+document.getElementById('region-timeline').innerHTML = `
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:var(--text-muted);">T+0ms</span><div style="flex:1; padding:8px 12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; font-size:12px; color:#3ecf8e;">Singapore user updates bio. Singapore's local database reflects it instantly.</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:#ff8b8f;">T+180ms</span><div style="flex:1; padding:8px 12px; background:rgba(229,72,77,0.1); border:1px solid #e5484d; border-radius:6px; font-size:12px; color:#ff8b8f;">Friend in Virginia views the profile. Virginia's regional copy hasn't received the update yet — shows the old bio.</div></div>
+    <div style="display:flex; align-items:center; gap:12px;"><span style="min-width:90px; font-size:11px; color:var(--text-muted);">T+400ms</span><div style="flex:1; padding:8px 12px; background:var(--surface-2); border-radius:6px; font-size:12px;">Cross-region replication catches up. Virginia's copy now matches Singapore's.</div></div>
+  </div>
+`;
+
+document.getElementById('fig-multiregion-conflict').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: both Virginia and Singapore regions accepting local writes independently, requiring cross-region replication to eventually converge">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="40" y="35" width="220" height="60" rx="8" fill="#1a2029" stroke="#5b8cff" stroke-width="1.5"/><text x="150" y="60" text-anchor="middle" fill="#a9c1ff">Virginia DB (writable)</text><text x="150" y="78" text-anchor="middle" fill="#7891c9" font-size="8">accepts local writes instantly</text>
+  <rect x="420" y="35" width="220" height="60" rx="8" fill="#1a2029" stroke="#3ecf8e" stroke-width="1.5"/><text x="530" y="60" text-anchor="middle" fill="#3ecf8e">Singapore DB (writable)</text><text x="530" y="78" text-anchor="middle" fill="#5fb98a" font-size="8">accepts local writes instantly</text>
+  <line x1="260" y1="55" x2="420" y2="55" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd16)" marker-start="url(#sd16b)"/>
+  <text x="340" y="45" text-anchor="middle" fill="#f5a623" font-size="8">cross-region replication (real delay)</text>
+  <defs>
+    <marker id="sd16" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd16b" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

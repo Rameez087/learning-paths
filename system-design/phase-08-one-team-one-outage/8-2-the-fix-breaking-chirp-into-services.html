@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.2 The fix: breaking Chirp into services | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · One Codebase, One Team, One Outage &middot; ~10,000,000+ users</div>
+  <span class="stage-badge fix">Fix</span>
+  <h1>8.2 The fix: breaking Chirp into services</h1>
+  <p class="subtitle">Feed, Notifications, Search, and Profile become four separate applications — deployed independently, failing independently, owned by four separate teams.</p>
+
+  <div class="chirp-quote">
+    "Split the monolith into services this quarter — Feed, Notifications, Search, Profile, each with its own deploy pipeline and its own on-call rotation. Yesterday, notifications had a bad deploy and rolled back on their own, in about 90 seconds, without anyone on the feed team even noticing." — you, three months later</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Microservices</strong> split one large application into several smaller, independently
+    deployable services, each owning a specific piece of functionality and its own data. Services
+    communicate over the network (typically via APIs) rather than through in-process function
+    calls, which means a crash in one service no longer automatically crashes another — directly
+    solving 8.1's coupling problem. Each team can now deploy their own service on their own
+    schedule, without coordinating with every other team touching the same shared codebase.
+  </div>
+
+  <h2>Try it: explore how Chirp's services split by responsibility</h2>
+  <div class="metric-box">
+    <div id="ms-services"></div>
+  </div>
+
+  <h2>Drawing service boundaries around data, not just code</h2>
+  <p>
+    The most important design decision in this split isn't which files go where — it's which
+    service <em>owns</em> which data. The Notifications service owns the notifications table
+    entirely; other services never query it directly, only through Notifications' own API. This
+    matters because it's what actually enables independent deployment: if the Feed service could
+    directly query the Notifications database, changing that database's schema would still require
+    coordinating with Feed's team, undoing much of the point of splitting them apart.
+  </p>
+
+  <div class="figure" id="fig-services-arch"></div>
+
+  <h2>Why this doesn't come for free — the honest cost</h2>
+  <p>
+    What used to be a single, fast, in-process function call between two features is now a real
+    network request between two separate services — slower, and now genuinely capable of failing
+    in ways an in-process call never could (the other service being down, a network timeout,
+    partial data returned). Every one of this track's earlier network-related lessons — Chapter
+    2's app/DB split, Chapter 3's load balancing, Chapter 5's replication — now applies again, but
+    between many more independent pieces instead of just two.
+  </p>
+
+  <h2>Why 40 engineers specifically makes this trade-off worth it</h2>
+  <p>
+    At small team sizes, a monolith's simplicity (one codebase, one deploy, no network calls
+    between features) genuinely outweighs microservices' operational complexity — this is exactly
+    why Chirp correctly stayed a monolith through Chapters 1-7. The trade-off flips specifically
+    once team coordination overhead (8.1) becomes a bigger cost than the added network complexity
+    microservices introduce. There's no universal "right" architecture here — only the one that
+    matches the actual current constraint, the same principle from Chapter 1.1, now playing out at
+    organizational scale.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does splitting Chirp into separate services directly solve 8.1's crash-coupling problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Services communicate over the network rather than through in-process function calls, so a crash in one service no longer automatically crashes another running in the same process</button>
+        <button class="q-option" data-correct="false">Microservices eliminate the possibility of any service ever crashing</button>
+        <button class="q-option" data-correct="false">Splitting into services has no effect on failure isolation between features</button>
+      </div>
+      <div class="q-explain">This is the direct mechanism — process isolation between services is what prevents one feature's failure from taking down unrelated features, unlike the shared-process monolith.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does drawing service boundaries around data ownership matter more than just splitting code into separate files?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If one service could directly query another service's database, changing that database's schema would still require cross-team coordination, undoing much of the point of splitting the services apart in the first place</button>
+        <button class="q-option" data-correct="false">Data ownership has no bearing on whether services can actually be deployed independently</button>
+        <button class="q-option" data-correct="false">Splitting code into files always automatically implies proper data ownership boundaries</button>
+      </div>
+      <div class="q-explain">This is the deeper design principle — genuine independence requires each service to own its data exclusively, not just having separate code repositories.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why was staying a monolith the correct choice for Chirp through Chapters 1-7, given that microservices are being introduced now?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">At smaller team sizes, a monolith's simplicity genuinely outweighed microservices' operational complexity — the trade-off only flipped once team coordination overhead became a bigger cost than the network complexity microservices introduce</button>
+        <button class="q-option" data-correct="false">Staying a monolith through earlier chapters was actually a mistake that should have been avoided</button>
+        <button class="q-option" data-correct="false">Microservices are unconditionally superior to monolithic architecture at any scale</button>
+      </div>
+      <div class="q-explain">This reinforces Chapter 1.1's foundational theme one more time — the right architecture matches the actual current constraint, and that constraint genuinely changed as the team grew.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — microservices as a canonical senior-level pattern; system-design-primer (GitHub) — service decomposition and data ownership principles.</p>
+
+  <div class="pager">
+    <a href="8-1-the-bottleneck-nobody-can-deploy-safely.html">&larr; 8.1 The bottleneck: nobody can deploy safely</a>
+    <a href="8-3-the-new-problem-when-three-services-have-to-agree.html">8.3 The new problem: when three services have to agree &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const MS_SERVICES = [
+  { name: "Feed Service", owns: "Posts, timelines, feed ranking", team: "Feed team, 12 engineers" },
+  { name: "Notifications Service", owns: "Notification records, delivery preferences, push tokens", team: "Notifications team, 6 engineers" },
+  { name: "Search Service", owns: "Search index, query processing", team: "Search team, 8 engineers" },
+  { name: "Profile Service", owns: "User profiles, follow relationships, account settings", team: "Profile team, 9 engineers" },
+];
+document.getElementById('ms-services').innerHTML = MS_SERVICES.map(s => `
+  <div style="padding:12px; background:var(--surface-2); border-radius:8px; margin-bottom:8px; border:1px solid var(--border-strong);">
+    <div style="font-weight:700; font-size:13px; color:#f5a623;">${s.name}</div>
+    <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Owns: ${s.owns}</div>
+    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">${s.team}</div>
+  </div>
+`).join('');
+
+document.getElementById('fig-services-arch').innerHTML = `
+<svg viewBox="0 0 680 150" width="100%" role="img" aria-label="Diagram: four independent services, each with its own database, communicating over the network via APIs rather than sharing a process">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="70" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/><text x="90" y="45" text-anchor="middle" fill="#a9c1ff" font-size="9">Feed Service</text><rect x="40" y="55" width="100" height="20" rx="3" fill="#1a2029" stroke="#3ecf8e"/><text x="90" y="68" text-anchor="middle" fill="#3ecf8e" font-size="7">own DB</text>
+  <rect x="180" y="20" width="140" height="70" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/><text x="250" y="45" text-anchor="middle" fill="#a9c1ff" font-size="9">Notifications</text><rect x="200" y="55" width="100" height="20" rx="3" fill="#1a2029" stroke="#3ecf8e"/><text x="250" y="68" text-anchor="middle" fill="#3ecf8e" font-size="7">own DB</text>
+  <rect x="340" y="20" width="140" height="70" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/><text x="410" y="45" text-anchor="middle" fill="#a9c1ff" font-size="9">Search Service</text><rect x="360" y="55" width="100" height="20" rx="3" fill="#1a2029" stroke="#3ecf8e"/><text x="410" y="68" text-anchor="middle" fill="#3ecf8e" font-size="7">own DB</text>
+  <rect x="500" y="20" width="140" height="70" rx="8" fill="#182238" stroke="#5b8cff" stroke-width="1.5"/><text x="570" y="45" text-anchor="middle" fill="#a9c1ff" font-size="9">Profile Service</text><rect x="520" y="55" width="100" height="20" rx="3" fill="#1a2029" stroke="#3ecf8e"/><text x="570" y="68" text-anchor="middle" fill="#3ecf8e" font-size="7">own DB</text>
+  <line x1="160" y1="55" x2="180" y2="55" stroke="#f5a623" stroke-width="1.5"/>
+  <line x1="320" y1="55" x2="340" y2="55" stroke="#f5a623" stroke-width="1.5"/>
+  <line x1="480" y1="55" x2="500" y2="55" stroke="#f5a623" stroke-width="1.5"/>
+  <text x="340" y="115" text-anchor="middle" fill="#f5a623" font-size="9">← network API calls between services, no shared process or database →</text>
+</svg>
+`;
+</script>
+</body>
+</html>

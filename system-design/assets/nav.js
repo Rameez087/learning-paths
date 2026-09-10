@@ -34,27 +34,27 @@
       ["6-3-deep-dive-consistent-hashing", "6.3 Deep dive: consistent hashing"],
       ["6-4-the-new-problem-celebrities-and-cross-shard-search", "6.4 The new problem: celebrities & cross-shard search"]
     ]},
-    { n: 7, dir: "phase-07-everything-is-on-fire", name: "Everything's on Fire at Once", built: false, topics: [
+    { n: 7, dir: "phase-07-everything-is-on-fire", name: "Everything's on Fire at Once", built: true, topics: [
       ["7-1-the-bottleneck-notifications-and-video-blocking-everything", "7.1 The bottleneck: notifications & video blocking everything"],
       ["7-2-the-fix-message-queues-and-workers", "7.2 The fix: message queues & workers"],
       ["7-3-the-new-problem-the-double-notification-bug", "7.3 The new problem: the double-notification bug"]
     ]},
-    { n: 8, dir: "phase-08-one-team-one-outage", name: "One Codebase, One Team, One Outage", built: false, topics: [
+    { n: 8, dir: "phase-08-one-team-one-outage", name: "One Codebase, One Team, One Outage", built: true, topics: [
       ["8-1-the-bottleneck-nobody-can-deploy-safely", "8.1 The bottleneck: nobody can deploy safely"],
       ["8-2-the-fix-breaking-chirp-into-services", "8.2 The fix: breaking Chirp into services"],
       ["8-3-the-new-problem-when-three-services-have-to-agree", "8.3 The new problem: when three services have to agree"]
     ]},
-    { n: 9, dir: "phase-09-the-other-side-of-the-world", name: "The Other Side of the World", built: false, topics: [
+    { n: 9, dir: "phase-09-the-other-side-of-the-world", name: "The Other Side of the World", built: true, topics: [
       ["9-1-the-bottleneck-chirp-is-slow-far-from-home", "9.1 The bottleneck: Chirp is slow far from home"],
       ["9-2-the-fix-cdn-edge-and-multi-region", "9.2 The fix: CDN edge & multi-region"],
       ["9-3-the-new-problem-whose-copy-of-the-data-is-right", "9.3 The new problem: whose copy of the data is right?"]
     ]},
-    { n: 10, dir: "phase-10-when-failure-is-the-default", name: "When Failure Is the Default", built: false, topics: [
+    { n: 10, dir: "phase-10-when-failure-is-the-default", name: "When Failure Is the Default", built: true, topics: [
       ["10-1-the-bottleneck-one-slow-dependency-takes-down-everything", "10.1 The bottleneck: one slow dependency takes down everything"],
       ["10-2-the-fix-circuit-breakers-rate-limiting-graceful-degradation", "10.2 The fix: circuit breakers, rate limiting, graceful degradation"],
       ["10-3-the-mindset-designing-for-failure", "10.3 The mindset: designing for failure"]
     ]},
-    { n: 11, dir: "phase-11-the-toolbox", name: "The Toolbox", built: false, topics: [
+    { n: 11, dir: "phase-11-the-toolbox", name: "The Toolbox", built: true, topics: [
       ["11-1-api-design-principles", "11.1 API design principles"],
       ["11-2-rate-limiting-algorithms", "11.2 Rate limiting algorithms"],
       ["11-3-cap-theorem-and-pacelc", "11.3 CAP theorem & PACELC"],
@@ -64,7 +64,7 @@
       ["11-7-back-of-envelope-estimation", "11.7 Back-of-envelope estimation"],
       ["11-8-the-system-design-interview-framework", "11.8 The system design interview framework"]
     ]},
-    { n: 12, dir: "phase-12-the-patterns-everyone-asks", name: "The Patterns Everyone Asks", built: false, topics: [
+    { n: 12, dir: "phase-12-the-patterns-everyone-asks", name: "The Patterns Everyone Asks", built: true, topics: [
       ["12-1-design-a-url-shortener", "12.1 Design a URL shortener"],
       ["12-2-design-a-social-feed", "12.2 Design a social feed"],
       ["12-3-design-a-chat-app", "12.3 Design a chat app"],
@@ -72,7 +72,7 @@
       ["12-5-design-a-rate-limiter", "12.5 Design a rate limiter"],
       ["12-6-design-search-autocomplete", "12.6 Design search autocomplete"]
     ]},
-    { n: 13, dir: "phase-13-specialized-patterns", name: "Specialized Patterns", built: false, topics: [
+    { n: 13, dir: "phase-13-specialized-patterns", name: "Specialized Patterns", built: true, topics: [
       ["13-1-design-a-video-streaming-service", "13.1 Design a video streaming service"],
       ["13-2-design-a-notification-system", "13.2 Design a notification system"],
       ["13-3-design-dropbox", "13.3 Design Dropbox"],

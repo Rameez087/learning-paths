@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.3 The new problem: the double-notification bug | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 · Everything's on Fire at Once &middot; ~5,000,000-10,000,000 users</div>
+  <span class="stage-badge newproblem">New Problem</span>
+  <h1>7.3 The new problem: the double-notification bug</h1>
+  <p class="subtitle">"Why did I get notified twice that the same person liked my post?" A support ticket that seems trivial and is actually pointing at a genuinely deep distributed systems problem.</p>
+
+  <div class="chirp-quote">
+    "Investigated the duplicate notification reports. Here's what's happening: a worker picks up a message, starts processing it, and right before it finishes and acknowledges completion — it crashes. The queue, having never received that acknowledgment, assumes the job failed and redelivers the exact same message to a different worker. Which then sends the notification again." — you, in the postmortem doc</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Message queues make a deliberate, honest choice here: when in doubt about whether a message
+    was actually processed, redeliver it rather than risk silently losing it. This is called
+    <strong>at-least-once delivery</strong>, and it's the practical default nearly every real
+    message queue uses — the alternative (guaranteeing exactly-once delivery in a distributed
+    system) is a famously, genuinely hard problem, not a solved one any queue can promise for
+    free. The consequence: any worker needs to be written assuming it might receive and process
+    the exact same message more than once.
+  </div>
+
+  <h2>Try it: make the notification worker idempotent</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:100px;">Worker version</label>
+    </div>
+    <div id="idem-demo"></div>
+  </div>
+
+  <h2>Idempotency: the fix, and the word worth knowing precisely</h2>
+  <p>
+    An operation is <strong>idempotent</strong> if running it multiple times produces the exact
+    same result as running it once. "Set the account balance to $500" is idempotent — running it
+    five times leaves the balance at $500. "Add $50 to the account balance" is not — running it
+    five times adds $250. The notification worker's bug is exactly this: sending a notification is
+    not naturally idempotent, so redelivery causes a real, visible duplicate.
+  </p>
+
+  <div class="figure" id="fig-idempotency"></div>
+
+  <h2>The fix in code: a deduplication check before acting</h2>
+  <pre><code>def process_notification(message):
+    idempotency_key = message["notification_id"]  # unique per logical notification
+
+    if redis.exists(f"processed:{idempotency_key}"):
+        return  # already handled — this is a redelivery, safely ignore it
+
+    send_push_notification(message["user_id"], message["content"])
+    redis.set(f"processed:{idempotency_key}", True, expire_seconds=86400)</code></pre>
+  <p>
+    This makes the worker safe to run against the same message any number of times — the first
+    delivery sends the notification and records that it did; every subsequent redelivery of that
+    same logical message checks the record, sees it's already handled, and does nothing further.
+  </p>
+
+  <h2>Why this same idea already showed up once, and will again</h2>
+  <p>
+    Recall webhook handling from earlier system design thinking, and idempotent API design more
+    broadly (this gets its own full treatment in Phase 11's toolbox) — "handle duplicate delivery
+    safely" is a recurring requirement anywhere at-least-once delivery is the honest default,
+    which is most distributed messaging in practice. Recognizing this pattern once means
+    recognizing it everywhere it reappears, rather than treating each instance as a brand-new
+    problem.
+  </p>
+
+  <h2>Why "just guarantee exactly-once" isn't the actual fix</h2>
+  <p>
+    It's tempting to wish the queue itself would simply guarantee each message is delivered
+    exactly once, eliminating the need for this workaround entirely. In practice, true
+    exactly-once delivery across a genuinely distributed system (where networks can fail,
+    machines can crash mid-operation) is not something any real system can honestly promise for
+    free — building idempotent consumers is the practical, honest way production systems actually
+    achieve the same user-visible outcome (no duplicates) without pretending the underlying
+    distributed-systems problem doesn't exist.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why do message queues default to at-least-once delivery instead of guaranteeing exactly-once?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">When in doubt about whether a message was actually processed, the queue chooses to redeliver rather than risk silently losing it — true exactly-once delivery across a genuinely distributed system is a famously hard, unsolved-for-free problem</button>
+        <button class="q-option" data-correct="false">At-least-once delivery is simply an arbitrary design choice with no real justification</button>
+        <button class="q-option" data-correct="false">Exactly-once delivery is trivial to implement and queues simply choose not to bother</button>
+      </div>
+      <div class="q-explain">This is an honest engineering trade-off, not an oversight — choosing to occasionally over-deliver rather than risk silently losing a message reflects a real, deliberate design philosophy.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why is "add $50 to the account balance" not idempotent, while "set the account balance to $500" is?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Running the "add" operation multiple times keeps changing the result each time, while running the "set" operation multiple times always leaves the same final value regardless of repetition</button>
+        <button class="q-option" data-correct="false">Both operations are equally idempotent since they both modify an account balance</button>
+        <button class="q-option" data-correct="false">Idempotency only applies to operations involving money, not other types of data</button>
+      </div>
+      <div class="q-explain">This is the precise definition at work — idempotency is about whether repeated execution changes the outcome beyond the first execution, which is exactly what distinguishes these two operations.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is building idempotent consumers described as the practical, honest fix rather than a workaround to eventually replace?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">True exactly-once delivery isn't something a real distributed system can promise for free — idempotent consumers achieve the same practical user-visible outcome (no duplicates) without pretending the underlying distributed systems challenge doesn't exist</button>
+        <button class="q-option" data-correct="false">Idempotent consumers are a temporary hack that better message queue technology will eventually make unnecessary</button>
+        <button class="q-option" data-correct="false">Exactly-once delivery is fully solved by modern message queues, making this fix redundant</button>
+      </div>
+      <div class="q-explain">This is a durable, foundational distributed-systems reality, not a stopgap — idempotency at the consumer level is how production systems genuinely and honestly handle at-least-once delivery's implications.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — at-least-once delivery and idempotent consumer design; Design Gurus "How to Learn System Design?" (2026) — "explain at-least-once delivery, idempotent consumers, and why exactly-once is hard" as a named Phase 1 graduation criterion.</p>
+
+  <div class="pager">
+    <a href="7-2-the-fix-message-queues-and-workers.html">&larr; 7.2 The fix: message queues &amp; workers</a>
+    <a href="../phase-08-one-team-one-outage/8-1-the-bottleneck-nobody-can-deploy-safely.html">Phase 8: One Codebase, One Team, One Outage &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let idemProcessed = false;
+function renderIdem() {
+  let html = `
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <button id="idem-deliver" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Redeliver the same message</button>
+      <button id="idem-reset" style="padding:8px 16px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); color:var(--text-secondary);">Reset</button>
+    </div>
+    <div id="idem-log" style="font-size:12px; color:var(--text-secondary);"></div>
+  `;
+  document.getElementById('idem-demo').innerHTML = html;
+  document.getElementById('idem-deliver').addEventListener('click', () => {
+    const log = document.getElementById('idem-log');
+    if (!idemProcessed) {
+      idemProcessed = true;
+      log.innerHTML = `<div style="padding:8px 12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; color:#3ecf8e;">✓ First delivery: notification_id not seen before. Notification sent. Marked as processed.</div>`;
+    } else {
+      log.innerHTML += `<div style="padding:8px 12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:6px; color:#3ecf8e; margin-top:6px;">✓ Redelivery: notification_id already marked processed. Skipped — no duplicate sent.</div>`;
+    }
+  });
+  document.getElementById('idem-reset').addEventListener('click', () => {
+    idemProcessed = false;
+    document.getElementById('idem-log').innerHTML = '';
+  });
+}
+renderIdem();
+
+document.getElementById('fig-idempotency').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: a worker crashes before acknowledging a message, the queue redelivers it to another worker, which checks a processed record before deciding whether to act">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="20" width="140" height="35" rx="6" fill="#1a2029" stroke="#e5484d"/><text x="90" y="42" text-anchor="middle" fill="#ff8b8f">Worker A: crashes before ack</text>
+  <line x1="160" y1="37" x2="220" y2="37" stroke="#f2b84b" stroke-width="1.5" marker-end="url(#sd14)"/>
+  <text x="190" y="27" fill="#f2b84b" font-size="8">redelivered</text>
+  <rect x="220" y="20" width="140" height="35" rx="6" fill="#182238" stroke="#5b8cff"/><text x="290" y="42" text-anchor="middle" fill="#a9c1ff">Worker B: receives same msg</text>
+  <line x1="290" y1="55" x2="290" y2="80" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd14g)"/>
+  <rect x="200" y="85" width="180" height="35" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="290" y="107" text-anchor="middle" fill="#3ecf8e" font-size="8">Check: already processed? → skip safely</text>
+  <defs>
+    <marker id="sd14" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f2b84b"/></marker>
+    <marker id="sd14g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.7 Back-of-envelope estimation | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.7</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.7 Back-of-envelope estimation</h1>
+  <p class="subtitle">Every chapter in this track had specific numbers — 340 queries/sec, 91% cache hit rate, 8 shards. Here's how those numbers actually get estimated, before a system exists to measure.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Before designing anything, a rough estimate of scale — requests per second, storage growth,
+    bandwidth — reveals which bottlenecks (from this entire track) are actually going to matter
+    for a <em>specific</em> system, versus which are irrelevant at its actual scale. The method:
+    start from a stated or reasonable assumption (total users, daily active fraction), derive
+    requests per second, then derive storage and bandwidth from there — accepting round numbers
+    and orders of magnitude over false precision.
+  </div>
+
+  <h2>Try it: estimate Chirp's own numbers at a given scale</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:170px;">Total registered users</label>
+      <input type="range" id="est-users" min="1" max="8" value="4" style="flex:1;">
+      <span id="est-users-val" style="font-weight:700; min-width:80px;"></span>
+    </div>
+    <div id="est-results" style="margin-top:14px;"></div>
+  </div>
+
+  <h2>The core estimation chain, step by step</h2>
+  <pre><code># Step 1: daily active users (DAU) — commonly ~20-30% of total registered
+total_users = 10_000_000
+dau = total_users * 0.25  # 2.5M
+
+# Step 2: average actions per user per day
+avg_feed_refreshes_per_user = 15
+total_daily_requests = dau * avg_feed_refreshes_per_user  # 37.5M/day
+
+# Step 3: convert to requests per second (accounting for uneven traffic)
+avg_qps = total_daily_requests / 86_400  # ~434 QPS average
+peak_qps = avg_qps * 3  # peak traffic is often 2-3x average — ~1,300 QPS
+
+# Step 4: storage — one post, roughly estimated
+avg_post_size_bytes = 300  # text + metadata, excluding media
+posts_per_day = dau * 0.3  # 30% of DAU post at least once
+daily_storage = posts_per_day * avg_post_size_bytes  # ~225 MB/day of text alone</code></pre>
+
+  <div class="figure" id="fig-estimation-chain"></div>
+
+  <h2>Why round numbers and orders of magnitude are the actual goal</h2>
+  <p>
+    The point of this exercise isn't computing an exact figure — it's determining whether a system
+    needs to handle thousands, millions, or billions of requests, since the right architecture
+    genuinely differs by orders of magnitude (recall how differently this track's every chapter's
+    fix was shaped by roughly what scale Chirp had actually reached). Getting the exact number
+    right to three significant figures adds essentially no value; getting the right order of
+    magnitude is what actually determines whether Chapter 3's load balancing or Chapter 6's
+    sharding is the relevant concern.
+  </p>
+
+  <h2>Why this matters specifically in an interview setting</h2>
+  <p>
+    Recall Design Gurus' framing from Chapter 1.1: interviewers grade whether a candidate can
+    reason from constraints to a defensible design. Stating "let's assume 10 million daily active
+    users, which is roughly 400 average QPS with peaks around 1,200" — and then designing around
+    those numbers — demonstrates exactly that reasoning, visibly, rather than jumping straight to
+    architecture without any grounding in actual scale.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What is the actual goal of back-of-envelope estimation, according to this page?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Determining the right order of magnitude (thousands vs. millions vs. billions of requests), since the right architecture genuinely differs at different scales — not computing a precisely exact figure</button>
+        <button class="q-option" data-correct="false">Calculating an exact, precise number accurate to several significant figures</button>
+        <button class="q-option" data-correct="false">Estimation has no real bearing on which architectural decisions are appropriate</button>
+      </div>
+      <div class="q-explain">This is the actual point — rough scale determines which of this track's many fixes are even relevant, and precision beyond order-of-magnitude adds little practical value.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does the estimation chain multiply average QPS by roughly 2-3x to get a peak QPS estimate?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Traffic isn't evenly distributed across the day — peak usage periods see meaningfully more requests than the 24-hour average, so designing only for the average would underestimate real peak load</button>
+        <button class="q-option" data-correct="false">Peak and average QPS are always exactly identical in any real system</button>
+        <button class="q-option" data-correct="false">The multiplier accounts for storage growth, not traffic distribution</button>
+      </div>
+      <div class="q-explain">This is a practical, realistic adjustment — average-only estimates would miss exactly the kind of traffic spike that caused Chapter 3's original bottleneck.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does stating explicit scale assumptions out loud matter specifically in an interview context?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It visibly demonstrates the reasoning-from-constraints skill interviewers are actually grading, rather than jumping straight to an architecture with no stated grounding in actual scale</button>
+        <button class="q-option" data-correct="false">Stating scale assumptions is purely a formality with no bearing on interview performance</button>
+        <button class="q-option" data-correct="false">Interviewers only care about the final architecture, never the reasoning that produced it</button>
+      </div>
+      <div class="q-explain">This connects directly back to Chapter 1.1's framing of what system design interviews actually test — visible reasoning, not just a correct-looking final answer.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — reasoning about tradeoffs under constraints as the core interview skill; system-design-primer (GitHub) — back-of-envelope calculation methodology and common estimation figures.</p>
+
+  <div class="pager">
+    <a href="11-6-coordination-primitives.html">&larr; 11.6 Coordination primitives</a>
+    <a href="11-8-the-system-design-interview-framework.html">11.8 The system design interview framework &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderEst() {
+  const tier = parseInt(document.getElementById('est-users').value, 10);
+  const totalUsers = [10000, 100000, 1000000, 5000000, 10000000, 50000000, 100000000, 500000000][tier-1];
+  document.getElementById('est-users-val').textContent = totalUsers.toLocaleString();
+  const dau = totalUsers * 0.25;
+  const avgQps = Math.round((dau * 15) / 86400);
+  const peakQps = avgQps * 3;
+  const dailyStorageMb = Math.round((dau * 0.3 * 300) / 1e6 * 1000) / 1000;
+  document.getElementById('est-results').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;">
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:15px; font-weight:700;">${Math.round(dau).toLocaleString()}</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">Daily active users</div></div>
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:15px; font-weight:700;">${avgQps.toLocaleString()}</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">Avg QPS</div></div>
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:15px; font-weight:700; color:#f5a623;">${peakQps.toLocaleString()}</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">Peak QPS</div></div>
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:15px; font-weight:700;">${dailyStorageMb} MB/day</div><div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:4px;">Text storage growth</div></div>
+    </div>
+  `;
+}
+document.getElementById('est-users').addEventListener('input', renderEst);
+renderEst();
+
+document.getElementById('fig-estimation-chain').innerHTML = `
+<svg viewBox="0 0 680 100" width="100%" role="img" aria-label="Diagram: estimation chain from total users through daily active users, requests per second, and storage growth">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="10" y="30" width="140" height="40" rx="6" fill="#1a2029" stroke="#5b8cff"/><text x="80" y="54" text-anchor="middle" fill="#a9c1ff">Total users</text>
+  <line x1="150" y1="50" x2="190" y2="50" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd20)"/>
+  <rect x="190" y="30" width="140" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="260" y="54" text-anchor="middle" fill="#3ecf8e">Daily active users</text>
+  <line x1="330" y1="50" x2="370" y2="50" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd20)"/>
+  <rect x="370" y="30" width="140" height="40" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="440" y="54" text-anchor="middle" fill="#f5a623">Requests/sec</text>
+  <line x1="510" y1="50" x2="550" y2="50" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd20)"/>
+  <rect x="550" y="30" width="120" height="40" rx="6" fill="#1a2029" stroke="#a78bfa"/><text x="610" y="54" text-anchor="middle" fill="#c4b5fd">Storage/day</text>
+  <defs><marker id="sd20" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.1 The bottleneck: nobody can deploy safely | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 · One Codebase, One Team, One Outage &middot; ~10,000,000+ users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>8.1 The bottleneck: nobody can deploy safely</h1>
+  <p class="subtitle">Chirp has 40 engineers now. A one-line fix to the notification-preferences page just took down the entire feed for six minutes.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    A deploy touching only notification settings code caused a full outage — an unrelated import error at module load time crashed the entire application process, taking every feature down simultaneously, not just notifications.
+  </div>
+
+  <div class="chirp-quote">
+    "This is the fourth time this quarter an unrelated bug has taken down something completely different. We have 40 engineers now, all deploying the exact same codebase, and every single deploy is a bet that nobody's change — anywhere in this enormous application — breaks anything else." — you, in the incident retro</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Chirp is now one large application (a <strong>monolith</strong>) with dozens of engineers all
+    committing to the same codebase and deploying the same single artifact together. This creates
+    a specific, organizational bottleneck distinct from every earlier chapter: it's not that any
+    machine lacks capacity, it's that the codebase itself has become the constraint — a bug in
+    notification code can crash the feed, a slow database migration for one feature blocks
+    deploying an unrelated bug fix, and every team's changes are coupled to every other team's
+    changes purely by living in the same process.
+  </div>
+
+  <h2>Try it: see how deploy risk compounds with team size</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Engineers deploying to the monolith</label>
+      <input type="range" id="mono-eng" min="2" max="60" value="2" style="flex:1;">
+      <span id="mono-eng-val" style="font-weight:700; min-width:30px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Deploys per week (all teams)</span><div class="metric-bar-track"><div class="metric-bar-fill" id="mono-deploys" style="background:#3ecf8e;"></div></div><span id="mono-deploys-val" style="min-width:60px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+    <div class="metric-row"><span class="metric-label">Estimated incidents/month</span><div class="metric-bar-track"><div class="metric-bar-fill" id="mono-incidents" style="background:#3ecf8e;"></div></div><span id="mono-incidents-val" style="min-width:60px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+
+  <h2>Why this bottleneck is organizational, not just technical</h2>
+  <p>
+    Every earlier chapter's bottleneck was purely a machine running out of some resource — CPU,
+    connections, storage. This one is different: the actual constraint is how many people can
+    safely make changes to one shared codebase at once without stepping on each other. A team
+    might have a perfectly correct, well-tested change ready to ship, and still be blocked because
+    someone else's unrelated, in-progress change is currently causing test failures on the shared
+    main branch.
+  </p>
+
+  <div class="figure" id="fig-monolith-coupling"></div>
+
+  <h2>Why this problem didn't exist at Chapter 1's scale</h2>
+  <p>
+    With one or two engineers, coordination overhead is nearly invisible — everyone roughly knows
+    what everyone else is working on. As team size grows, the number of possible ways one person's
+    change can interact badly with another's grows much faster than the team size itself. This is
+    exactly why this bottleneck appears specifically around the 10 million user mark for Chirp —
+    not because of user count directly, but because reaching that scale realistically requires the
+    larger engineering team whose size is the actual cause.
+  </p>
+
+  <h2>What the fix needs to actually solve</h2>
+  <p>
+    The goal isn't simply "write better tests" or "review code more carefully" — those help, but
+    don't address the structural issue: unrelated features are coupled together purely by sharing
+    one process and one deploy. What's needed is a way for different parts of Chirp to be built,
+    tested, deployed, and — critically — allowed to fail independently of each other.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is this bottleneck described as organizational rather than purely technical, unlike every earlier chapter's bottleneck?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The actual constraint is how many people can safely make changes to one shared codebase at once, not any single machine running out of a resource like CPU or storage</button>
+        <button class="q-option" data-correct="false">Organizational bottlenecks and technical bottlenecks are identical in every meaningful way</button>
+        <button class="q-option" data-correct="false">This bottleneck only ever affects a single engineer working alone</button>
+      </div>
+      <div class="q-explain">This is a genuinely new category of constraint in the track — team coordination and codebase coupling, not raw machine capacity.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why can an unrelated bug in notification-preferences code cause the entire feed to crash?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Both features live in the same application process — a crash anywhere in that shared process takes down everything running inside it, regardless of which specific feature caused the problem</button>
+        <button class="q-option" data-correct="false">Notification code and feed code are technically isolated and cannot affect each other</button>
+        <button class="q-option" data-correct="false">This kind of cross-feature failure only happens due to malicious code</button>
+      </div>
+      <div class="q-explain">This is the concrete mechanism behind the "coupled by sharing one process" problem — unrelated features aren't actually isolated from each other's failures at all.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does the material argue that "write better tests" alone doesn't solve this bottleneck?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Better testing helps but doesn't address the structural issue that unrelated features are coupled together purely by sharing one process and one deploy — the fix needs to let parts of the system fail independently</button>
+        <button class="q-option" data-correct="false">Testing has no relationship to deployment safety whatsoever</button>
+        <button class="q-option" data-correct="false">Better tests would fully and permanently eliminate this bottleneck on their own</button>
+      </div>
+      <div class="q-explain">This sets up exactly why the next page's fix is structural (splitting the codebase into independent services) rather than a process improvement layered on top of the existing monolith.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — microservices as a canonical pattern tested at senior level; system-design-primer (GitHub) — monolithic vs. microservice architecture trade-offs.</p>
+
+  <div class="pager">
+    <a href="../phase-07-everything-is-on-fire/7-3-the-new-problem-the-double-notification-bug.html">&larr; 7.3 The new problem: the double-notification bug</a>
+    <a href="8-2-the-fix-breaking-chirp-into-services.html">8.2 The fix: breaking Chirp into services &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderMono() {
+  const eng = parseInt(document.getElementById('mono-eng').value, 10);
+  document.getElementById('mono-eng-val').textContent = eng;
+  const deploys = eng * 3;
+  const incidents = Math.round(Math.pow(eng, 1.6) / 12);
+  document.getElementById('mono-deploys').style.width = Math.min(100, deploys / 2) + '%';
+  document.getElementById('mono-deploys-val').textContent = deploys + '/wk';
+  document.getElementById('mono-incidents').style.width = Math.min(100, incidents * 4) + '%';
+  document.getElementById('mono-incidents').style.background = incidents > 15 ? '#e5484d' : incidents > 6 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('mono-incidents-val').textContent = incidents;
+}
+document.getElementById('mono-eng').addEventListener('input', renderMono);
+renderMono();
+
+document.getElementById('fig-monolith-coupling').innerHTML = `
+<svg viewBox="0 0 680 130" width="100%" role="img" aria-label="Diagram: many unrelated features all compiled and deployed together as one single process, so any one feature crashing takes all of them down">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="130" y="20" width="420" height="90" rx="8" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/>
+  <text x="340" y="38" text-anchor="middle" fill="#ff8b8f">One process, one deploy</text>
+  <rect x="150" y="50" width="80" height="25" rx="4" fill="#182238" stroke="#5b8cff"/><text x="190" y="66" text-anchor="middle" font-size="7">Feed</text>
+  <rect x="240" y="50" width="80" height="25" rx="4" fill="#182238" stroke="#5b8cff"/><text x="280" y="66" text-anchor="middle" font-size="7">Notifications</text>
+  <rect x="330" y="50" width="80" height="25" rx="4" fill="#182238" stroke="#5b8cff"/><text x="370" y="66" text-anchor="middle" font-size="7">Search</text>
+  <rect x="420" y="50" width="80" height="25" rx="4" fill="#182238" stroke="#5b8cff"/><text x="460" y="66" text-anchor="middle" font-size="7">Profile</text>
+  <rect x="150" y="85" width="350" height="15" rx="3" fill="#e5484d" opacity="0.3"/><text x="325" y="96" text-anchor="middle" fill="#ff8b8f" font-size="7">any crash here takes ALL of these down together</text>
+</svg>
+`;
+</script>
+</body>
+</html>

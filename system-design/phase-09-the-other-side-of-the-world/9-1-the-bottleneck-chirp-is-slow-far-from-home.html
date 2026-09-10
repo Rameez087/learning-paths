@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.1 The bottleneck: Chirp is slow far from home | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 · The Other Side of the World &middot; ~10,000,000-50,000,000 users</div>
+  <span class="stage-badge bottleneck">Bottleneck</span>
+  <h1>9.1 The bottleneck: Chirp is slow far from home</h1>
+  <p class="subtitle">Every single piece of Chirp's infrastructure — every service from Chapter 8, every shard from Chapter 6 — lives in one US data center. Chirp just started trending in Southeast Asia.</p>
+
+  <div class="incident-banner">
+    <div class="label">⚠ Alert</div>
+    Median latency for users in the US sits at a healthy 90ms. Median latency for new users in Singapore, Jakarta, and Manila is running 480-650ms — even though every earlier fix in this track is working exactly as designed.
+  </div>
+
+  <div class="chirp-quote">
+    "Nothing is actually broken. Every service, every cache, every shard is healthy and fast. The problem is physics — a request from Manila to our data center in Virginia and back covers roughly 28,000 kilometers round trip, and that simply takes time no amount of clever engineering removes." — you, in the incident channel</div>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Every fix through Chapter 8 assumed users were roughly the same network distance from Chirp's
+    infrastructure — true when Chirp was primarily a US product, false the moment real growth
+    starts coming from other continents. <strong>Network latency</strong> — the time for data to
+    physically travel between two points — has a genuine floor set by the speed of light, and no
+    amount of caching, sharding, or service optimization changes the actual distance data has to
+    travel. This is the first bottleneck in this entire track that isn't really about capacity,
+    contention, or coordination at all — it's pure physical distance.
+  </div>
+
+  <h2>Try it: watch latency scale with distance</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:170px;">Distance to data center (km)</label>
+      <input type="range" id="lat-dist" min="100" max="18000" value="100" step="100" style="flex:1;">
+      <span id="lat-dist-val" style="font-weight:700; min-width:70px;"></span>
+    </div>
+    <div class="metric-row"><span class="metric-label">Round-trip network time</span><div class="metric-bar-track"><div class="metric-bar-fill" id="lat-time" style="background:#3ecf8e;"></div></div><span id="lat-time-val" style="min-width:60px; text-align:right; font-weight:700; font-size:12px;"></span></div>
+  </div>
+
+  <h2>Why this floor is genuinely unavoidable, not just "not yet optimized"</h2>
+  <p>
+    Light (and the electrical/optical signals data actually travels as) moves at a fixed maximum
+    speed. A request from Manila to a data center in Virginia has a physical minimum round-trip
+    time no engineering effort can beat — real-world fiber routing, through undersea cables and
+    intermediate hops, typically adds meaningfully more than the theoretical minimum on top of
+    that. This is worth stating plainly: unlike every earlier bottleneck in this track, this one
+    has a hard physical floor that no clever architecture eliminates, only works around.
+  </p>
+
+  <div class="figure" id="fig-distance"></div>
+
+  <h2>Why "just add more servers in Virginia" doesn't help at all here</h2>
+  <p>
+    Every previous fix in this track added capacity or split work to solve a bottleneck rooted in
+    <em>how much</em> work needed doing. This bottleneck isn't about volume at all — a Manila user
+    making one single request still has to travel the same physical distance, no matter how much
+    idle capacity Virginia has. The only way to genuinely reduce this latency is to reduce the
+    physical distance the request has to travel — which means putting infrastructure physically
+    closer to where users actually are.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is this bottleneck fundamentally different from every earlier one in this track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It has a genuine physical floor set by the speed of light and real network distance, rather than being rooted in capacity, contention, or coordination — no clever engineering eliminates it, only works around it</button>
+        <button class="q-option" data-correct="false">This bottleneck is caused by exactly the same underlying mechanism as Chapter 2's resource contention problem</button>
+        <button class="q-option" data-correct="false">Network latency can always be reduced to zero with sufficiently optimized code</button>
+      </div>
+      <div class="q-explain">This is the key distinguishing feature — a hard physical constraint, not an engineering inefficiency that better code or more hardware can remove.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why doesn't adding more server capacity in Virginia help a user in Manila?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">This bottleneck isn't about volume of work — a single request from Manila still has to travel the same physical distance regardless of how much idle capacity exists at the destination</button>
+        <button class="q-option" data-correct="false">Adding more servers in Virginia would fully solve this latency problem</button>
+        <button class="q-option" data-correct="false">Server capacity and network distance are the exact same underlying constraint</button>
+      </div>
+      <div class="q-explain">This distinction — volume-based bottlenecks versus distance-based bottlenecks — is exactly why the standard "add more capacity" playbook from earlier chapters doesn't apply here.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What's the only genuine way to meaningfully reduce this specific kind of latency?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Reducing the actual physical distance a request has to travel, which means putting infrastructure physically closer to where users actually are</button>
+        <button class="q-option" data-correct="false">Optimizing the application code running on the existing servers</button>
+        <button class="q-option" data-correct="false">Adding more read replicas to the existing single-region database</button>
+      </div>
+      <div class="q-explain">This directly sets up the next page's fix — since the constraint is physical distance, the solution has to be physical too: infrastructure located closer to distant users.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: AlgoMaster "Scalability | System Design" (2026) — CDN and multi-region deployment for reducing latency to geographically distant users; Design Gurus "How to Learn System Design?" (2026) — network fundamentals and latency as foundational Phase 1 vocabulary.</p>
+
+  <div class="pager">
+    <a href="../phase-08-one-team-one-outage/8-3-the-new-problem-when-three-services-have-to-agree.html">&larr; 8.3 The new problem: when three services have to agree</a>
+    <a href="9-2-the-fix-cdn-edge-and-multi-region.html">9.2 The fix: CDN edge &amp; multi-region &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderLat() {
+  const dist = parseInt(document.getElementById('lat-dist').value, 10);
+  document.getElementById('lat-dist-val').textContent = dist.toLocaleString() + ' km';
+  // rough real-world fiber latency approximation: ~0.05ms/km round trip, plus overhead
+  const ms = Math.round(dist * 0.055 + 15);
+  document.getElementById('lat-time').style.width = Math.min(100, ms / 7) + '%';
+  document.getElementById('lat-time').style.background = ms > 400 ? '#e5484d' : ms > 150 ? '#f2b84b' : '#3ecf8e';
+  document.getElementById('lat-time-val').textContent = ms + 'ms';
+}
+document.getElementById('lat-dist').addEventListener('input', renderLat);
+renderLat();
+
+document.getElementById('fig-distance').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: a request from Manila traveling a much longer physical distance to a single data center in Virginia than a request from a nearby US user">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="290" y="45" width="120" height="35" rx="6" fill="#1a2029" stroke="#f5a623" stroke-width="1.5"/><text x="350" y="67" text-anchor="middle" fill="#f5a623">Virginia DC</text>
+  <rect x="220" y="10" width="90" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="265" y="28" text-anchor="middle" fill="#3ecf8e" font-size="8">Nearby US user</text>
+  <line x1="265" y1="40" x2="330" y2="45" stroke="#3ecf8e" stroke-width="1.5"/>
+  <text x="290" y="35" fill="#3ecf8e" font-size="7">~15ms</text>
+  <rect x="20" y="90" width="90" height="30" rx="4" fill="#1a2029" stroke="#e5484d"/><text x="65" y="108" text-anchor="middle" fill="#ff8b8f" font-size="8">Manila user</text>
+  <line x1="110" y1="95" x2="290" y2="70" stroke="#e5484d" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="200" y="90" fill="#ff8b8f" font-size="7">~560ms — same infra, vastly different distance</text>
+</svg>
+`;
+</script>
+</body>
+</html>

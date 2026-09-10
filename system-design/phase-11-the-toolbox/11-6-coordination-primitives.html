@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.6 Coordination primitives | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.6</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.6 Coordination primitives</h1>
+  <p class="subtitle">"What happens when a node dies?" has come up constantly throughout this track without a shared vocabulary. Here's the vocabulary.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Heartbeats</strong>: nodes periodically signal "I'm alive" — missing heartbeats is how
+    a system detects a failure (exactly what 3.3's health checks and 10.2's circuit breakers rely
+    on). <strong>Leader election</strong>: when multiple nodes could coordinate a task, one is
+    elected "leader" to avoid conflicting decisions — if the leader stops sending heartbeats,
+    another node is elected automatically. <strong>Quorum</strong>: requiring agreement from a
+    majority of nodes (not all of them) before considering an operation successful — tolerates
+    some nodes being down while still guaranteeing consistency.
+  </div>
+
+  <h2>Try it: watch leader election happen after a failure</h2>
+  <div class="metric-box">
+    <div id="leader-nodes"></div>
+    <button id="leader-kill" style="padding:8px 16px; background:rgba(229,72,77,0.15); border:1px solid #e5484d; color:#ff8b8f; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Kill the current leader</button>
+    <p id="leader-log" style="font-size:12px; color:var(--text-secondary); margin-top:10px;"></p>
+  </div>
+
+  <h2>Heartbeats: the mechanism underneath most failure detection in this track</h2>
+  <p>
+    Recall Chapter 3.3's load balancer health checks and Chapter 5.2's replicas — both rely on the
+    same underlying idea: periodic signals confirming a node is alive and responsive. Missing a
+    configured number of consecutive heartbeats is what triggers "this node is down" — the load
+    balancer removes it from rotation, a replica gets flagged for investigation, a circuit breaker
+    (10.2) trips. Nearly every failure-detection mechanism in this entire track ultimately rests on
+    this one simple primitive.
+  </p>
+
+  <div class="figure" id="fig-quorum"></div>
+
+  <h2>Why leader election specifically matters for Chirp's sharded, replicated setup</h2>
+  <p>
+    Recall Chapter 5.2: writes go to exactly one primary database per shard. If that primary
+    fails, something needs to promote one of its replicas to become the new primary — and
+    critically, all the other replicas need to agree on <em>which one</em>, or the system risks
+    ending up with two machines both believing they're the primary (a genuinely dangerous
+    "split-brain" scenario). Leader election protocols exist specifically to make this promotion
+    happen safely and unambiguously.
+  </p>
+
+  <h2>Quorum: why "majority," not "everyone," is usually the right bar</h2>
+  <p>
+    Requiring literally every replica to confirm a write before considering it successful would
+    mean one single slow or failed replica blocks all writes entirely — far too fragile. Requiring
+    only a majority (a quorum) means the system tolerates some nodes being down or slow while
+    still guaranteeing that any two quorums necessarily overlap by at least one node — which is
+    what prevents two conflicting decisions from both being independently confirmed as "successful"
+    at the same time.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What underlying mechanism does the material identify as common to Chapter 3.3's health checks, Chapter 5.2's replica monitoring, and Chapter 10.2's circuit breakers?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Heartbeats — periodic "I'm alive" signals, where missing a configured number of them is what triggers each mechanism's specific failure-detection response</button>
+        <button class="q-option" data-correct="false">These three mechanisms have no shared underlying primitive and work in completely unrelated ways</button>
+        <button class="q-option" data-correct="false">Heartbeats are only relevant to load balancer health checks, not replicas or circuit breakers</button>
+      </div>
+      <div class="q-explain">This is exactly the kind of cross-chapter pattern recognition this toolbox phase is meant to surface — one shared primitive underlying several previously separate-seeming mechanisms.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does leader election matter specifically for Chirp's sharded, replicated database setup from Chapter 5?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If a shard's primary fails, its replicas need to agree on exactly which one gets promoted to the new primary — without that agreement, the system risks a dangerous "split-brain" scenario with two machines both believing they're primary</button>
+        <button class="q-option" data-correct="false">Leader election is only relevant to systems with exactly one database and no replicas</button>
+        <button class="q-option" data-correct="false">Replicas never need to agree on which one becomes primary after a failure</button>
+      </div>
+      <div class="q-explain">This grounds the abstract primitive in a concrete, already-familiar scenario from earlier in the track — primary failover genuinely requires this coordination mechanism to work safely.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is requiring a majority (quorum) generally preferred over requiring every single replica to confirm a write?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Requiring every replica means one slow or failed replica blocks all writes entirely; a quorum tolerates some nodes being down while still guaranteeing any two quorums overlap, preventing conflicting decisions from both being confirmed</button>
+        <button class="q-option" data-correct="false">Quorum-based systems provide no actual consistency guarantee compared to requiring unanimous agreement</button>
+        <button class="q-option" data-correct="false">Requiring every replica to confirm is always faster than requiring only a majority</button>
+      </div>
+      <div class="q-explain">This is the genuine mathematical property that makes quorum useful — the overlap guarantee between any two majorities is what preserves consistency without requiring fragile, all-or-nothing unanimous agreement.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Design Gurus "How to Learn System Design?" (2026) — quorum, leader/follower, and heartbeat named explicitly as the coordination-tier chapters answering "what happens when a node dies?"</p>
+
+  <div class="pager">
+    <a href="11-5-indexes-bloom-filters-and-search-basics.html">&larr; 11.5 Indexes, bloom filters &amp; search basics</a>
+    <a href="11-7-back-of-envelope-estimation.html">11.7 Back-of-envelope estimation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let leaderNodes = [
+  { name: "Node A", role: "leader", alive: true },
+  { name: "Node B", role: "follower", alive: true },
+  { name: "Node C", role: "follower", alive: true },
+];
+function renderLeader() {
+  document.getElementById('leader-nodes').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+      ${leaderNodes.map(n => `
+        <div style="text-align:center; padding:14px; border-radius:8px; background:var(--surface-2); border:2px solid ${!n.alive ? '#e5484d' : n.role==='leader' ? '#f5a623' : '#3ecf8e'}; opacity:${n.alive?1:0.4};">
+          <div style="font-weight:700; font-size:13px;">${n.name}</div>
+          <div style="font-size:11px; margin-top:4px; color:${!n.alive ? '#ff8b8f' : n.role==='leader' ? '#f5a623' : '#3ecf8e'};">${!n.alive ? 'DOWN' : n.role === 'leader' ? '👑 LEADER' : 'follower'}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+renderLeader();
+document.getElementById('leader-kill').addEventListener('click', function() {
+  const leader = leaderNodes.find(n => n.role === 'leader' && n.alive);
+  if (!leader) { document.getElementById('leader-log').textContent = "No alive leader to kill — simulation reset needed."; return; }
+  leader.alive = false;
+  renderLeader();
+  document.getElementById('leader-log').textContent = `${leader.name} stopped sending heartbeats. Remaining nodes detect the missing heartbeat...`;
+  setTimeout(() => {
+    const newLeader = leaderNodes.find(n => n.alive && n.role !== 'leader');
+    if (newLeader) {
+      newLeader.role = 'leader';
+      renderLeader();
+      document.getElementById('leader-log').innerHTML = `<span style="color:#3ecf8e;">✓ ${newLeader.name} elected as new leader automatically. System continues operating with no manual intervention.</span>`;
+    }
+  }, 1200);
+});
+
+document.getElementById('fig-quorum').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: five nodes where a quorum of three (a majority) is required to confirm a write, tolerating up to two nodes being down or slow">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <circle cx="80" cy="55" r="30" fill="#1a2029" stroke="#3ecf8e" stroke-width="2"/><text x="80" y="59" text-anchor="middle" fill="#3ecf8e" font-size="8">Node 1 ✓</text>
+  <circle cx="200" cy="55" r="30" fill="#1a2029" stroke="#3ecf8e" stroke-width="2"/><text x="200" y="59" text-anchor="middle" fill="#3ecf8e" font-size="8">Node 2 ✓</text>
+  <circle cx="320" cy="55" r="30" fill="#1a2029" stroke="#3ecf8e" stroke-width="2"/><text x="320" y="59" text-anchor="middle" fill="#3ecf8e" font-size="8">Node 3 ✓</text>
+  <circle cx="440" cy="55" r="30" fill="#1a2029" stroke="#e5484d" stroke-width="2" opacity="0.4"/><text x="440" y="59" text-anchor="middle" fill="#ff8b8f" font-size="8">Node 4 down</text>
+  <circle cx="560" cy="55" r="30" fill="#1a2029" stroke="#e5484d" stroke-width="2" opacity="0.4"/><text x="560" y="59" text-anchor="middle" fill="#ff8b8f" font-size="8">Node 5 slow</text>
+  <text x="340" y="100" text-anchor="middle" fill="#f5a623" font-size="9">3 of 5 = quorum reached — write confirmed successful despite 2 nodes unavailable</text>
+</svg>
+`;
+</script>
+</body>
+</html>
