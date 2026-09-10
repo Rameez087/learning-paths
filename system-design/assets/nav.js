@@ -62,7 +62,17 @@
       ["11-5-indexes-bloom-filters-and-search-basics", "11.5 Indexes, bloom filters & search basics"],
       ["11-6-coordination-primitives", "11.6 Coordination primitives"],
       ["11-7-back-of-envelope-estimation", "11.7 Back-of-envelope estimation"],
-      ["11-8-the-system-design-interview-framework", "11.8 The system design interview framework"]
+      ["11-8-the-system-design-interview-framework", "11.8 The system design interview framework"],
+      ["11-9-acid-transactions-and-isolation-levels", "11.9 ACID transactions & isolation levels"],
+      ["11-10-leaderless-replication-and-quorums", "11.10 Leaderless replication & quorums"],
+      ["11-11-b-trees-vs-lsm-trees", "11.11 B-trees vs. LSM-trees"],
+      ["11-12-linearizability-and-consensus", "11.12 Linearizability & consensus"],
+      ["11-13-log-based-brokers-vs-task-queues", "11.13 Log-based brokers vs. task queues"],
+      ["11-14-percentile-literacy", "11.14 Percentile literacy: p50, p95, p99"],
+      ["11-15-sharding-by-key-range-and-secondary-indexes", "11.15 Sharding by key range & secondary indexes"],
+      ["11-16-two-phase-commit", "11.16 Two-phase commit"],
+      ["11-17-event-sourcing-and-cqrs", "11.17 Event sourcing & CQRS"],
+      ["11-18-vector-embeddings-and-ann-search", "11.18 Vector embeddings & ANN search"]
     ]},
     { n: 12, dir: "phase-12-the-patterns-everyone-asks", name: "The Patterns Everyone Asks", built: true, topics: [
       ["12-1-design-a-url-shortener", "12.1 Design a URL shortener"],

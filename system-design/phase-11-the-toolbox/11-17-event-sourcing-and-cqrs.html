@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.17 Event sourcing & CQRS | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.17</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.17 Event sourcing & CQRS</h1>
+  <p class="subtitle">Every database in Chirp's story stored current state — the latest value, overwriting the last. There's a genuinely different philosophy: store every change that ever happened, and never overwrite anything.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Event sourcing</strong> stores the full sequence of things that happened ("post
+    created," "post edited," "post liked") rather than just the current state — current state
+    becomes something you <em>compute</em> by replaying the events, not something you directly
+    store and overwrite. <strong>CQRS</strong> (Command Query Responsibility Segregation) is the
+    natural pairing: separate the model used for writes (append an event) from the model used for
+    reads (a precomputed, query-optimized view built from those events) — genuinely the same shape
+    as Chapter 5's read replicas, but generalized far beyond just database replication.
+  </div>
+
+  <h2>Try it: watch current state get derived by replaying events</h2>
+  <div class="metric-box">
+    <div id="es-events"></div>
+    <button id="es-next" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Replay next event</button>
+  </div>
+
+  <h2>Why this would have genuinely helped Chirp's edit-history problem</h2>
+  <p>
+    Recall Chapter 4.4: Chirp's cache showed a stale version of an edited post. With event sourcing,
+    "what did this post look like five minutes ago" isn't a hard question at all — it's just
+    replaying events up to that point in time. Chirp's actual database, storing only current
+    state, has no memory of what a post looked like before its most recent edit. This is a real,
+    concrete capability event sourcing provides that Chirp's actual architecture never had.
+  </p>
+
+  <div class="figure" id="fig-cqrs"></div>
+
+  <h2>Why Chirp didn't actually need this, and that's a legitimate reason to skip it</h2>
+  <p>
+    Event sourcing adds real complexity: every piece of code that reads data now needs a
+    materialized view built from events, rather than a simple table lookup, and replaying a long
+    event history to rebuild a view has a real computational cost. Chirp's actual requirements —
+    show the current feed, current profile, current follower count — never needed full history or
+    audit trails badly enough to justify that complexity. This is the same judgment call from
+    Chapter 1.1, reapplied: the right architecture matches the actual requirement, and "we might
+    want history someday" isn't the same as "we need it now."
+  </p>
+
+  <h2>Where it genuinely earns its place: audit-critical systems</h2>
+  <p>
+    13.4's payment system is exactly the kind of place event sourcing shines — "show me every
+    state this transaction has ever been in" is often a real, non-negotiable requirement (for
+    disputes, compliance, debugging), not a nice-to-have. A system whose core value is an accurate
+    historical record, rather than just current state, is where event sourcing's added complexity
+    is worth paying for.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the fundamental difference between event sourcing and how Chirp's actual database stored data throughout this track?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Event sourcing stores the full sequence of changes and derives current state by replaying them; Chirp's actual database stored only current state directly, overwriting previous values on each update</button>
+        <button class="q-option" data-correct="false">Event sourcing and Chirp's actual approach store exactly the same information in the same way</button>
+        <button class="q-option" data-correct="false">Event sourcing only applies to financial systems, never social media data</button>
+      </div>
+      <div class="q-explain">This is the core philosophical shift — storing what happened versus storing only where things currently stand, with real consequences for what questions the system can later answer.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How would event sourcing have specifically helped with Chapter 4.4's stale-cache problem?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">"What did this post look like earlier" becomes a matter of replaying events up to that point in time — Chirp's actual database has no memory of a post's prior state once it's been overwritten by an edit</button>
+        <button class="q-option" data-correct="false">Event sourcing has no relationship to the stale-cache problem from Chapter 4.4</button>
+        <button class="q-option" data-correct="false">Chirp's actual database already stored full edit history, making this comparison moot</button>
+      </div>
+      <div class="q-explain">This is a genuine, concrete capability gap in Chirp's actual design, made visible by contrasting it against what event sourcing would have provided for free.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why was it a legitimate design choice for Chirp to skip event sourcing entirely, rather than a missed opportunity?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Chirp's actual requirements never needed full history or audit trails badly enough to justify the real added complexity — the same "match the architecture to the actual requirement" judgment from Chapter 1.1, applied again</button>
+        <button class="q-option" data-correct="false">Event sourcing has no real complexity cost, making it a mistake not to use it everywhere</button>
+        <button class="q-option" data-correct="false">Event sourcing is only useful for systems that have already failed using traditional storage</button>
+      </div>
+      <div class="q-explain">This is an honest, balanced assessment — a powerful capability is still not worth adopting when the actual requirement doesn't call for it, echoing the track's very first lesson about matching complexity to genuine need.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 3 "Data Models and Query Languages" — Event Sourcing and CQRS as a data modeling approach.</p>
+
+  <div class="pager">
+    <a href="11-16-two-phase-commit.html">&larr; 11.16 Two-phase commit</a>
+    <a href="11-18-vector-embeddings-and-ann-search.html">11.18 Vector embeddings &amp; ANN search &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ES_EVENTS = [
+  { event: "PostCreated: \"Excited for the wknd!!\"", state: { content: "Excited for the wknd!!", likes: 0 } },
+  { event: "PostEdited: \"Excited for the weekend!!\"", state: { content: "Excited for the weekend!!", likes: 0 } },
+  { event: "PostLiked (x1)", state: { content: "Excited for the weekend!!", likes: 1 } },
+  { event: "PostLiked (x1)", state: { content: "Excited for the weekend!!", likes: 2 } },
+];
+let esIdx = 0;
+function renderEs() {
+  let html = '<div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Event log:</div>';
+  html += ES_EVENTS.slice(0, esIdx + 1).map((e,i) => `<div style="padding:6px 10px; background:var(--surface-2); border-radius:6px; margin-bottom:4px; font-size:11px; font-family:var(--font-mono);">${i+1}. ${e.event}</div>`).join('');
+  const current = ES_EVENTS[esIdx].state;
+  html += `<div style="margin-top:12px; padding:12px; background:rgba(62,207,142,0.1); border:1px solid #3ecf8e; border-radius:8px; font-size:12px; color:#3ecf8e;">
+    Current derived state: "${current.content}" — ${current.likes} like${current.likes !== 1 ? 's' : ''}
+  </div>`;
+  document.getElementById('es-events').innerHTML = html;
+  const btn = document.getElementById('es-next');
+  if (esIdx >= ES_EVENTS.length - 1) {
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+    btn.textContent = "All events replayed";
+  }
+}
+renderEs();
+document.getElementById('es-next').addEventListener('click', () => {
+  esIdx++;
+  renderEs();
+});
+
+document.getElementById('fig-cqrs').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: writes appending to an event log, which feeds into a separately optimized read model, mirroring the read replica pattern but generalized beyond database replication">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="35" width="130" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="85" y="59" text-anchor="middle" fill="#a9c1ff">Write (command)</text>
+  <line x1="150" y1="55" x2="200" y2="55" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd34)"/>
+  <rect x="200" y="35" width="130" height="40" rx="6" fill="#1a2029" stroke="#f5a623"/><text x="265" y="59" text-anchor="middle" fill="#f5a623">Event log</text>
+  <line x1="330" y1="55" x2="380" y2="55" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd34g)"/>
+  <rect x="380" y="35" width="150" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="455" y="59" text-anchor="middle" fill="#3ecf8e">Read model (query)</text>
+  <defs>
+    <marker id="sd34" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+    <marker id="sd34g" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

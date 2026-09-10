@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.12 Linearizability & consensus | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.12</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.12 Linearizability & consensus</h1>
+  <p class="subtitle">11.3's "C" in CAP has a precise name. 11.6's leader election is a specific instance of a much bigger idea. Here's both, named properly.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Linearizability</strong> is the strongest consistency guarantee: once any client's
+    write completes, every subsequent read by any client sees that write (or a later one) — the
+    system behaves as if there's only ever one copy of the data, updated instantaneously.
+    <strong>Consensus</strong> is the general problem of getting multiple nodes to agree on a
+    single value despite failures — and it's the actual mechanism that makes linearizable systems
+    possible. 11.6's leader election was a specific instance of consensus (agreeing on "who's the
+    leader"); named algorithms like <strong>Raft</strong> and <strong>Paxos</strong> solve the
+    general version of this problem.
+  </div>
+
+  <h2>Try it: is this history of operations linearizable?</h2>
+  <div class="metric-box" id="lin-demo"></div>
+
+  <h2>Why 11.3's CAP theorem "Consistency" specifically means this</h2>
+  <p>
+    When CAP theorem says a system chooses "Consistency" during a partition, it specifically means
+    linearizability — every client sees the same, most up-to-date view, as if there were only one
+    copy of the data. This is why Chapter 5's asynchronous replicas are explicitly <em>not</em>
+    linearizable (5.3's whole bug was a read not seeing a very recent write) — Chirp deliberately
+    chose availability and performance over this specific guarantee, precisely the trade-off named
+    in 11.3.
+  </p>
+
+  <div class="figure" id="fig-consensus"></div>
+
+  <h2>Raft's core idea, at the level worth actually knowing</h2>
+  <p>
+    Raft (and Paxos, which solves the same problem differently) works by having nodes elect a
+    leader — exactly 11.6's leader election, now recognized as literally running a consensus
+    algorithm — and having that leader sequence all writes into a numbered log, which it replicates
+    to followers. A write is only considered committed once a <em>majority</em> of nodes have it
+    in their log — 11.6 and 11.10's quorum idea again, this time guaranteeing that even if the
+    leader crashes immediately after, the committed write survives on whichever node becomes the
+    new leader.
+  </p>
+
+  <h2>Where consensus shows up as a concrete building block: coordination services</h2>
+  <p>
+    Tools like ZooKeeper and etcd exist specifically to run consensus (via Raft or a similar
+    protocol) as a reusable service, so individual applications don't need to implement it
+    themselves. A system needing to reliably elect a leader, store configuration that must be
+    linearizable, or coordinate distributed locks typically reaches for one of these rather than
+    building consensus from scratch — the practical, real-world answer to "how do I actually get
+    11.6's leader election correctly implemented."
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does CAP theorem's "Consistency" specifically refer to, in precise terms?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Linearizability — every client sees the same, most up-to-date view of the data, as if there were only ever one copy, updated instantaneously</button>
+        <button class="q-option" data-correct="false">CAP's "Consistency" has no specific, precise technical definition</button>
+        <button class="q-option" data-correct="false">CAP's "Consistency" refers to eventual consistency, not linearizability</button>
+      </div>
+      <div class="q-explain">This gives 11.3's abstract framework a precise, named definition — and explains exactly why Chapter 5.3's replication lag bug was a genuine violation of this specific guarantee.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does 11.6's leader election relate to the general problem of consensus?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Leader election is a specific instance of consensus — getting multiple nodes to agree on a single value (in this case, "who's the leader") despite failures — while Raft and Paxos solve the general version of that same problem</button>
+        <button class="q-option" data-correct="false">Leader election and consensus are completely unrelated concepts</button>
+        <button class="q-option" data-correct="false">Consensus algorithms are only used for tasks unrelated to leader election</button>
+      </div>
+      <div class="q-explain">This is the key reframing this page provides — a concept already covered (leader election) turns out to be a specific case of a much more general and more famous problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does Raft require a majority of nodes to have a write in their log before considering it committed?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">This guarantees that even if the leader crashes immediately afterward, the committed write survives on whichever node becomes the new leader — the same quorum overlap principle from 11.6 and 11.10</button>
+        <button class="q-option" data-correct="false">Requiring a majority has no relationship to failure tolerance in Raft</button>
+        <button class="q-option" data-correct="false">Raft requires unanimous agreement from every single node, not just a majority</button>
+      </div>
+      <div class="q-explain">This is the same quorum mathematics appearing for a third time in this Toolbox phase — a genuinely recurring, load-bearing idea across replication, quorum reads/writes, and now consensus.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 10 "Consistency and Consensus" — linearizability, the many faces of consensus, and coordination services.</p>
+
+  <div class="pager">
+    <a href="11-11-b-trees-vs-lsm-trees.html">&larr; 11.11 B-trees vs. LSM-trees</a>
+    <a href="11-13-log-based-brokers-vs-task-queues.html">11.13 Log-based brokers vs. task queues &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+let linScenario = 0;
+const LIN_SCENARIOS = [
+  { desc: "Client A writes X=1 and gets confirmation. Client B then reads X and sees X=1.", linearizable: true, explain: "Linearizable — B's read happened after A's confirmed write, and correctly saw the new value." },
+  { desc: "Client A writes X=1 and gets confirmation. Client B then reads X and sees the OLD value, X=0.", linearizable: false, explain: "NOT linearizable — a read after a confirmed write must see that write. This is exactly Chapter 5.3's replication-lag bug." },
+  { desc: "Client A's write to X=1 is still in progress (not yet confirmed). Client B reads X and sees X=0.", linearizable: true, explain: "Linearizable — since A's write hadn't completed yet, B reading the old value is perfectly consistent with linearizability." },
+];
+function renderLin() {
+  const s = LIN_SCENARIOS[linScenario];
+  document.getElementById('lin-demo').innerHTML = `
+    <p style="font-size:13px; margin-bottom:14px;">${s.desc}</p>
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <button id="lin-yes" style="padding:8px 16px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">Linearizable</button>
+      <button id="lin-no" style="padding:8px 16px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans);">NOT linearizable</button>
+    </div>
+    <div id="lin-feedback" style="font-size:12px; color:var(--text-secondary);"></div>
+  `;
+  document.getElementById('lin-yes').addEventListener('click', () => checkLin(true));
+  document.getElementById('lin-no').addEventListener('click', () => checkLin(false));
+}
+function checkLin(guess) {
+  const s = LIN_SCENARIOS[linScenario];
+  const correct = guess === s.linearizable;
+  document.getElementById('lin-feedback').innerHTML = `<span style="color:${correct?'#3ecf8e':'#ff8b8f'};">${correct ? '✓ Correct.' : '✗ Not quite.'} ${s.explain}</span> <button id="lin-next" style="margin-left:8px; padding:4px 10px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:6px; cursor:pointer; font-size:11px; font-family:var(--font-sans);">Next scenario</button>`;
+  document.getElementById('lin-next').addEventListener('click', () => {
+    linScenario = (linScenario + 1) % LIN_SCENARIOS.length;
+    renderLin();
+  });
+}
+renderLin();
+
+document.getElementById('fig-consensus').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: a leader sequencing writes into a numbered log and replicating to followers, with a write considered committed once a majority of nodes have it">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="270" y="15" width="140" height="35" rx="6" fill="#182238" stroke="#f5a623" stroke-width="1.5"/><text x="340" y="38" text-anchor="middle" fill="#f5a623">Leader (log: [A,B,C])</text>
+  <line x1="300" y1="50" x2="150" y2="80" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd32)"/>
+  <line x1="340" y1="50" x2="340" y2="80" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd32)"/>
+  <line x1="380" y1="50" x2="530" y2="80" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd32)"/>
+  <rect x="80" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="150" y="101" text-anchor="middle" fill="#3ecf8e" font-size="8">Follower 1: [A,B,C]</text>
+  <rect x="270" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="340" y="101" text-anchor="middle" fill="#3ecf8e" font-size="8">Follower 2: [A,B,C]</text>
+  <rect x="460" y="85" width="140" height="25" rx="4" fill="#1a2029" stroke="#e5484d"/><text x="530" y="101" text-anchor="middle" fill="#ff8b8f" font-size="8">Follower 3: [A,B] (lagging)</text>
+  <text x="340" y="65" text-anchor="middle" fill="#5fb98a" font-size="8">C committed: 2 of 3 followers have it — majority reached</text>
+  <defs><marker id="sd32" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>

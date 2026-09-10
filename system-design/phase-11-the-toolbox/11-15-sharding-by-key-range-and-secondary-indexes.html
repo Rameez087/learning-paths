@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.15 Sharding by key range & secondary indexes | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.15</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.15 Sharding by key range & secondary indexes</h1>
+  <p class="subtitle">Chapter 6.2 sharded Chirp by hashing user_id. There's a genuinely different way to split data — and a real complication hash sharding quietly sidesteps.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Range sharding</strong> assigns contiguous key ranges to each shard (users A-F on
+    shard 1, G-M on shard 2, and so on) — unlike Chapter 6.2's hash-based approach, this keeps
+    related keys physically close, making range queries ("all posts between March and June")
+    genuinely fast. The cost: range sharding is far more prone to hot spots, since real-world keys
+    are rarely evenly distributed across the alphabet or timestamp range. Separately: once data is
+    sharded, a <strong>secondary index</strong> (indexing something other than the shard key, like
+    "posts containing #hashtag") can be <strong>local</strong> (each shard indexes only its own
+    data — fast writes, expensive scatter-gather reads) or <strong>global</strong> (one shared
+    index across all shards — fast reads, expensive distributed writes).
+  </div>
+
+  <h2>Try it: compare hash vs. range sharding for different query types</h2>
+  <div class="metric-box">
+    <div id="shard-tabs" style="display:flex; gap:8px; margin-bottom:16px;"></div>
+    <div id="shard-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why Chapter 6.2's hash sharding was still the right call for Chirp</h2>
+  <p>
+    Chirp's dominant queries are almost entirely "get this specific user's data" — a single-key
+    lookup, not a range scan. Hash sharding's even distribution (helped further by 6.3's
+    consistent hashing) was exactly right for that access pattern, and it's precisely what avoided
+    the hot-spot risk range sharding would have introduced for arbitrary user IDs. Range sharding
+    earns its place specifically when range queries are actually common — a time-series system
+    where "give me all events from last Tuesday" is the dominant query shape, for instance.
+  </p>
+
+  <div class="figure" id="fig-secondary-index"></div>
+
+  <h2>The secondary index trade-off, made concrete with hashtags</h2>
+  <p>
+    Suppose Chirp adds hashtag search — "find all posts tagged #launch." A <strong>local secondary
+    index</strong> means each of the 8 shards maintains its own hashtag index for only the posts it
+    holds; writing a new hashtagged post is fast (touches one shard), but finding all #launch posts
+    requires querying all 8 shards and merging results — exactly 6.4's scatter-gather problem,
+    reappearing for a new reason. A <strong>global secondary index</strong> means one shared index
+    mapping hashtag → post IDs across every shard; reads become a single fast lookup, but a write
+    now has to update both the local shard <em>and</em> the global index — a small, real instance
+    of 8.3's cross-shard consistency problem, on every single post.
+  </p>
+
+  <h2>Why there's no universally correct choice here</h2>
+  <p>
+    Local indexes favor write speed and simplicity at the cost of read fan-out; global indexes
+    favor read speed at the cost of write complexity and consistency risk. The right choice depends
+    on Chirp's actual read/write ratio for hashtag search specifically — the same "check the
+    dominant access pattern first" discipline from 11.4's database taxonomy, applied one layer
+    deeper, to index placement within an already-sharded system.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why is range sharding more prone to hot spots than the hash sharding Chirp actually used in Chapter 6.2?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Real-world keys are rarely evenly distributed across their range (alphabet, timestamp, etc.), so contiguous ranges can end up wildly uneven in size, unlike hashing which spreads keys evenly regardless of their real-world distribution</button>
+        <button class="q-option" data-correct="false">Range sharding and hash sharding have identical hot-spot risk profiles</button>
+        <button class="q-option" data-correct="false">Hot spots only occur under hash-based sharding, never range-based sharding</button>
+      </div>
+      <div class="q-explain">This is the genuine trade-off driving the choice between the two schemes — hash sharding trades away range-query efficiency specifically to get this even-distribution property.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does a local secondary index for hashtags require querying every shard to find all posts with a given hashtag?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Each shard only maintains an index for its own data, so no single shard knows about hashtagged posts stored elsewhere — finding all matches requires checking every shard and merging results, exactly 6.4's scatter-gather problem</button>
+        <button class="q-option" data-correct="false">Local secondary indexes automatically synchronize across all shards without any extra work</button>
+        <button class="q-option" data-correct="false">This scatter-gather requirement is unique to hashtag search and unrelated to anything covered in Chapter 6</button>
+      </div>
+      <div class="q-explain">This is a direct, explicit reappearance of 6.4's cross-shard search cost, now shown to be a general property of local secondary indexes, not just a one-off search-feature problem.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What does a global secondary index trade away in exchange for fast reads?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Every write now has to update both the local shard and the shared global index, introducing a small-scale version of 8.3's cross-shard consistency problem on every single write</button>
+        <button class="q-option" data-correct="false">Global secondary indexes have no real cost compared to local secondary indexes</button>
+        <button class="q-option" data-correct="false">Global secondary indexes only affect read performance, never write performance</button>
+      </div>
+      <div class="q-explain">This is the genuine, symmetric trade-off — fast reads in exchange for write complexity and consistency risk, directly connecting to the saga-pattern challenge already covered in 8.3.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 7 "Sharding" — sharding by key range vs. hash of key, and local vs. global secondary indexes.</p>
+
+  <div class="pager">
+    <a href="11-14-percentile-literacy.html">&larr; 11.14 Percentile literacy: p50, p95, p99</a>
+    <a href="11-16-two-phase-commit.html">11.16 Two-phase commit &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const SHARD_COMPARE = {
+  hash: { label: "Hash sharding (Chirp's choice)", detail: "user_id hashed → evenly distributed across shards. Single-key lookups ('get user 4821's posts') are fast and land on exactly one shard. Range queries ('users 1000-2000') are effectively impossible — hashing destroys any ordering." },
+  range: { label: "Range sharding", detail: "Keys assigned to contiguous ranges. Range queries ('posts from March') are fast — a query on a contiguous range typically hits only one or two shards. Risk: an uneven real-world distribution (a viral day, a popular username prefix) can overload one shard, since range sharding has no inherent randomization to spread load." },
+};
+document.getElementById('shard-tabs').innerHTML = Object.keys(SHARD_COMPARE).map((k,i) =>
+  `<div class="shard-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${SHARD_COMPARE[k].label}</div>`
+).join('');
+function renderShard(key) {
+  document.getElementById('shard-detail').textContent = SHARD_COMPARE[key].detail;
+  document.querySelectorAll('.shard-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.shard-tab').forEach(t => t.addEventListener('click', () => renderShard(t.dataset.k)));
+renderShard('hash');
+
+document.getElementById('fig-secondary-index').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram comparing a local secondary index, where each shard indexes only its own data requiring scatter-gather reads, versus a global secondary index shared across all shards requiring cross-shard write coordination">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <text x="150" y="15" text-anchor="middle" font-size="10">Local secondary index</text>
+  <rect x="30" y="30" width="90" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="75" y="49" text-anchor="middle" fill="#3ecf8e" font-size="7">Shard 1 + index</text>
+  <rect x="130" y="30" width="90" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="175" y="49" text-anchor="middle" fill="#3ecf8e" font-size="7">Shard 2 + index</text>
+  <rect x="230" y="30" width="90" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="275" y="49" text-anchor="middle" fill="#3ecf8e" font-size="7">Shard 3 + index</text>
+  <text x="175" y="80" text-anchor="middle" fill="#f5a623" font-size="8">read: query ALL shards (scatter-gather)</text>
+
+  <text x="510" y="15" text-anchor="middle" font-size="10">Global secondary index</text>
+  <rect x="400" y="30" width="90" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="445" y="47" text-anchor="middle" fill="#a9c1ff" font-size="7">Shard 1</text>
+  <rect x="500" y="30" width="90" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="545" y="47" text-anchor="middle" fill="#a9c1ff" font-size="7">Shard 2</text>
+  <rect x="600" y="30" width="70" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="635" y="47" text-anchor="middle" fill="#a9c1ff" font-size="7">Shard 3</text>
+  <rect x="440" y="70" width="180" height="25" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="530" y="87" text-anchor="middle" fill="#f5a623" font-size="7">Shared global index — 1 fast read, coordinated writes</text>
+</svg>
+`;
+</script>
+</body>
+</html>

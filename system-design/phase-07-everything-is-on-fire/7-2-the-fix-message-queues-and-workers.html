@@ -71,6 +71,16 @@ def video_worker():
     actually need to be coupled — rather than the same fix reapplied.
   </p>
 
+  <div class="incident-banner" style="margin-top:24px;">
+    <div class="label">📝 A precise naming note</div>
+    What's being called a "message queue" here is, precisely, a <strong>task queue</strong> —
+    each message goes to exactly one worker and is gone once processed, which is exactly right
+    for transcoding and notification fan-out. There's a genuinely different structure, a
+    <strong>log-based broker</strong> (Kafka-style), built for when multiple independent systems
+    need to react to the same event — Phase 11's Toolbox covers the distinction in full at 11.13,
+    once the vocabulary for it is in place.
+  </div>
+
   <h2>The scaling benefit this quietly delivers</h2>
   <p>
     Worker count and app server count can now scale completely independently. A surge of video

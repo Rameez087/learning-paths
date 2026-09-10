@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.11 B-trees vs. LSM-trees | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.11</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.11 B-trees vs. LSM-trees</h1>
+  <p class="subtitle">Chapter 6.1 described an index outgrowing RAM and slowing writes down. Here's exactly what's happening inside the database when that occurs — and the alternative design built specifically to avoid it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>B-trees</strong> (what Postgres, MySQL, and most relational databases use by default)
+    update data in place — a write finds the exact right spot on disk and modifies it directly,
+    keeping the tree balanced. <strong>LSM-trees</strong> (used by Cassandra, RocksDB, and most
+    databases built for very high write volume) never modify data in place — writes always go to
+    an in-memory buffer first, which periodically flushes to disk as a new, immutable file; a
+    background process called <strong>compaction</strong> later merges old files together and
+    discards outdated data. This single design choice — update in place vs. append and merge later
+    — is the real mechanism behind most storage engines' write-performance differences.
+  </div>
+
+  <h2>Try it: compare the write path for each</h2>
+  <div class="metric-box">
+    <div id="tree-tabs" style="display:flex; gap:8px; margin-bottom:16px;"></div>
+    <div id="tree-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>The precise mechanism behind Chapter 6.1's write slowdown</h2>
+  <p>
+    A B-tree write has to locate the exact leaf node responsible for the new value — a lookup that's
+    fast while the tree fits in memory, but requires real disk reads once it doesn't, since finding
+    the right spot to write means first reading several tree nodes from disk to navigate down to
+    it. This is precisely 6.1's mechanism, now explained down to the actual data structure: it's
+    not that writes are "slow" in some vague sense, it's that a B-tree write genuinely requires
+    disk reads before the disk write can even happen, once the tree outgrows RAM.
+  </p>
+
+  <div class="figure" id="fig-lsm-write"></div>
+
+  <h2>Why LSM-trees would have avoided 6.1's specific problem</h2>
+  <p>
+    An LSM-tree write never needs to locate anything on disk first — it just appends to an
+    in-memory buffer, an operation that stays fast regardless of total data size. This is exactly
+    why databases built for extremely high write throughput (Cassandra, the kind of database that
+    might genuinely suit Chapter 7's high-volume location updates or event logging) default to
+    LSM-trees rather than B-trees — the write path is structurally insulated from the "index
+    outgrew memory" problem that motivated Chirp's actual fix (splitting the database, then
+    sharding).
+  </p>
+
+  <h2>The trade-off LSM-trees make in exchange: read cost and compaction overhead</h2>
+  <p>
+    Nothing is free. Because data isn't organized in one place, a read might need to check the
+    in-memory buffer <em>and</em> several on-disk files before finding (or ruling out) a key —
+    exactly the scenario where 11.5's bloom filters earn their keep, letting a read skip checking
+    files that definitely don't contain the key. Compaction itself also consumes real background
+    CPU and I/O, a genuine operational cost paid in exchange for that fast write path.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What specifically makes a B-tree write slow down once the tree no longer fits in memory?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Locating the exact leaf node to write to requires navigating down the tree, which means reading several tree nodes from disk before the actual write can even happen — the same mechanism Chapter 6.1 described at a higher level</button>
+        <button class="q-option" data-correct="false">B-trees are equally fast regardless of whether they fit in memory</button>
+        <button class="q-option" data-correct="false">B-tree writes only slow down due to network latency, unrelated to disk access</button>
+      </div>
+      <div class="q-explain">This grounds 6.1's earlier, more abstract explanation in the actual data-structure-level mechanism — the same bottleneck, now explained precisely.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does an LSM-tree's write path stay fast regardless of total data size, unlike a B-tree's?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A write just appends to an in-memory buffer without needing to locate anything specific on disk first — the write path is structurally insulated from the tree-outgrowing-memory problem that affects B-trees</button>
+        <button class="q-option" data-correct="false">LSM-trees and B-trees have identical write performance characteristics at any data size</button>
+        <button class="q-option" data-correct="false">LSM-trees avoid disk access entirely, even for very large datasets</button>
+      </div>
+      <div class="q-explain">This is the core structural difference driving the whole comparison — append-then-merge-later versus locate-then-update-in-place produces genuinely different scaling behavior for writes.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does a bloom filter (from 11.5) specifically help with LSM-tree reads?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Since data can be spread across the in-memory buffer and several on-disk files, a bloom filter lets a read cheaply skip files that definitely don't contain the key, avoiding unnecessary disk checks</button>
+        <button class="q-option" data-correct="false">Bloom filters have no practical application to LSM-tree read performance</button>
+        <button class="q-option" data-correct="false">Bloom filters are only useful for B-tree reads, never LSM-tree reads</button>
+      </div>
+      <div class="q-explain">This is a direct, concrete reuse of an existing Toolbox concept — LSM-trees are exactly the kind of real-world scenario bloom filters were introduced to address.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 4 "Storage and Retrieval" — log-structured storage, B-trees, and the trade-offs between the two.</p>
+
+  <div class="pager">
+    <a href="11-10-leaderless-replication-and-quorums.html">&larr; 11.10 Leaderless replication &amp; quorums</a>
+    <a href="11-12-linearizability-and-consensus.html">11.12 Linearizability &amp; consensus &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TREE_INFO = {
+  btree: { label: "B-tree write path", detail: "1. Navigate the tree from root to the correct leaf (may require disk reads if the tree exceeds RAM). 2. Modify the value in place at that exact location. 3. Rebalance the tree if needed. Fast when small, slower as the tree outgrows memory — exactly Chapter 6.1's bottleneck." },
+  lsm: { label: "LSM-tree write path", detail: "1. Append the write to an in-memory buffer (a 'memtable') — no disk lookup needed. 2. Once the buffer fills, flush it to disk as a new immutable file. 3. A background compaction process later merges files and discards outdated entries. Write speed stays constant regardless of total data size." },
+};
+document.getElementById('tree-tabs').innerHTML = Object.keys(TREE_INFO).map((k,i) =>
+  `<div class="tree-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${TREE_INFO[k].label}</div>`
+).join('');
+function renderTree(key) {
+  document.getElementById('tree-detail').textContent = TREE_INFO[key].detail;
+  document.querySelectorAll('.tree-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.tree-tab').forEach(t => t.addEventListener('click', () => renderTree(t.dataset.k)));
+renderTree('btree');
+
+document.getElementById('fig-lsm-write').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: LSM-tree writes going to an in-memory buffer first, then flushing to immutable disk files, with a background compaction process merging older files over time">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="20" y="40" width="130" height="40" rx="6" fill="#182238" stroke="#5b8cff"/><text x="85" y="64" text-anchor="middle" fill="#a9c1ff">Write request</text>
+  <line x1="150" y1="60" x2="200" y2="60" stroke="#3ecf8e" stroke-width="1.5" marker-end="url(#sd31)"/>
+  <rect x="200" y="40" width="130" height="40" rx="6" fill="#1a2029" stroke="#3ecf8e"/><text x="265" y="64" text-anchor="middle" fill="#3ecf8e">In-memory buffer</text>
+  <line x1="330" y1="60" x2="380" y2="60" stroke="#f5a623" stroke-width="1.5" marker-end="url(#sd31y)"/>
+  <text x="355" y="50" fill="#f5a623" font-size="7">flush</text>
+  <rect x="380" y="20" width="90" height="30" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="425" y="39" text-anchor="middle" fill="#f5a623" font-size="8">Disk file 1</text>
+  <rect x="380" y="60" width="90" height="30" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="425" y="79" text-anchor="middle" fill="#f5a623" font-size="8">Disk file 2</text>
+  <line x1="470" y1="35" x2="530" y2="55" stroke="#a78bfa" stroke-width="1.5"/>
+  <line x1="470" y1="75" x2="530" y2="55" stroke="#a78bfa" stroke-width="1.5"/>
+  <rect x="530" y="40" width="130" height="35" rx="6" fill="#1a2029" stroke="#a78bfa"/><text x="595" y="62" text-anchor="middle" fill="#c4b5fd">Compaction merges</text>
+  <defs>
+    <marker id="sd31" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3ecf8e"/></marker>
+    <marker id="sd31y" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5a623"/></marker>
+  </defs>
+</svg>
+`;
+</script>
+</body>
+</html>

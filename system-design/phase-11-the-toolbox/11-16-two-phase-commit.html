@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.16 Two-phase commit | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.16</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.16 Two-phase commit</h1>
+  <p class="subtitle">Chapter 8.3 solved cross-service consistency with sagas. Here's the more "obvious" answer nearly everyone asks about first — and precisely why it's not what Chirp actually used.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Two-phase commit (2PC)</strong> tries to make a multi-service operation genuinely
+    atomic, the way a single-database transaction is (11.9): a coordinator asks every participant
+    to <strong>prepare</strong> (do the work, but don't finalize it — stay ready to either commit
+    or roll back), and only once every participant confirms it's prepared does the coordinator tell
+    everyone to <strong>commit</strong>. This sounds like exactly what 8.3 needed. The reason
+    Chirp used sagas instead: 2PC is <strong>blocking</strong> — if the coordinator crashes
+    between the prepare and commit messages, every participant is stuck holding locks, unable to
+    proceed, until the coordinator recovers.
+  </div>
+
+  <h2>Try it: watch 2PC's crash scenario play out</h2>
+  <div class="metric-box">
+    <div id="tpc-steps"></div>
+    <button id="tpc-next" style="padding:8px 16px; background:rgba(245,166,35,0.15); border:1px solid #f5a623; color:#f5c168; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; font-family:var(--font-sans); margin-top:10px;">Advance</button>
+  </div>
+
+  <h2>Why this is worse than it sounds for a system shaped like Chirp's</h2>
+  <p>
+    While a participant is "prepared" but waiting for the final commit instruction, it typically
+    holds a lock on the relevant data — meaning nothing else can touch that row until the
+    coordinator resolves the transaction. Recall Chapter 10.1's cascading failure lesson:
+    a coordinator crash under 2PC doesn't just fail one operation, it can leave real database
+    locks held indefinitely across multiple services, exactly the kind of resource-holding failure
+    mode that chapter identified as dangerous at scale.
+  </p>
+
+  <div class="figure" id="fig-2pc-flow"></div>
+
+  <h2>Why sagas won the trade-off for Chirp's account deletion</h2>
+  <p>
+    8.3's saga accepts a real cost — a brief window where the system is genuinely, visibly
+    inconsistent (a post deleted but not yet reflected in search) — in exchange for never
+    blocking indefinitely. Each step in a saga commits immediately and independently; if a later
+    step fails, compensating actions clean up rather than everyone waiting on a coordinator. For a
+    social app where a few seconds of visible inconsistency is a real but tolerable cost, this is
+    a better trade than the availability risk 2PC's blocking nature introduces.
+  </p>
+
+  <h2>Where 2PC still genuinely earns its place</h2>
+  <p>
+    2PC (or protocols built on similar ideas) remains the right choice specifically when true
+    atomicity is worth the availability cost — the exact "consistency over availability" choice
+    named in 11.3's CAP framework and demonstrated concretely in 13.4's payment system, where
+    briefly blocking is a far better outcome than a customer being charged without receiving what
+    they paid for.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What does it mean for two-phase commit to be "blocking," and why does that matter?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If the coordinator crashes between sending prepare and commit messages, every participant is stuck holding locks, unable to proceed until the coordinator recovers — a real availability risk, not just a theoretical one</button>
+        <button class="q-option" data-correct="false">"Blocking" means 2PC prevents any transactions from ever completing successfully</button>
+        <button class="q-option" data-correct="false">2PC's blocking behavior has no relationship to coordinator failures</button>
+      </div>
+      <div class="q-explain">This is the specific, concrete failure mode that makes 2PC risky — and it's exactly what motivated 8.3's choice of sagas instead for Chirp's account deletion.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. How does a coordinator crash under 2PC connect to Chapter 10.1's cascading failure lesson?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A stuck coordinator can leave real database locks held indefinitely across multiple services, exactly the kind of resource-holding failure mode 10.1 identified as dangerous — not just one operation failing, but resources tied up system-wide</button>
+        <button class="q-option" data-correct="false">2PC coordinator crashes have no relationship to anything covered in Chapter 10</button>
+        <button class="q-option" data-correct="false">Cascading failures only occur in synchronous request chains, never in transaction coordination</button>
+      </div>
+      <div class="q-explain">This is a genuine structural parallel — both failure modes involve one component's failure propagating resource exhaustion outward to everything depending on it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does 2PC remain the right choice for 13.4's payment system, even though 8.3 rejected it for account deletion?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Payments genuinely need consistency over availability — briefly blocking is a far better outcome than a customer being charged without receiving what they paid for, the same CAP trade-off from 11.3 producing a different answer for a different cost profile</button>
+        <button class="q-option" data-correct="false">2PC is never appropriate for any real system, including payment processing</button>
+        <button class="q-option" data-correct="false">Payments and account deletion have identical cost-of-error profiles, so the same choice should always apply</button>
+      </div>
+      <div class="q-explain">This reinforces the track's recurring theme one more time — the right consistency mechanism depends on what a specific error actually costs, not a universal rule about which pattern is "better."</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 8 "Transactions" — two-phase commit, distributed transactions across systems, and their blocking failure mode.</p>
+
+  <div class="pager">
+    <a href="11-15-sharding-by-key-range-and-secondary-indexes.html">&larr; 11.15 Sharding by key range &amp; secondary indexes</a>
+    <a href="11-17-event-sourcing-and-cqrs.html">11.17 Event sourcing &amp; CQRS &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const TPC_STEPS = [
+  { text: "Coordinator sends PREPARE to Profile Service and Feed Service", status: "normal" },
+  { text: "Both services do the work, lock the relevant rows, and reply 'prepared' — waiting for the final word", status: "normal" },
+  { text: "Coordinator crashes before sending COMMIT to either service", status: "fail" },
+  { text: "Both services are now stuck: locks held, unable to commit or roll back, waiting indefinitely for a coordinator that's gone", status: "fail" },
+];
+let tpcIdx = 0;
+function renderTpc() {
+  document.getElementById('tpc-steps').innerHTML = TPC_STEPS.slice(0, tpcIdx + 1).map((s,i) => {
+    const color = s.status === 'fail' ? '#e5484d' : '#3ecf8e';
+    return `<div style="padding:8px 12px; background:${s.status==='fail'?'rgba(229,72,77,0.1)':'var(--surface-2)'}; border:1px solid ${color}; border-radius:6px; margin-bottom:6px; font-size:12px; color:${color};">${i+1}. ${s.text}</div>`;
+  }).join('');
+  const btn = document.getElementById('tpc-next');
+  if (tpcIdx >= TPC_STEPS.length - 1) {
+    btn.textContent = "Stuck — this is 2PC's blocking failure mode";
+    btn.disabled = true;
+    btn.style.opacity = "0.5";
+  }
+}
+renderTpc();
+document.getElementById('tpc-next').addEventListener('click', () => {
+  tpcIdx++;
+  renderTpc();
+});
+
+document.getElementById('fig-2pc-flow').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram: a coordinator sending prepare messages to two participants, both replying prepared, then the coordinator crashing before sending commit, leaving both participants blocked holding locks">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <rect x="270" y="10" width="140" height="30" rx="6" fill="#1a2029" stroke="#e5484d" stroke-width="1.5"/><text x="340" y="30" text-anchor="middle" fill="#ff8b8f">Coordinator (crashed)</text>
+  <line x1="300" y1="40" x2="180" y2="70" stroke="#6b7386" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <line x1="380" y1="40" x2="500" y2="70" stroke="#6b7386" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <rect x="100" y="75" width="160" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="180" y="97" text-anchor="middle" fill="#f2b84b">Participant A: prepared, stuck</text>
+  <rect x="420" y="75" width="160" height="35" rx="6" fill="#1a2029" stroke="#f2b84b"/><text x="500" y="97" text-anchor="middle" fill="#f2b84b">Participant B: prepared, stuck</text>
+</svg>
+`;
+</script>
+</body>
+</html>

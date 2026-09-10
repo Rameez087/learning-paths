@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.10 Leaderless replication & quorums | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.10</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.10 Leaderless replication & quorums</h1>
+  <p class="subtitle">Chirp always had exactly one writable copy per shard. Here's the genuinely different model Cassandra and DynamoDB use instead — no leader at all.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    In <strong>leaderless replication</strong>, any replica can accept a write — there's no
+    single primary to route through, unlike every design in Chirp's story. Correctness comes from
+    <strong>quorums</strong>: with <strong>N</strong> total replicas, a write must succeed on at
+    least <strong>W</strong> of them, and a read must check at least <strong>R</strong> of them.
+    As long as <strong>W + R &gt; N</strong>, every read is guaranteed to overlap with the most
+    recent write on at least one replica — the same overlap guarantee from 11.6's quorum
+    discussion, now applied specifically to guaranteeing read freshness rather than just failure
+    tolerance.
+  </div>
+
+  <h2>Try it: find which N/W/R combinations guarantee freshness</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:60px;">N</label>
+      <input type="range" id="qr-n" min="3" max="7" value="5" style="flex:1;">
+      <span id="qr-n-val" style="font-weight:700; min-width:30px;">5</span>
+    </div>
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:60px;">W (write quorum)</label>
+      <input type="range" id="qr-w" min="1" max="7" value="3" style="flex:1;">
+      <span id="qr-w-val" style="font-weight:700; min-width:30px;">3</span>
+    </div>
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:60px;">R (read quorum)</label>
+      <input type="range" id="qr-r" min="1" max="7" value="3" style="flex:1;">
+      <span id="qr-r-val" style="font-weight:700; min-width:30px;">3</span>
+    </div>
+    <div id="qr-result" style="margin-top:14px;"></div>
+  </div>
+
+  <h2>Why Chirp's actual design (single-leader) was still the right call</h2>
+  <p>
+    Leaderless replication isn't strictly better than Chapter 5's single-leader model — it's a
+    different trade-off. Single-leader gives a simple, clear ordering of writes and avoids
+    5.3-style conflicts entirely, at the cost of the primary being a bottleneck for writes.
+    Leaderless spreads write load across every replica with no single bottleneck, at the cost of
+    needing to actively resolve concurrent writes to the same key — a real, recurring cost, not a
+    one-time setup decision.
+  </p>
+
+  <div class="figure" id="fig-quorum-overlap"></div>
+
+  <h2>What happens when quorums don't overlap: stale reads, by design</h2>
+  <p>
+    Choosing W + R ≤ N is a legitimate, deliberate choice some systems make — it trades away the
+    freshness guarantee for even lower latency (fewer replicas need to respond per operation). This
+    is the same latency-vs-consistency trade-off from 11.3's PACELC framework, made explicit and
+    tunable per-operation rather than baked into the architecture once, the way Chirp's
+    single-leader design baked it in back in Chapter 5.2.
+  </p>
+
+  <h2>Read repair: fixing staleness quietly, after the fact</h2>
+  <p>
+    When a quorum read discovers that different replicas disagree (one has an older value than
+    another), the coordinating node can write the newer value back to the stale replica right then
+    — <strong>read repair</strong>. This means staleness in a leaderless system tends to
+    self-correct over time as reads happen, rather than requiring a separate, dedicated
+    reconciliation process.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why does W + R &gt; N guarantee that a read will see the most recent write?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">If a write succeeded on W replicas and a read checks R replicas, and W + R exceeds the total N, the two sets of replicas must overlap by at least one — guaranteeing the read touches at least one replica that has the latest write</button>
+        <button class="q-option" data-correct="false">W + R &gt; N guarantees freshness only when N equals exactly 3</button>
+        <button class="q-option" data-correct="false">This overlap guarantee has no mathematical basis and is purely a convention</button>
+      </div>
+      <div class="q-explain">This is the same overlap mathematics from 11.6's quorum discussion, applied here specifically to guarantee read freshness rather than just tolerating node failures.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why isn't leaderless replication strictly better than Chirp's actual single-leader design from Chapter 5?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">It's a different trade-off — leaderless avoids a single write bottleneck but requires actively resolving concurrent writes to the same key as an ongoing cost, while single-leader avoids that conflict resolution at the cost of the primary being a bottleneck</button>
+        <button class="q-option" data-correct="false">Leaderless replication has no real trade-offs compared to single-leader replication</button>
+        <button class="q-option" data-correct="false">Single-leader replication is always objectively inferior to leaderless replication</button>
+      </div>
+      <div class="q-explain">This reinforces the track's recurring theme — different replication models solve the same underlying problem with genuinely different, real costs, not a strictly-better-or-worse ranking.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. How does read repair help a leaderless system stay consistent over time?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">When a quorum read finds replicas disagreeing, the coordinating node writes the newer value back to the stale replica immediately — letting staleness self-correct as reads happen, rather than needing a separate reconciliation process</button>
+        <button class="q-option" data-correct="false">Read repair requires a completely separate, dedicated process that runs independently of normal reads</button>
+        <button class="q-option" data-correct="false">Read repair only works in single-leader replication systems, never leaderless ones</button>
+      </div>
+      <div class="q-explain">This is a genuinely elegant, low-overhead mechanism — consistency maintenance is folded into the normal read path rather than requiring extra dedicated infrastructure.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 6 "Replication" — leaderless replication, quorum reads/writes, and read repair.</p>
+
+  <div class="pager">
+    <a href="11-9-acid-transactions-and-isolation-levels.html">&larr; 11.9 ACID transactions &amp; isolation levels</a>
+    <a href="11-11-b-trees-vs-lsm-trees.html">11.11 B-trees vs. LSM-trees &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderQr() {
+  const n = parseInt(document.getElementById('qr-n').value, 10);
+  const w = Math.min(n, parseInt(document.getElementById('qr-w').value, 10));
+  const r = Math.min(n, parseInt(document.getElementById('qr-r').value, 10));
+  document.getElementById('qr-n-val').textContent = n;
+  document.getElementById('qr-w').max = n;
+  document.getElementById('qr-r').max = n;
+  document.getElementById('qr-w-val').textContent = w;
+  document.getElementById('qr-r-val').textContent = r;
+  const guaranteed = (w + r) > n;
+  document.getElementById('qr-result').innerHTML = `
+    <div style="padding:14px 16px; border-radius:8px; background:${guaranteed?'rgba(62,207,142,0.1)':'rgba(229,72,77,0.1)'}; border:1px solid ${guaranteed?'#3ecf8e':'#e5484d'}; font-size:13px; color:${guaranteed?'#3ecf8e':'#ff8b8f'};">
+      W + R = ${w + r}, N = ${n} → ${guaranteed ? 'Guaranteed fresh reads (quorums must overlap)' : 'NOT guaranteed — stale reads possible (a deliberate low-latency trade-off, or a misconfiguration)'}
+    </div>
+  `;
+}
+['qr-n','qr-w','qr-r'].forEach(id => document.getElementById(id).addEventListener('input', renderQr));
+renderQr();
+
+document.getElementById('fig-quorum-overlap').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: five replicas where a write quorum of three and a read quorum of three necessarily overlap by at least one replica, guaranteeing the read sees the latest write">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <circle cx="120" cy="55" r="28" fill="none" stroke="#5b8cff" stroke-width="2"/><text x="120" y="15" text-anchor="middle" fill="#a9c1ff">Write quorum (W=3)</text>
+  <circle cx="220" cy="55" r="28" fill="none" stroke="#3ecf8e" stroke-width="2"/><text x="220" y="95" text-anchor="middle" fill="#3ecf8e">Read quorum (R=3)</text>
+  <circle cx="70" cy="40" r="10" fill="#182238" stroke="#5b8cff"/><text x="70" y="43" text-anchor="middle" font-size="7">R1</text>
+  <circle cx="90" cy="75" r="10" fill="#182238" stroke="#5b8cff"/><text x="90" y="78" text-anchor="middle" font-size="7">R2</text>
+  <circle cx="170" cy="55" r="10" fill="#1a2029" stroke="#f5a623" stroke-width="2"/><text x="170" y="58" text-anchor="middle" font-size="7" fill="#f5a623">R3</text>
+  <circle cx="250" cy="35" r="10" fill="#1a2029" stroke="#3ecf8e"/><text x="250" y="38" text-anchor="middle" font-size="7">R4</text>
+  <circle cx="245" cy="80" r="10" fill="#1a2029" stroke="#3ecf8e"/><text x="245" y="83" text-anchor="middle" font-size="7">R5</text>
+  <text x="170" y="100" text-anchor="middle" fill="#f5a623" font-size="8">R3 is in both quorums — the overlap that guarantees freshness</text>
+</svg>
+`;
+</script>
+</body>
+</html>

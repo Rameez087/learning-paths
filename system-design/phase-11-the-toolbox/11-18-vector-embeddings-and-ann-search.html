@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.18 Vector embeddings & ANN search | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.18</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.18 Vector embeddings & ANN search</h1>
+  <p class="subtitle">13.6's RAG chatbot waved its hands at "a vector index." Here's what's actually inside that box.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An <strong>embedding</strong> is a list of numbers (typically hundreds to thousands of
+    dimensions) representing a piece of text's <em>meaning</em>, produced by a model trained so
+    that semantically similar text ends up as nearby points in that numeric space — "weekend
+    plans" and "plans for Saturday" land close together even without sharing any exact words,
+    unlike 11.5's inverted index, which only matches exact terms. Finding the most relevant
+    content for a question means finding the nearest embedding points to the question's own
+    embedding — and since checking literally every stored point doesn't scale, real systems use
+    <strong>Approximate Nearest Neighbor (ANN)</strong> algorithms that find <em>almost</em> the
+    closest matches, dramatically faster, in exchange for a small, usually acceptable chance of
+    missing the single best match.
+  </div>
+
+  <h2>Try it: see nearby points in embedding space</h2>
+  <div class="metric-box" id="vec-demo"></div>
+
+  <h2>Why this is genuinely different from 11.5's search, not just a fancier version</h2>
+  <p>
+    11.5's inverted index is precise but literal — it finds documents containing the exact word
+    typed. Embeddings capture meaning, not exact wording — a question like "what did I say about
+    my trip" can retrieve a post that says "heading to the coast this weekend" with no word overlap
+    at all. This is precisely why 13.6's RAG chatbot needs this specific technique: a user's
+    question is rarely phrased using the same words as the original post, and exact-match search
+    would miss the connection entirely.
+  </p>
+
+  <div class="figure" id="fig-ann"></div>
+
+  <h2>Why approximate, not exact, nearest neighbor</h2>
+  <p>
+    Finding the mathematically exact nearest point among millions of high-dimensional vectors is
+    genuinely expensive — checking every single one doesn't scale any better than Chapter 6.4's
+    scatter-gather problem did. ANN algorithms (HNSW is a common one) pre-build a navigable graph
+    structure over the embedding space, letting a search jump quickly toward the right
+    neighborhood rather than checking everything — the same underlying instinct as 6.3's
+    consistent hashing ring: organize the space in advance so a search doesn't need to be
+    exhaustive.
+  </p>
+
+  <h2>Closing the loop on 13.6, precisely</h2>
+  <p>
+    The "vector index" in Chirp's RAG chatbot is specifically an ANN-indexed store of post
+    embeddings. When a user asks a question, the question itself gets embedded (same model, same
+    space), the ANN index quickly finds the nearest post embeddings, and those posts — not the
+    entire post history — get handed to the LLM as grounding context. This is the concrete
+    mechanism behind every one of 13.6's retrieval steps, finally made specific rather than
+    described only at the architecture-diagram level.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can a vector search retrieve a relevant post even when the user's question shares no exact words with it?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Embeddings represent meaning, not exact wording — a model trained to place semantically similar text nearby in numeric space can match "weekend plans" to "plans for Saturday" despite no shared words</button>
+        <button class="q-option" data-correct="false">Vector search and 11.5's inverted index work identically, just with different underlying data structures</button>
+        <button class="q-option" data-correct="false">Vector search requires exact word matches just like an inverted index does</button>
+      </div>
+      <div class="q-explain">This is the core capability that makes vector search genuinely different from (not just a fancier version of) exact-match search — meaning-based retrieval rather than literal term matching.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do real systems use Approximate Nearest Neighbor search instead of finding the exact mathematically closest match?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Checking every single stored vector to find the exact nearest one doesn't scale — ANN algorithms pre-build a navigable structure that lets a search jump toward the right neighborhood quickly, in exchange for a small, usually acceptable chance of missing the single best match</button>
+        <button class="q-option" data-correct="false">Exact nearest neighbor search is actually faster than approximate search in every case</button>
+        <button class="q-option" data-correct="false">ANN algorithms guarantee finding the mathematically exact closest match every time</button>
+      </div>
+      <div class="q-explain">This is a genuine, deliberate trade-off — approximate but fast, versus exact but prohibitively expensive at real scale, echoing the same "organize in advance instead of exhaustive search" instinct from consistent hashing.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. What specifically does this page clarify about 13.6's RAG chatbot architecture that was previously left vague?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The "vector index" is specifically an ANN-indexed store of post embeddings, and retrieval works by embedding the user's question and using ANN search to find the nearest post embeddings — the concrete mechanism behind 13.6's diagram-level description</button>
+        <button class="q-option" data-correct="false">This page has no real connection to 13.6's RAG chatbot design</button>
+        <button class="q-option" data-correct="false">13.6's vector index was already fully explained at the mechanism level, making this page redundant</button>
+      </div>
+      <div class="q-explain">This is the deliberate payoff of this addition — turning an earlier capstone's hand-waved component into something concretely understood, closing a real gap rather than just adding an unrelated new fact.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 4 "Storage and Retrieval" — vector embeddings and multidimensional indexes for semantic search.</p>
+
+  <div class="pager">
+    <a href="11-17-event-sourcing-and-cqrs.html">&larr; 11.17 Event sourcing &amp; CQRS</a>
+    <a href="../phase-12-the-patterns-everyone-asks/12-1-design-a-url-shortener.html">Phase 12: The Patterns Everyone Asks &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const VEC_POINTS = [
+  { label: "\"heading to the coast this weekend\"", x: 220, y: 90, color: "#3ecf8e" },
+  { label: "\"beach trip on Saturday\"", x: 250, y: 130, color: "#3ecf8e" },
+  { label: "\"just adopted a cat!\"", x: 480, y: 60, color: "#6b7386" },
+  { label: "\"new kitten is adorable\"", x: 510, y: 90, color: "#6b7386" },
+  { label: "QUERY: \"what did I say about my trip?\"", x: 235, y: 60, color: "#f5a623" },
+];
+document.getElementById('vec-demo').innerHTML = `<div id="vec-svg-container"></div><p style="font-size:12px; color:var(--text-secondary); margin-top:10px;">The query lands near the trip-related posts in embedding space, despite no exact word overlap — and far from the unrelated cat posts.</p>`;
+document.getElementById('vec-svg-container').innerHTML = `
+<svg viewBox="0 0 680 200" width="100%" role="img" aria-label="Scatter plot: trip-related posts clustered near the query point in embedding space, while unrelated cat posts cluster far away, illustrating semantic similarity">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <rect x="10" y="10" width="660" height="180" rx="8" fill="var(--code-bg)" stroke="#262d3a"/>
+  ${VEC_POINTS.map(p => `
+    <circle cx="${p.x}" cy="${p.y}" r="${p.color==='#f5a623'?7:6}" fill="${p.color}"/>
+    <text x="${p.x}" y="${p.y - 12}" text-anchor="middle" fill="${p.color}" font-size="7">${p.label}</text>
+  `).join('')}
+  <line x1="235" y1="60" x2="220" y2="90" stroke="#f5a623" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>
+  <line x1="235" y1="60" x2="250" y2="130" stroke="#f5a623" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>
+</svg>
+`;
+
+document.getElementById('fig-ann').innerHTML = `
+<svg viewBox="0 0 680 110" width="100%" role="img" aria-label="Diagram: a query embedding navigating a pre-built graph structure to quickly find approximate nearest neighbors, rather than checking every stored embedding exhaustively">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <circle cx="80" cy="55" r="14" fill="#182238" stroke="#f5a623" stroke-width="2"/><text x="80" y="80" text-anchor="middle" fill="#f5a623">Query</text>
+  <line x1="94" y1="55" x2="200" y2="40" stroke="#6b7386" stroke-width="1"/>
+  <line x1="200" y1="40" x2="320" y2="55" stroke="#6b7386" stroke-width="1"/>
+  <line x1="320" y1="55" x2="440" y2="35" stroke="#3ecf8e" stroke-width="1.5"/>
+  <circle cx="200" cy="40" r="8" fill="#1a2029" stroke="#5b8cff"/>
+  <circle cx="320" cy="55" r="8" fill="#1a2029" stroke="#5b8cff"/>
+  <circle cx="440" cy="35" r="10" fill="#1a2029" stroke="#3ecf8e" stroke-width="2"/><text x="440" y="20" text-anchor="middle" fill="#3ecf8e">Nearest match</text>
+  <text x="260" y="90" text-anchor="middle" fill="#9aa4b5" font-size="8">navigating a pre-built graph — never checking all vectors exhaustively</text>
+</svg>
+`;
+</script>
+</body>
+</html>

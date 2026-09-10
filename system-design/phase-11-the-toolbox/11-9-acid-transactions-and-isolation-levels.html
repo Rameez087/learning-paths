@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.9 ACID transactions & isolation levels | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.9</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.9 ACID transactions & isolation levels</h1>
+  <p class="subtitle">Chirp never explicitly dealt with this — every fix so far sidestepped it. Here's the concept underneath "a database operation either fully happens or doesn't happen at all."</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>transaction</strong> groups multiple operations so they succeed or fail as one unit.
+    <strong>ACID</strong> names the guarantee: Atomicity (all-or-nothing), Consistency (the
+    database moves between valid states), Isolation (concurrent transactions don't interfere),
+    Durability (a committed transaction survives a crash). Isolation is the genuinely interesting
+    one in practice — full isolation (<strong>Serializable</strong>) is expensive, so most real
+    databases default to a weaker level (<strong>Read Committed</strong> or <strong>Snapshot
+    Isolation</strong>) that allows certain rare anomalies in exchange for speed. Choosing an
+    isolation level is choosing exactly which anomalies you're willing to risk.
+  </div>
+
+  <h2>Try it: watch which anomalies each isolation level allows</h2>
+  <div class="metric-box">
+    <div id="iso-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="iso-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Where Chirp actually needed this and quietly avoided it</h2>
+  <p>
+    Recall Chapter 6.2: sharding by <code>user_id</code> means a single user's data lives on one
+    shard, so most of Chirp's operations only ever touch one shard — genuinely a transaction
+    within a single database, handled by Postgres automatically. But "follow this user" updates
+    two things at once: the follower's following-count and the followed user's follower-count —
+    and after sharding, those two counts can live on <em>different</em> shards. This is exactly
+    the multi-object, cross-shard problem that motivated Chapter 8.3's saga pattern: a true ACID
+    transaction can't span two independent databases, so the saga's compensating-action approach
+    is the practical answer when a single transaction genuinely isn't available.
+  </p>
+
+  <div class="figure" id="fig-isolation-spectrum"></div>
+
+  <h2>Why "Serializable" is expensive enough that most systems avoid it by default</h2>
+  <p>
+    Serializable isolation guarantees transactions behave exactly as if they ran one at a time, in
+    some order — the strongest, simplest-to-reason-about guarantee. Achieving it usually means
+    either literally running transactions one at a time (fine for small, fast transactions; a
+    throughput ceiling for anything else) or detecting conflicts and aborting one of two
+    transactions that collide — meaning the application needs to handle retries. Most production
+    systems default to Read Committed or Snapshot Isolation specifically because full
+    serializability's throughput cost isn't worth it for the majority of operations, which don't
+    actually need it.
+  </p>
+
+  <h2>The anomaly that's easy to miss: write skew</h2>
+  <p>
+    Two transactions each read the same data, each independently decide their own write is safe
+    based on what they read, and both commit — producing a result neither transaction would have
+    allowed if it had seen the other's write first. A classic example: two on-call engineers each
+    check "is anyone else on call right now," each sees no one else, and both remove themselves —
+    leaving nobody on call, even though the rule was "always at least one person." Snapshot
+    Isolation, despite sounding strong, does <em>not</em> prevent this — only full Serializable
+    isolation does.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why did Chapter 6's sharding decision indirectly create a transaction problem for Chirp's "follow" operation?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Following updates two counts that can end up on different shards after sharding by user_id — a true ACID transaction can't span two independent databases, which is exactly what motivated the saga pattern in 8.3</button>
+        <button class="q-option" data-correct="false">Sharding has no relationship to transaction boundaries in any real system</button>
+        <button class="q-option" data-correct="false">The follow operation only ever touches one shard, regardless of sharding scheme</button>
+      </div>
+      <div class="q-explain">This connects a completely new concept (ACID transactions) directly back to an existing chapter's real consequence — sharding's benefits (6.2) come with this specific, honest cost.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why do most production databases default to a weaker isolation level than Serializable, despite Serializable being the strongest guarantee?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Achieving full serializability requires either running transactions one at a time or aborting and retrying conflicting ones, both of which cost throughput that most operations don't actually need to pay for</button>
+        <button class="q-option" data-correct="false">Weaker isolation levels are always strictly better than Serializable in every way</button>
+        <button class="q-option" data-correct="false">Serializable isolation is a purely theoretical concept with no real implementation cost</button>
+      </div>
+      <div class="q-explain">This is a genuine, real trade-off — the strongest guarantee is expensive enough that most systems only reach for it when a specific operation actually demands it.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why does write skew occur even under Snapshot Isolation, despite Snapshot Isolation preventing many other anomalies?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Two transactions can each independently read the same data, each decide their own write is individually safe based on what they saw, and both commit — producing a combined result neither would have allowed if they'd seen each other's write first</button>
+        <button class="q-option" data-correct="false">Write skew is actually fully prevented by Snapshot Isolation, contrary to what this page states</button>
+        <button class="q-option" data-correct="false">Write skew only occurs under the weakest possible isolation level, never under Snapshot Isolation</button>
+      </div>
+      <div class="q-explain">This is the specific, easy-to-miss anomaly that makes isolation level choice genuinely consequential — a level that sounds strong can still permit a real, subtle class of bugs.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 8 "Transactions" — ACID definitions, weak isolation levels (Read Committed, Snapshot Isolation), write skew, and serializability.</p>
+
+  <div class="pager">
+    <a href="11-8-the-system-design-interview-framework.html">&larr; 11.8 The system design interview framework</a>
+    <a href="11-10-leaderless-replication-and-quorums.html">11.10 Leaderless replication &amp; quorums &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const ISO_LEVELS = {
+  readcommitted: { label: "Read Committed", detail: "Prevents dirty reads (seeing another transaction's uncommitted changes). Still allows: non-repeatable reads (re-reading the same row twice in one transaction can see different values if another transaction commits in between)." },
+  snapshot: { label: "Snapshot Isolation", detail: "Each transaction sees a consistent snapshot of the database from when it started — prevents non-repeatable reads entirely. Still allows: write skew (two transactions each independently make a decision that's individually valid but jointly wrong)." },
+  serializable: { label: "Serializable", detail: "Transactions behave exactly as if run one at a time, in some order. Prevents all the anomalies above, including write skew. Cost: significantly lower throughput, since the database must either serialize execution or detect and abort conflicts." },
+};
+document.getElementById('iso-tabs').innerHTML = Object.keys(ISO_LEVELS).map((k,i) =>
+  `<div class="iso-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${ISO_LEVELS[k].label}</div>`
+).join('');
+function renderIso(key) {
+  document.getElementById('iso-detail').textContent = ISO_LEVELS[key].detail;
+  document.querySelectorAll('.iso-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.iso-tab').forEach(t => t.addEventListener('click', () => renderIso(t.dataset.k)));
+renderIso('readcommitted');
+
+document.getElementById('fig-isolation-spectrum').innerHTML = `
+<svg viewBox="0 0 680 100" width="100%" role="img" aria-label="Diagram: isolation levels arranged on a spectrum from Read Committed through Snapshot Isolation to Serializable, with strength increasing and throughput decreasing left to right">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <line x1="40" y1="50" x2="640" y2="50" stroke="#262d3a" stroke-width="2"/>
+  <circle cx="100" cy="50" r="8" fill="#3ecf8e"/><text x="100" y="75" text-anchor="middle" fill="#3ecf8e">Read Committed</text>
+  <circle cx="340" cy="50" r="8" fill="#f2b84b"/><text x="340" y="75" text-anchor="middle" fill="#f2b84b">Snapshot Isolation</text>
+  <circle cx="580" cy="50" r="8" fill="#e5484d"/><text x="580" y="75" text-anchor="middle" fill="#ff8b8f">Serializable</text>
+  <text x="100" y="25" text-anchor="middle" fill="#9aa4b5" font-size="8">weaker, faster</text>
+  <text x="580" y="25" text-anchor="middle" fill="#9aa4b5" font-size="8">stronger, slower</text>
+</svg>
+`;
+</script>
+</body>
+</html>

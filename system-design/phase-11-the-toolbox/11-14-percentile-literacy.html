@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.14 Percentile literacy: p50, p95, p99 | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.14</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.14 Percentile literacy: p50, p95, p99</h1>
+  <p class="subtitle">Every incident banner in this track quoted a p95 or p99 number without ever explaining what that actually means. Time to fix that.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The <strong>average</strong> response time hides exactly the thing that matters most: how bad
+    the worst requests actually are. A <strong>percentile</strong> answers a sharper question —
+    "p95 = 400ms" means 95% of requests finished in 400ms or less, and 5% took longer. Engineers
+    obsess over <strong>p99</strong> (or even p999) specifically because average can look
+    perfectly healthy while a meaningful slice of real users are having a genuinely bad
+    experience — and at scale, "rare" still means thousands of people.
+  </div>
+
+  <h2>Try it: watch average lie while p99 tells the truth</h2>
+  <div class="metric-box">
+    <div class="metric-row">
+      <label style="font-size:13px; color:var(--text-secondary); min-width:150px;">Slow outlier requests</label>
+      <input type="range" id="pct-outliers" min="0" max="50" value="0" style="flex:1;">
+      <span id="pct-outliers-val" style="font-weight:700; min-width:50px;"></span>
+    </div>
+    <div id="pct-results" style="margin-top:14px;"></div>
+  </div>
+
+  <h2>Why p99, not p100 (the true maximum)</h2>
+  <p>
+    The absolute slowest request ever recorded is usually a genuine fluke — a one-off network
+    blip, not representative of anything systemic. p99 is chosen as a practical, stable cutoff:
+    extreme enough to reveal real tail problems, but not so extreme that a single freak event
+    dominates the number. Chapter 10.1's cascading failure detection cared about exactly this
+    signal — a service whose p99 suddenly spikes while its average barely moves is showing early
+    symptoms of exactly the kind of slow-not-down problem that chapter described.
+  </p>
+
+  <div class="figure" id="fig-percentile-dist"></div>
+
+  <h2>Why tail latency compounds at scale — the multi-request page problem</h2>
+  <p>
+    If a single request has a 1% chance of hitting a genuinely slow p99 case, that sounds rare.
+    But a single Chirp page load might trigger 20 separate backend calls (feed items, profile
+    data, notification counts). The probability that <em>at least one</em> of those 20 calls hits
+    the slow 1% case is far higher than 1% — this is exactly why services with many internal
+    dependencies (Chapter 8's microservices) need to obsess over tail latency specifically, not
+    just average performance per call.
+  </p>
+
+  <h2>Setting SLOs on percentiles, not averages</h2>
+  <p>
+    A service-level objective stated as "average response time under 200ms" can be satisfied while
+    a real fraction of users wait several seconds. A percentile-based SLO — "p99 under 500ms" —
+    makes an actual commitment about the worst realistic experience, which is what users and
+    downstream services calling this one (Chapter 10's cascading failure risk) actually care about.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. Why can average response time look healthy even when a meaningful number of real users are having a bad experience?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Averaging blends fast and slow requests together, so a relatively small number of genuinely slow outliers can be diluted into an average that still looks fine, even though those slow requests are real experiences for real users</button>
+        <button class="q-option" data-correct="false">Average and percentile measurements always produce identical values for any distribution</button>
+        <button class="q-option" data-correct="false">Average response time is always a more accurate representation of user experience than any percentile</button>
+      </div>
+      <div class="q-explain">This is the core reason percentiles matter — averages are mathematically dominated by the bulk of fast requests, hiding exactly the tail behavior that percentiles are designed to reveal.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why does tail latency (like a 1% chance of a slow p99 request) become a much bigger practical problem when a single page load triggers many backend calls?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">The probability that at least one of many calls hits the slow case is much higher than the probability for any single call — this is exactly why services with many internal dependencies need to care especially about tail latency</button>
+        <button class="q-option" data-correct="false">Multiple backend calls always average out to reduce the overall chance of hitting a slow case</button>
+        <button class="q-option" data-correct="false">The number of backend calls triggered has no effect on the overall probability of a slow experience</button>
+      </div>
+      <div class="q-explain">This is a genuinely important, often-underappreciated consequence — tail latency compounds across a request fan-out, making it a much bigger deal for microservice architectures than for simple single-call systems.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why is a percentile-based SLO ("p99 under 500ms") a stronger commitment than an average-based one ("average under 200ms")?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A percentile-based SLO makes an actual commitment about the worst realistic experience, while an average-based SLO can be satisfied even while a real fraction of users experience much worse performance</button>
+        <button class="q-option" data-correct="false">Average-based and percentile-based SLOs provide identical practical guarantees</button>
+        <button class="q-option" data-correct="false">Percentile-based SLOs are only relevant for services with no internal dependencies</button>
+      </div>
+      <div class="q-explain">This is the practical, operational payoff of understanding percentiles — it directly changes what kind of commitment a team is actually making to their users and to services depending on them.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 2 "Defining Nonfunctional Requirements" — latency, response time, and the use of average/median/percentile metrics.</p>
+
+  <div class="pager">
+    <a href="11-13-log-based-brokers-vs-task-queues.html">&larr; 11.13 Log-based brokers vs. task queues</a>
+    <a href="11-15-sharding-by-key-range-and-secondary-indexes.html">11.15 Sharding by key range &amp; secondary indexes &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+function renderPct() {
+  const outliers = parseInt(document.getElementById('pct-outliers').value, 10);
+  document.getElementById('pct-outliers-val').textContent = outliers + ' of 1000';
+  const baseline = 80;
+  const outlierMs = 4000;
+  const avg = Math.round(((1000 - outliers) * baseline + outliers * outlierMs) / 1000);
+  const p50 = baseline;
+  const p99 = outliers >= 10 ? outlierMs : (outliers > 0 ? Math.round(baseline + (outlierMs - baseline) * (outliers / 10)) : baseline);
+  document.getElementById('pct-results').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Average</div><div style="font-size:17px; font-weight:700; margin-top:4px; color:${avg<150?'#3ecf8e':'#f2b84b'};">${avg}ms</div><div style="font-size:10px; color:var(--text-muted); margin-top:2px;">looks fine</div></div>
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">p50 (median)</div><div style="font-size:17px; font-weight:700; margin-top:4px; color:#3ecf8e;">${p50}ms</div></div>
+      <div style="background:var(--surface-2); border-radius:8px; padding:12px; text-align:center;"><div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">p99</div><div style="font-size:17px; font-weight:700; margin-top:4px; color:${p99>1000?'#e5484d':p99>200?'#f2b84b':'#3ecf8e'};">${p99}ms</div><div style="font-size:10px; color:var(--text-muted); margin-top:2px;">${p99>1000?'reveals the real problem':'still healthy'}</div></div>
+    </div>
+  `;
+}
+document.getElementById('pct-outliers').addEventListener('input', renderPct);
+renderPct();
+
+document.getElementById('fig-percentile-dist').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Chart: a distribution of response times with most requests fast and clustered together, and a long tail of slow requests extending to the right, with average, p50, and p99 markers shown at different points">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:9px; font-weight:600; } </style>
+  <path d="M 30 100 Q 100 20, 160 30 Q 220 60, 300 90 Q 400 105, 550 108 L 650 110" fill="none" stroke="#5b8cff" stroke-width="2"/>
+  <line x1="150" y1="20" x2="150" y2="110" stroke="#3ecf8e" stroke-width="1.5" stroke-dasharray="3,2"/><text x="150" y="15" text-anchor="middle" fill="#3ecf8e" font-size="8">p50</text>
+  <line x1="200" y1="20" x2="200" y2="110" stroke="#f2b84b" stroke-width="1.5" stroke-dasharray="3,2"/><text x="200" y="15" text-anchor="middle" fill="#f2b84b" font-size="8">avg</text>
+  <line x1="450" y1="20" x2="450" y2="110" stroke="#e5484d" stroke-width="1.5" stroke-dasharray="3,2"/><text x="450" y="15" text-anchor="middle" fill="#ff8b8f" font-size="8">p99</text>
+  <text x="340" y="112" text-anchor="middle" fill="#9aa4b5" font-size="8">→ increasing response time</text>
+</svg>
+`;
+</script>
+</body>
+</html>

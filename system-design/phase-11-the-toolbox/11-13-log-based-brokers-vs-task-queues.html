@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.13 Log-based brokers vs. task queues | System Design</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">System <span>Design</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 11</a> &nbsp;/&nbsp; 11.13</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 11 · The Toolbox</div>
+  <h1>11.13 Log-based brokers vs. task queues</h1>
+  <p class="subtitle">A correction, honestly stated: what Chapter 7.2 called a "message queue" is really a task queue. Here's the genuinely different alternative — and when Chirp would actually need it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>task queue</strong> (SQS-style — what Chapter 7.2 actually built) hands each message
+    to exactly one worker, which processes it and it's gone — perfect for "do this piece of work
+    once." A <strong>log-based broker</strong> (Kafka-style) is a genuinely different structure: an
+    ordered, durable, replayable log that <em>multiple independent consumers</em> can each read
+    through at their own pace, each keeping their own position — none of them "consume" the
+    message away from the others. The right choice depends on a specific question: does exactly
+    one thing need to happen in response to this event, or might several different, decoupled
+    things need to react to it, now or later?
+  </div>
+
+  <h2>Try it: pick the right tool for each Chirp scenario</h2>
+  <div class="metric-box">
+    <div id="broker-tabs" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;"></div>
+    <div id="broker-detail" style="padding:14px 16px; background:var(--code-bg); border-radius:8px; font-size:13px;"></div>
+  </div>
+
+  <h2>Why Chapter 7.2's task queue was still the right call for that problem</h2>
+  <p>
+    Video transcoding and notification fan-out are genuinely single-purpose: one video gets
+    transcoded once, by one worker; that's exactly what a task queue is built for, and reaching for
+    Kafka there would have been unnecessary complexity. This isn't walking back 7.2's decision —
+    it's naming precisely what was built, so the distinction is available when a genuinely
+    different situation shows up.
+  </p>
+
+  <div class="figure" id="fig-broker-compare"></div>
+
+  <h2>Where Chirp would actually need a log-based broker</h2>
+  <p>
+    Imagine Chirp later wants an analytics pipeline tracking engagement trends, a fraud-detection
+    system watching for suspicious posting patterns, and a search indexer keeping 12.6's
+    autocomplete trie fresh — all three genuinely need to react to the exact same "new post
+    created" event, independently, without knowing about each other or coordinating deploy
+    schedules. A task queue can't do this cleanly (once one worker consumes the message, it's
+    gone). A log-based broker handles it naturally: three consumer groups, each reading the same
+    "new post" log independently, each at their own pace.
+  </p>
+
+  <h2>The replay property: the other genuinely distinct capability</h2>
+  <p>
+    Because a log-based broker retains messages for a configured period rather than deleting them
+    on consumption, a brand-new consumer (say, a new analytics service launched next quarter) can
+    read the entire recent history of "new post" events from the beginning — recovering data that
+    existed before the consumer itself did. A task queue offers nothing like this; once a task
+    is consumed, it's genuinely gone.
+  </p>
+
+  <div class="quiz" id="quiz">
+    <h3>Check your understanding</h3>
+    <div class="q-block">
+      <div class="q-prompt">1. What's the fundamental structural difference between a task queue and a log-based broker?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">A task queue hands each message to exactly one worker and it's gone; a log-based broker keeps an ordered, durable log that multiple independent consumers can each read through at their own pace</button>
+        <button class="q-option" data-correct="false">Task queues and log-based brokers are functionally identical, just with different names</button>
+        <button class="q-option" data-correct="false">Log-based brokers can only ever have exactly one consumer, same as task queues</button>
+      </div>
+      <div class="q-explain">This is the core structural distinction the whole page is built around — single-consumption versus durable, replayable, multi-consumer access.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">2. Why was Chapter 7.2's original task-queue design still the correct choice for video transcoding and notification fan-out, even though it's a different tool than Kafka?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Those problems are genuinely single-purpose — one video gets transcoded once, by one worker — exactly what a task queue is built for, making a log-based broker unnecessary complexity for that specific case</button>
+        <button class="q-option" data-correct="false">Chapter 7.2's design was actually a mistake that should be reversed</button>
+        <button class="q-option" data-correct="false">Task queues and log-based brokers are always interchangeable regardless of the problem</button>
+      </div>
+      <div class="q-explain">This is an honest correction to the terminology, not a reversal of the actual design decision — matching the right tool to the right problem, which 7.2 already did correctly.</div>
+    </div>
+    <div class="q-block">
+      <div class="q-prompt">3. Why couldn't three independent systems (analytics, fraud detection, search indexing) all cleanly react to the same "new post" event using a task queue?</div>
+      <div class="q-options">
+        <button class="q-option" data-correct="true">Once one worker consumes a message from a task queue, it's gone — a task queue has no way for multiple independent consumers to each see and process the same event without coordinating and competing for it</button>
+        <button class="q-option" data-correct="false">Task queues can easily support any number of independent consumers reacting to the same event</button>
+        <button class="q-option" data-correct="false">This scenario has no meaningful difference from the video transcoding use case</button>
+      </div>
+      <div class="q-explain">This is the concrete scenario that makes the distinction matter in practice — a genuinely different requirement (multiple independent reactions to one event) that a task queue structurally cannot satisfy cleanly.</div>
+    </div>
+  </div>
+
+  <p class="sources" style="margin-top:32px">Sources: Kleppmann & Riccomini, <em>Designing Data-Intensive Applications</em>, 2nd ed. (O'Reilly, 2026), Chapter 12 "Stream Processing" — messaging systems, log-based message brokers, and the distinction from traditional message queues.</p>
+
+  <div class="pager">
+    <a href="11-12-linearizability-and-consensus.html">&larr; 11.12 Linearizability &amp; consensus</a>
+    <a href="11-14-percentile-literacy.html">11.14 Percentile literacy: p50, p95, p99 &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script>
+document.querySelectorAll('.q-block').forEach(block => {
+  const options = block.querySelectorAll('.q-option');
+  const explain = block.querySelector('.q-explain');
+  options.forEach(opt => opt.addEventListener('click', () => {
+    if (block.dataset.answered) return;
+    block.dataset.answered = "true";
+    options.forEach(o => o.classList.add(o.dataset.correct === "true" ? "correct" : "incorrect"));
+    explain.classList.add('show');
+  }));
+});
+
+const BROKER_SCENARIOS = {
+  video: { label: "Transcode an uploaded video", answer: "Task queue", detail: "One video needs to be transcoded exactly once, by one worker. A task queue is the simpler, correct fit — this is genuinely what Chapter 7.2 built." },
+  analytics: { label: "3 teams need the same 'new post' event", answer: "Log-based broker", detail: "Analytics, fraud detection, and search indexing all need to independently react to every new post, without coordinating with each other or competing for the same message. Only a log-based broker supports this cleanly." },
+  notif: { label: "Send one push notification", answer: "Task queue", detail: "A single, specific action needs to happen once per event. Exactly Chapter 7's notification fan-out — a task queue fits." },
+  replay: { label: "A new service needs last month's post history", answer: "Log-based broker", detail: "Only a log-based broker retains history a new consumer can replay from the beginning — a task queue has already discarded consumed messages." },
+};
+document.getElementById('broker-tabs').innerHTML = Object.keys(BROKER_SCENARIOS).map((k,i) =>
+  `<div class="broker-tab" data-k="${k}" style="padding:8px 14px; background:${i===0?'rgba(245,166,35,0.15)':'var(--surface-2)'}; border:1px solid ${i===0?'#f5a623':'var(--border-strong)'}; color:${i===0?'#f5c168':'var(--text-primary)'}; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">${BROKER_SCENARIOS[k].label}</div>`
+).join('');
+function renderBroker(key) {
+  const s = BROKER_SCENARIOS[key];
+  document.getElementById('broker-detail').innerHTML = `<strong style="color:#f5a623;">${s.answer}</strong> — ${s.detail}`;
+  document.querySelectorAll('.broker-tab').forEach(t => {
+    const active = t.dataset.k === key;
+    t.style.background = active ? 'rgba(245,166,35,0.15)' : 'var(--surface-2)';
+    t.style.borderColor = active ? '#f5a623' : 'var(--border-strong)';
+    t.style.color = active ? '#f5c168' : 'var(--text-primary)';
+  });
+}
+document.querySelectorAll('.broker-tab').forEach(t => t.addEventListener('click', () => renderBroker(t.dataset.k)));
+renderBroker('video');
+
+document.getElementById('fig-broker-compare').innerHTML = `
+<svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Diagram comparing a task queue where a message goes to one worker and disappears, versus a log-based broker where multiple independent consumer groups each read the same durable log at their own pace">
+  <style> text { font-family: -apple-system, sans-serif; fill: #e6e9ef; font-size:8px; font-weight:600; } </style>
+  <text x="150" y="15" text-anchor="middle" font-size="10">Task queue</text>
+  <rect x="70" y="25" width="160" height="30" rx="4" fill="#1a2029" stroke="#f5a623"/><text x="150" y="44" text-anchor="middle" fill="#f5a623">Message</text>
+  <line x1="150" y1="55" x2="150" y2="80" stroke="#6b7386" stroke-width="1.5" marker-end="url(#sd33)"/>
+  <rect x="90" y="85" width="120" height="25" rx="4" fill="#1a2029" stroke="#5b8cff"/><text x="150" y="101" text-anchor="middle" fill="#a9c1ff">One worker (then gone)</text>
+
+  <text x="510" y="15" text-anchor="middle" font-size="10">Log-based broker</text>
+  <rect x="430" y="25" width="160" height="30" rx="4" fill="#1a2029" stroke="#3ecf8e"/><text x="510" y="44" text-anchor="middle" fill="#3ecf8e">Durable log (persists)</text>
+  <line x1="470" y1="55" x2="440" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="510" y1="55" x2="510" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <line x1="550" y1="55" x2="580" y2="80" stroke="#6b7386" stroke-width="1"/>
+  <rect x="400" y="85" width="80" height="25" rx="4" fill="#1a2029" stroke="#a78bfa"/><text x="440" y="101" text-anchor="middle" fill="#c4b5fd" font-size="7">Analytics</text>
+  <rect x="470" y="85" width="80" height="25" rx="4" fill="#1a2029" stroke="#a78bfa"/><text x="510" y="101" text-anchor="middle" fill="#c4b5fd" font-size="7">Fraud detect</text>
+  <rect x="540" y="85" width="80" height="25" rx="4" fill="#1a2029" stroke="#a78bfa"/><text x="580" y="101" text-anchor="middle" fill="#c4b5fd" font-size="7">Search index</text>
+  <defs><marker id="sd33" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6b7386"/></marker></defs>
+</svg>
+`;
+</script>
+</body>
+</html>
