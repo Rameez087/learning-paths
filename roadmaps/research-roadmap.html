@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Roadmap: Data Engineer to Research-Ready</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="roadmap.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Learning <span>Paths</span></a>
+  <div class="crumbs">Roadmaps</div>
+</nav>
+<main class="page rm" style="max-width:900px;">
+<a class="rm-back" href="../index.html">&larr; All paths</a>
+<h1>Research Roadmap: Data Engineer to Research-Ready</h1>
+<p class="subtitle">Written 2026-10-07. A plan for getting from production data engineering to a first public piece of research, and from there to professor conversations.</p>
+
+<h2>Where you stand, honestly</h2>
+<p>Your strongest research asset is production experience with messy enterprise data. Your weakest is any public research output. This plan fixes the second without discarding the first.</p>
+<p><strong>What you already have:</strong></p>
+<ul>
+<li>About a year of engineering work on Azure Synapse pipelines, SAP ACDOCA data and Power BI.</li>
+<li>A custom lineage viewer you built after Purview and OpenLineage hit a platform limit.</li>
+<li>Hands-on study of LLM evaluation and observability tools (Langfuse, Ragas, LangSmith) and the RAG ecosystem.</li>
+<li>A final year project that combined GANs with federated learning.</li>
+</ul>
+<p><strong>What is missing:</strong></p>
+<ul>
+<li>A paper, preprint or public experiment write-up.</li>
+<li>A faculty contact who can speak for you.</li>
+<li>A CGPA you cannot change, so your new evidence has to come from new work.</li>
+</ul>
+<p>A concrete artifact, such as a reproduced paper with a public repository, gives a reader something to check. A statement of interest does not.</p>
+
+<h2>The goal for the next 12 months</h2>
+<p>Produce one small, honest, public piece of research by January 2027, then build on it. Depth beats breadth here.</p>
+<table>
+<thead><tr><th>By</th><th>Output</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td>Jan 2027</td><td>One reproduced paper, a public repo and a two page report</td><td>Gives every email and statement of purpose something concrete to point to</td></tr>
+<tr><td>Jan 2027</td><td>8 to 12 tailored emails sent, at least 2 conversations held</td><td>Starts relationships before most application deadlines</td></tr>
+<tr><td>Spring 2027</td><td>One extension written up as a workshop paper or preprint draft</td><td>Moves you from replicating to contributing</td></tr>
+<tr><td>Autumn 2027</td><td>An ongoing collaboration with a supervisor or an open community</td><td>Gives you a reference and a thesis direction</td></tr>
+</tbody></table>
+<p>Check every programme's deadline this week. Many Fall 2027 deadlines for Erasmus Mundus, Germany and Italy fall between roughly December 2026 and spring 2027, so January is the last point where an application can still include your artifact. I have not verified individual deadlines.</p>
+
+<h2>Research methodology: the skills</h2>
+<p>Research is a small set of habits, and each one can be practiced on a single paper. The NeurIPS paper checklist is a free syllabus for most of them, so read it before you run experiments, not after.</p>
+<table>
+<thead><tr><th>Skill</th><th>What good looks like</th><th>How to practice</th></tr></thead>
+<tbody>
+<tr><td>Reading papers</td><td>Three passes: a 5 to 10 minute triage, a careful read that skips proofs, then a deep read where you rebuild the argument</td><td>Read 3 to 5 recent papers on one topic, then mine their related work sections for the citations they share</td></tr>
+<tr><td>Asking a narrow question</td><td>One falsifiable claim, plus the result that would prove you wrong</td><td>Write the claim and the failing result in two sentences before running anything</td></tr>
+<tr><td>Baselines and ablations</td><td>A strong simple baseline, and tests that remove one component at a time</td><td>For every gain you claim, add the simplest model that could explain it</td></tr>
+<tr><td>Statistics</td><td>Several seeds, error bars or confidence intervals, and a significance test when comparing methods</td><td>Report mean and spread over at least 3 seeds; 5 is better</td></tr>
+<tr><td>Reproducibility</td><td>Code, data version, seeds, hyperparameters, compute and environment recorded so someone else can rerun it</td><td>Track runs in MLflow or Weights &amp; Biases and pin your dependencies</td></tr>
+<tr><td>Data hygiene</td><td>No leakage between train, validation and test; licenses and privacy checked</td><td>Split before any preprocessing that learns from the data; use public datasets only</td></tr>
+<tr><td>Writing</td><td>A reader who makes a single pass still gets the gist</td><td>Draft the abstract and the main results figure first</td></tr>
+</tbody></table>
+<p>On the reading row: Keshav's three-pass method is the most widely cited advice on reading papers in computer science, and it notes that most reviewers make only one pass over a paper. That is also why your own abstract has to carry the whole message.</p>
+
+<h2>Must-know foundations</h2>
+<p>You need enough math and ML to read a paper's method section without guessing. Your AI Engineering and Data Science tracks already cover much of the applied side, so spend new time on the math and on experiment design.</p>
+<table>
+<thead><tr><th>Area</th><th>Be able to</th><th>Start with</th></tr></thead>
+<tbody>
+<tr><td>Linear algebra</td><td>Derive gradients through matrix operations; explain SVD and eigendecomposition</td><td>Mathematics for Machine Learning (Deisenroth, Faisal, Ong; free book)</td></tr>
+<tr><td>Probability and statistics</td><td>Maximum likelihood, Bayes rule, hypothesis tests, confidence intervals</td><td>The same book, then any introductory statistics text</td></tr>
+<tr><td>Optimization</td><td>Explain why gradient descent behaves as it does, and what learning rate and regularization change</td><td>Extend your autograd project with SGD and Adam</td></tr>
+<tr><td>Machine learning core</td><td>Bias and variance, cross validation, metrics, overfitting</td><td>Stanford CS229 public notes</td></tr>
+<tr><td>Deep learning and transformers</td><td>Attention, training loops, fine tuning</td><td>Karpathy's Zero to Hero (in progress), then Stanford CS224N</td></tr>
+<tr><td>Data systems</td><td>Query processing, indexes, transactions, dataflow</td><td>CMU 15-445 public lectures and Designing Data-Intensive Applications</td></tr>
+<tr><td>Experiment design</td><td>Leakage, statistical power, ablations, A/B tests</td><td>The NeurIPS checklist and Keshav's paper</td></tr>
+</tbody></table>
+<p class="note">Resource names come from my background knowledge, not a search today. Confirm they are current before you commit time.</p>
+
+<h2>Fields that fit your background</h2>
+<p>The strongest fit is the point where data engineering meets ML, because you already work on the data side that research often treats as an afterthought. The ranking is my judgment from your background, not a measurement.</p>
+<table>
+<thead><tr><th>Field</th><th>Why it fits you</th><th>A starting question</th><th>Fit</th></tr></thead>
+<tbody>
+<tr><td>Data-centric AI and data quality for ML</td><td>Your daily work is the data side of ML. The field treats training data development, evaluation data development and data maintenance as research tasks</td><td>Which data defects hurt model quality most, and can they be detected automatically?</td><td>Strongest</td></tr>
+<tr><td>LLMs for data management</td><td>Schema matching, entity resolution, cleaning and text to SQL are data engineering problems that LLMs now attack</td><td>Where do LLM based cleaning and matching fail on enterprise style data?</td><td>Strong</td></tr>
+<tr><td>RAG evaluation and robustness</td><td>You already study Ragas, Langfuse and the RAG ecosystem, and your portfolio plan includes an evaluation study</td><td>How do upstream data errors change retrieval and answer quality?</td><td>Strong</td></tr>
+<tr><td>Provenance and lineage for pipelines</td><td>You built a lineage viewer after a platform limit</td><td>How well do lineage tools capture column level lineage for PySpark transformations?</td><td>Good, needs a literature check</td></tr>
+<tr><td>ML systems and MLOps</td><td>You run production pipelines</td><td>What breaks when a pipeline retrains a model on drifting data?</td><td>Good</td></tr>
+<tr><td>Federated learning and generative vision</td><td>Your final year project</td><td>Revisit only if a professor's interest matches</td><td>Stretch</td></tr>
+</tbody></table>
+
+<h2>Projects that produce a citable artifact</h2>
+<p>Start with a reproduction. It is real research training, it finishes on a deadline, and it gives you something to send.</p>
+<table>
+<thead><tr><th>Project</th><th>Core experiment</th><th>Artifact</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>A. Reproduce and extend one paper</td><td>Rerun a recent data quality or RAG evaluation paper, then add one ablation or dataset</td><td>Public repo and two page report</td><td>6 to 9 weeks</td></tr>
+<tr><td>B. Data defects in RAG</td><td>Inject controlled defects (duplicates, stale documents, missing fields, schema drift) into a public corpus and measure retrieval and answer metrics</td><td>Benchmark script and results table</td><td>8 to 12 weeks</td></tr>
+<tr><td>C. Your RAG evaluation study</td><td>Turn portfolio project 2 into a study with stated hypotheses, several seeds and public data</td><td>Preprint draft</td><td>8 to 12 weeks</td></tr>
+<tr><td>D. Lineage capture benchmark</td><td>Test how well OpenLineage style integrations capture column level lineage on public or synthetic PySpark pipelines</td><td>Open benchmark and findings</td><td>8 to 12 weeks</td></tr>
+</tbody></table>
+<p>Do A first, then move to B or C. Before B or D, spend two days on Google Scholar and arXiv to confirm the exact question is not already answered.</p>
+<div class="callout"><div class="callout-label">Protect your employer</div>
+<p>Do not publish work notebooks, schemas or SAP derived data, and ask before sharing anything built at work, including the lineage viewer. Use public or synthetic data for every public result.</p></div>
+
+<h2>Who to contact, and about what</h2>
+<p>These groups work where data management meets ML, which matches your background. The descriptions come from each group's own pages as search returned them. I did not verify who is currently taking students, so check each page before you write.</p>
+<table>
+<thead><tr><th>Group</th><th>What its pages say</th><th>A narrow topic to raise</th></tr></thead>
+<tbody>
+<tr><td><a href="https://ds.ifi.uni-heidelberg.de/open-positions">Heidelberg, Data Science group (Michael Gertz)</a></td><td>Gertz heads the Database Systems Research Group; interests include text analytics, NLP and ML applied to medicine, law, political science and economics. Its open positions page listed none when I searched</td><td>Data quality in text corpora used for RAG; evaluating LLM extraction pipelines</td></tr>
+<tr><td><a href="https://www.dima.tu-berlin.de/menue/research/parameter/en/?type=1">TU Berlin, DIMA group (Volker Markl)</a></td><td>Database systems, scalable and distributed data management, and ML systems</td><td>Data pipelines that retrain models on drifting data</td></tr>
+<tr><td><a href="https://user.tu-berlin.de/neutatz">TU Berlin, Felix Neutatz</a></td><td>Data management and ML, including data quality and declarative ML. The page was last updated in 2021, so confirm he is still there</td><td>Automated data cleaning for ML</td></tr>
+<tr><td><a href="https://bavaria1.dt.uni-bamberg.de/">Bamberg, Data Engineering Group (Maximilian Sch&uuml;le)</a></td><td>Database systems and ML, native ML inside databases, data to ML integration; lists supervision of student and graduate projects</td><td>ML inside databases</td></tr>
+<tr><td><a href="https://www.discountquality.polimi.it/?p=139">Politecnico di Milano, data quality researchers</a></td><td>Named as experts in data and information quality, with pipelines for scientific and social media data</td><td>Data quality assessment</td></tr>
+<tr><td><a href="https://www.discountquality.polimi.it/?p=139">Modena and Reggio Emilia, DBGroup</a></td><td>Data preparation for over 20 years; entity resolution with a human in the loop plus ML; data lake integration</td><td>Entity resolution with LLMs</td></tr>
+<tr><td><a href="https://www.discountquality.polimi.it/?p=139">Milano-Bicocca, INSID&amp;S Lab</a></td><td>AI based data management with interactive methods</td><td>Interactive data cleaning</td></tr>
+<tr><td><a href="https://www.discountquality.polimi.it/?p=139">Sapienza, data quality and visual analytics</a></td><td>Visual analytics, human in the loop analysis, data quality</td><td>Visual debugging of data defects</td></tr>
+<tr><td><a href="https://www.door.polimi.it/">Politecnico di Milano, DOOR group</a></td><td>ML and big data analytics, including NLP</td><td>Applied ML on industry style data</td></tr>
+<tr><td><a href="https://aixia.it/en/gruppi/mldm/">AIxIA MLDM working group</a></td><td>Maintains a map of Italian ML and data mining groups</td><td>Use it to find groups by city</td></tr>
+<tr><td><a href="https://huggingface.co/CohereLabsCommunity">Cohere Labs Community</a></td><td>Open science community that collaborates with independent researchers worldwide; membership is by application, and I did not verify it is open now</td><td>Any project from the previous section</td></tr>
+<tr><td><a href="https://www.eleuther.ai/">EleutherAI</a></td><td>A grassroots, open research collective</td><td>Open model evaluation and data work</td></tr>
+</tbody></table>
+<p>The last two rows need no professor, so they can run in parallel with your emails. I have not yet researched FAU Erlangen-Nuremberg, Saarland or Bonn.</p>
+<p><strong>How to use the table:</strong></p>
+<ul>
+<li>Open the group page and read its two most recent papers.</li>
+<li>Find one sentence in each that you can ask a precise question about.</li>
+<li>Write one sentence stating the narrow question before you draft any email.</li>
+</ul>
+
+<h2>The cold email</h2>
+<p>A short email that shows you read their work and asks one direct question gets read. Long ones tend to be set aside for later.</p>
+<ul>
+<li>Keep it short, and say who you are and what you are asking for.</li>
+<li>Put the topic in the subject line.</li>
+<li>Mention one or two specifics from their work so it is clear this is not a mass email.</li>
+<li>Ask a question they can answer in a line, not an open request for mentorship.</li>
+<li>Attach your CV, and link your repo once you have one.</li>
+<li>If there is no reply after about a week, send one gentle follow up.</li>
+<li>Write it in your own voice. An AI tool can help with structure, but the words should be yours.</li>
+</ul>
+<p>Template to adapt:</p>
+<pre>Subject: Question on [paper title]: data defects in RAG pipelines
+
+Dear Professor [Surname],
+
+I am a software engineer working on Azure data pipelines for enterprise systems, and I am applying to [programme] for Fall 2027. I read your paper "[title]" and was interested in [one specific point, one sentence].
+
+Over the last [N] weeks I reproduced [paper] and extended it with [one change]. The repo and a two page report are here: [link]. My question is whether [narrow question] is still open, or whether your group has already covered it.
+
+Would you be open to a 15 minute call, or could you point me to someone in your group I should speak with? My CV is attached.
+
+Thank you for your time,
+Rameez Manzoor</pre>
+<p>Send your first emails only once the repo link works. Without it, the email asks for a favour. With it, the email offers evidence.</p>
+
+<h2>A 12 week plan</h2>
+<p>Week 1 starts on Monday 12 October 2026. Emails go out in week 7, once you have a reproduced result to show. Inboxes in Europe tend to slow around the year end, so the first emails should land before mid December.</p>
+<table>
+<thead><tr><th>Weeks</th><th>Phase</th><th>What you do</th></tr></thead>
+<tbody>
+<tr><td>1 to 2</td><td>Read and choose</td><td>Read 3 to 5 papers in one area, read the NeurIPS checklist and Keshav's paper, pick the paper to reproduce, check deadlines</td></tr>
+<tr><td>3 to 6</td><td>Reproduce</td><td>Rerun the paper with logged seeds, a pinned environment and a baseline; write down every gap between your numbers and theirs</td></tr>
+<tr><td>7 to 9</td><td>Extend and reach out</td><td>Add one ablation or dataset, publish the repo and report, send the first 8 to 12 emails</td></tr>
+<tr><td>10 to 12</td><td>Talk and decide</td><td>Hold conversations, follow up once, choose Project B or C as the next step, list application deadlines</td></tr>
+</tbody></table>
+<p>Outreach begins in the third phase. Every earlier phase exists to make that first email worth reading.</p>
+
+<h2>Pitfalls to avoid</h2>
+<ul>
+<li>Emailing before you have an artifact. Build the repo first.</li>
+<li>Sending the same text to everyone. Each email needs one or two specifics from that group's work.</li>
+<li>Using employer data or code in anything public. Use public or synthetic data only.</li>
+<li>Chasing novelty on the first project. A careful reproduction is valid research and it finishes.</li>
+<li>Claiming a gain without seeds and error bars. The NeurIPS checklist asks for both.</li>
+<li>Outsourcing your first read of a paper. Use AI to explain a specific equation after you have read the method yourself.</li>
+<li>Reading silence as a no. Follow up once after about a week.</li>
+<li>Relying on professors alone. Open communities can start the clock now.</li>
+<li>Missing deadlines while you build. List them in week 4 and apply with work in progress if needed.</li>
+</ul>
+
+<h2>Sources</h2>
+<p class="note">These came from web search results on 7 October 2026. I read the excerpts search returned and did not open each page in full. Resource names in the foundations table come from my background knowledge.</p>
+<ul class="src">
+<li><a href="https://www.cs.princeton.edu/courses/archive/fall18/cos561/papers/HowToRead05.pdf">How to Read a Paper (Keshav)</a></li>
+<li><a href="https://academicpositions.com/career-advice/how-to-email-a-potential-supervisor">How to Email a Potential Supervisor (Academic Positions)</a></li>
+<li><a href="https://psychology.ucdavis.edu/cold-emailing-guide">Cold Emailing Guide (UC Davis Psychology)</a></li>
+<li><a href="https://arxiv.org/abs/2301.04819">Data-centric AI: Perspectives and Challenges (Zha et al.)</a></li>
+<li><a href="https://arxiv.org/pdf/2112.06409">Data Collection and Quality Challenges in Deep Learning: A Data-Centric AI Perspective</a></li>
+<li><a href="https://arxiv.org/pdf/2003.12206v1">Improving Reproducibility in Machine Learning Research (NeurIPS 2019 program report)</a></li>
+<li><a href="https://neurips.cc/Conferences/2022/PaperInformation/PaperChecklist">NeurIPS 2022 Paper Checklist Guidelines</a></li>
+<li><a href="https://huggingface.co/CohereLabsCommunity">Cohere Labs Community</a></li>
+<li><a href="https://arxiv.org/pdf/2509.25397">A Cartography of Open Collaboration in Open Source AI (covers EleutherAI and Cohere Labs)</a></li>
+<li><a href="https://ds.ifi.uni-heidelberg.de/open-positions">Heidelberg Data Science group, open positions</a></li>
+<li><a href="https://ki-campus.org/node/611?locale=en">Michael Gertz profile (KI-Campus)</a></li>
+<li><a href="https://www.dima.tu-berlin.de/menue/research/parameter/en/?type=1">TU Berlin DIMA research page</a></li>
+<li><a href="https://user.tu-berlin.de/neutatz">Felix Neutatz, TU Berlin</a></li>
+<li><a href="https://bavaria1.dt.uni-bamberg.de/">Bamberg Data Engineering Group</a></li>
+<li><a href="https://www.discountquality.polimi.it/?p=139">DisCount project, Italian research units</a></li>
+<li><a href="https://www.door.polimi.it/">Politecnico di Milano DOOR group</a></li>
+<li><a href="https://aixia.it/en/gruppi/mldm/">AIxIA MLDM working group</a></li>
+</ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Azure Learning Roadmap: Start to Advanced</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="roadmap.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Learning <span>Paths</span></a>
+  <div class="crumbs">Roadmaps</div>
+</nav>
+<main class="page rm" style="max-width:900px;">
+<a class="rm-back" href="../index.html">&larr; All paths</a>
+<h1>Azure Learning Roadmap: Start to Advanced</h1>
+<p class="subtitle">Written 2026-10-07. Facts about services and exams were checked against web search that day; items marked as background knowledge were not.</p>
+
+<h2>How to use this roadmap</h2>
+<p>This roadmap assumes you already know the data engineering corner of Azure well, so it spends its time on the corners you may not: platform fundamentals, infrastructure as code, Databricks, ML and AI, and security. It runs from stage 0 to stage 4, and every stage ends with something you build.</p>
+<p>The rule that runs through the whole page: learn every task in at least two ways. Azure usually offers three or four tools for the same job, and choosing between them is the skill employers and exams test. Each domain section below has a table of the options and when to pick each.</p>
+
+<h2>The map</h2>
+<p>Everything you build in Azure rests on identity, networking and governance, so those layers come first even though data work fills your days. Read the stack from the bottom up.</p>
+<table>
+<thead><tr><th>Layer</th><th>What lives there</th></tr></thead>
+<tbody>
+<tr><td>5. AI and ML</td><td>Microsoft Foundry, Azure AI Search, Azure Machine Learning, Databricks ML</td></tr>
+<tr><td>4. Data</td><td>ADLS Gen2, Data Factory, Synapse, Fabric, Databricks, Event Hubs, Purview</td></tr>
+<tr><td>3. Application platform</td><td>App Service, Functions, Container Apps, AKS, Azure SQL, Cosmos DB, Key Vault</td></tr>
+<tr><td>2. Network</td><td>VNets, subnets, NSGs, private endpoints, Firewall, hub and spoke</td></tr>
+<tr><td>1. Identity and governance</td><td>Entra ID, RBAC, management groups, Azure Policy, cost management</td></tr>
+<tr><td>Everywhere</td><td>Azure Monitor and Log Analytics: you cannot run or afford what you cannot observe</td></tr>
+</tbody></table>
+
+<h2>Stages 0 to 4</h2>
+<p>Skim the stages you already know and spend your hours on stages 1, 2 and the AI half of stage 3. Durations are my estimate at about 10 hours a week.</p>
+<table>
+<thead><tr><th>Stage</th><th>What to learn</th><th>Key services</th><th>Proof project</th></tr></thead>
+<tbody>
+<tr><td>0. Cloud foundations (1 to 2 weeks)</td><td>Regions and availability zones, subscriptions, management groups, resource groups, Entra ID basics, RBAC, cost management</td><td>Portal, Azure CLI, Entra ID, Cost Management</td><td>Create a resource group with a role assignment and a budget alert from the CLI</td></tr>
+<tr><td>1. Core platform (4 to 6 weeks)</td><td>VMs, virtual networks, subnets and NSGs, storage, web hosting, secrets, monitoring, managed identities</td><td>Virtual Machines, VNet, Storage, App Service, Functions, Container Apps, Key Vault, Azure Monitor</td><td>A web app that reads a Key Vault secret through a managed identity, behind a private endpoint</td></tr>
+<tr><td>2. Infrastructure as code and delivery (3 to 4 weeks)</td><td>Bicep, Terraform, what-if and plan, state, modules, pipelines, deployment from CI</td><td>Bicep, Terraform, Azure Verified Modules, GitHub Actions, Azure DevOps</td><td>The stage 1 app deployed from a pipeline, once in Bicep and once in Terraform</td></tr>
+<tr><td>3. Data and AI platform (8 to 12 weeks)</td><td>Lake and warehouse design, orchestration, Spark and SQL engines, streaming, governance, ML training and serving, LLM apps and RAG</td><td>ADLS Gen2, Data Factory, Synapse, Fabric, Databricks, Event Hubs, Purview, Azure Machine Learning, Foundry, AI Search</td><td>One medallion pipeline built on two engines, plus one RAG app</td></tr>
+<tr><td>4. Architecture and operations (ongoing)</td><td>Hub and spoke networks, landing zones, policy, security posture, reliability, cost optimization, the Well-Architected Framework</td><td>Azure Policy, Defender for Cloud, Firewall, Azure Verified Modules landing zone</td><td>A landing zone deployed from code, with a written architecture decision record for each major choice</td></tr>
+</tbody></table>
+<p>A useful test for moving up a stage: you can rebuild the proof project from an empty subscription without opening a tutorial.</p>
+
+<h2>Infrastructure as code</h2>
+<p>Learn Bicep first, then Terraform, and keep both. Microsoft's own guidance recommends Bicep for Azure-only teams and Terraform when you also manage other clouds or services, and Azure Verified Modules supports both.</p>
+<table>
+<thead><tr><th>Way</th><th>What it is</th><th>State</th><th>Strength</th><th>Limit</th><th>Pick it when</th></tr></thead>
+<tbody>
+<tr><td>Portal</td><td>Click through the UI</td><td>None</td><td>Fastest way to explore a service</td><td>Not repeatable</td><td>Learning and one-off checks</td></tr>
+<tr><td>CLI and PowerShell</td><td>Imperative scripts</td><td>None</td><td>Quick automation, easy to read</td><td>You manage order and idempotency yourself</td><td>Small tasks and glue around other tools</td></tr>
+<tr><td>ARM templates</td><td>Declarative JSON</td><td>None</td><td>The native format everything compiles to</td><td>Verbose and hard to read</td><td>Reading old templates; rarely writing new ones</td></tr>
+<tr><td>Bicep</td><td>Azure-only language that compiles to ARM</td><td>Stateless; Azure holds the truth</td><td>Day-one support for new Azure features; simple auth; what-if and deployment stacks</td><td>Azure only; cannot manage non-Azure services directly</td><td>Azure-only teams</td></tr>
+<tr><td>Terraform</td><td>Multi-cloud language (HCL) with a provider model</td><td>State file you must store and lock</td><td>One tool across clouds and SaaS; mature module ecosystem</td><td>State to manage; the azurerm provider can lag new features</td><td>Multi-cloud or mixed estates</td></tr>
+<tr><td>Terraform with AzAPI</td><td>Microsoft's provider that calls the Azure REST API directly</td><td>Same state file</td><td>Covers preview and new features at once</td><td>More verbose than azurerm</td><td>Filling azurerm gaps in a Terraform project</td></tr>
+</tbody></table>
+<p>Two details worth knowing. The azurerm provider is co-developed by Microsoft and HashiCorp, while AzAPI is built by Microsoft alone, and the usual pattern is azurerm as the base with AzAPI for anything it lacks. Bicep keeps no state file, so you use what-if to preview a change and deployment stacks to manage resource lifecycle and cleanup.</p>
+<p><strong>Order to learn:</strong></p>
+<ol>
+<li>Do each task once in the portal and once with the CLI, so you know what the code is describing.</li>
+<li>Write the same stack in Bicep: storage account, Key Vault, App Service and a managed identity with role assignments.</li>
+<li>Rewrite it in Terraform with azurerm, keeping state in an Azure Storage account.</li>
+<li>Replace your hand-written resources with Azure Verified Modules in both tools.</li>
+<li>Run both from a pipeline using federated credentials, with no stored secrets.</li>
+<li>Break it on purpose: delete a resource by hand and change a setting in the portal, then see how each tool detects and repairs the drift.</li>
+</ol>
+
+<h2>Data engineering, modeling and science</h2>
+<p>The platform choice is the biggest decision here. As of June 2026, Synapse is supported with no announced end-of-life date, but it is in maintenance mode and new investment goes to Fabric. One vendor guide says Databricks is stronger for heavy ML engineering and MLOps, while Fabric fits Microsoft-heavy analytics and BI, and many companies run both. Since your own team is moving a client from Synapse to Databricks, learn all three well enough to explain the trade-offs.</p>
+<table>
+<thead><tr><th>Job</th><th>Option 1</th><th>Option 2</th><th>Option 3</th><th>Option 4</th></tr></thead>
+<tbody>
+<tr><td>Store raw and curated data</td><td>ADLS Gen2 with Delta or Parquet</td><td>OneLake in a Fabric lakehouse</td><td>Warehouse tables (Synapse dedicated pool, Fabric Warehouse, Azure SQL)</td><td>Databricks Unity Catalog managed tables</td></tr>
+<tr><td>Move and orchestrate</td><td>Data Factory</td><td>Synapse pipelines</td><td>Fabric Data Factory pipelines</td><td>Databricks Workflows or Airflow</td></tr>
+<tr><td>Transform</td><td>Spark notebooks (Synapse, Fabric or Databricks)</td><td>T-SQL in a warehouse</td><td>Dataflows Gen2 (Power Query)</td><td>dbt on a SQL engine</td></tr>
+<tr><td>Serve to BI</td><td>Power BI Import</td><td>DirectQuery</td><td>Direct Lake on Fabric</td><td>Semantic model over a warehouse</td></tr>
+<tr><td>Stream</td><td>Event Hubs with Stream Analytics</td><td>Spark Structured Streaming</td><td>Fabric Real-Time Intelligence (Eventstream, Eventhouse, KQL)</td><td>Kafka clients on Event Hubs</td></tr>
+<tr><td>Govern and trace lineage</td><td>Purview</td><td>Unity Catalog lineage</td><td>OpenLineage</td><td>A custom viewer, like the one you built</td></tr>
+</tbody></table>
+<p>Data modeling is a separate skill from the tool. Learn each style and when it wins.</p>
+<table>
+<thead><tr><th>Style</th><th>Idea</th><th>Pick it when</th><th>Where it lives in your pipeline</th></tr></thead>
+<tbody>
+<tr><td>Normalized (3NF)</td><td>Few duplicate facts, many joins</td><td>Transactional systems</td><td>Source systems, Azure SQL</td></tr>
+<tr><td>Star schema (Kimball)</td><td>Facts surrounded by dimensions</td><td>BI and reporting</td><td>Gold layer, Power BI semantic model</td></tr>
+<tr><td>Data Vault</td><td>Hubs, links and satellites that absorb change</td><td>Many changing sources, audit needs</td><td>Integration layer between raw and gold</td></tr>
+<tr><td>One big table</td><td>One wide denormalized table</td><td>Simple, fast dashboards</td><td>Gold marts for a single report</td></tr>
+<tr><td>Slowly changing dimensions</td><td>Type 1 overwrites, type 2 keeps history</td><td>Any dimension that changes over time</td><td>Dimension loads in the curated layer</td></tr>
+<tr><td>Document modeling</td><td>Embed related data, choose a partition key</td><td>Cosmos DB workloads</td><td>Application data stores</td></tr>
+</tbody></table>
+<p>Medallion layers (staging, raw, curated, gold) are a layering pattern, not a modeling style, and they combine with any style above.</p>
+<p>For data science, the Azure-specific part is where the work runs: Azure Machine Learning, Databricks notebooks with MLflow, or Fabric Data Science notebooks. The statistics, feature engineering and evaluation underneath are the same everywhere, and your Data Science track covers them.</p>
+
+<h2>AI and ML on Azure</h2>
+<p>Microsoft renamed Azure AI Foundry to Microsoft Foundry on 1 January 2026, and Azure OpenAI is now part of it as "Foundry Models sold by Azure". Expect older tutorials to use the old names for the same things.</p>
+<table>
+<thead><tr><th>Job</th><th>Option 1</th><th>Option 2</th><th>Option 3</th><th>Option 4</th></tr></thead>
+<tbody>
+<tr><td>Call an LLM</td><td>Foundry Models (OpenAI models and a wider catalog)</td><td>Azure OpenAI endpoints inside Foundry</td><td>Self-hosted open models on Azure ML or AKS</td><td>Databricks Model Serving</td></tr>
+<tr><td>Retrieval for RAG</td><td>Azure AI Search (vector, keyword and hybrid)</td><td>pgvector on Azure Database for PostgreSQL</td><td>Vector search in SQL or Cosmos DB</td><td>Databricks or Fabric vector search</td></tr>
+<tr><td>Build agents</td><td>Foundry Agent Service</td><td>Code frameworks such as Semantic Kernel, LangChain or LangGraph</td><td>Copilot Studio (low code)</td><td>A plain loop in your own service</td></tr>
+<tr><td>Train classic ML</td><td>Azure Machine Learning jobs and pipelines</td><td>Databricks with MLflow and AutoML</td><td>Fabric Data Science notebooks</td><td>A VM or container with MLflow</td></tr>
+<tr><td>Serve a model</td><td>Azure ML managed endpoints</td><td>Container Apps or AKS</td><td>Databricks Model Serving</td><td>Azure Functions for light models</td></tr>
+<tr><td>Narrow AI tasks</td><td>Prebuilt Azure AI services (Language, Vision, Speech, Document Intelligence)</td><td>A prompted LLM</td><td>A fine-tuned small model</td><td>Rules plus a classifier</td></tr>
+<tr><td>Evaluate and observe</td><td>Foundry evaluations and tracing</td><td>Ragas</td><td>Langfuse</td><td>LangSmith</td></tr>
+</tbody></table>
+<p>How to choose, in short:</p>
+<ul>
+<li>Use prebuilt AI services when the task is narrow and cost or latency matters, and an LLM when the task needs flexible language handling.</li>
+<li>Use Azure AI Search when you want managed hybrid retrieval, and pgvector when you want one database for data and vectors. You already built the second, so build the first and compare recall and cost.</li>
+<li>Treat evaluation as part of the build. Foundry's built-in evaluations and OpenTelemetry-based tracing sit next to the tools you already know.</li>
+</ul>
+<p>DP-800 covers the SQL side of this, so the new ground is Foundry, Azure AI Search and Azure Machine Learning.</p>
+
+<h2>Core platform</h2>
+<p>This is the part of Azure that every other service depends on, and the part your data work has let you skip. The options below come from my background knowledge, not a search today, so confirm current service names on Microsoft Learn.</p>
+<table>
+<thead><tr><th>Job</th><th>Option 1</th><th>Option 2</th><th>Option 3</th><th>Option 4</th></tr></thead>
+<tbody>
+<tr><td>Run an app</td><td>App Service (managed web apps)</td><td>Functions (event-driven code)</td><td>Container Apps (containers, no cluster to run)</td><td>AKS (full Kubernetes)</td></tr>
+<tr><td>Store application data</td><td>Azure SQL</td><td>Cosmos DB</td><td>PostgreSQL Flexible Server</td><td>Blob or Table Storage</td></tr>
+<tr><td>Give a service an identity</td><td>Managed identity</td><td>Service principal with a certificate</td><td>Workload identity federation (GitHub OIDC)</td><td>Keys and connection strings (avoid)</td></tr>
+<tr><td>Keep secrets and settings</td><td>Key Vault</td><td>App Configuration</td><td>Pipeline secrets</td><td>Environment variables (avoid for secrets)</td></tr>
+<tr><td>Reach a PaaS service privately</td><td>Public endpoint with firewall rules</td><td>Service endpoints</td><td>Private endpoints with Private Link</td><td>Network security perimeter</td></tr>
+<tr><td>Connect networks</td><td>VNet peering</td><td>Hub and spoke with Azure Firewall</td><td>VPN Gateway</td><td>ExpressRoute or Virtual WAN</td></tr>
+<tr><td>Observe</td><td>Azure Monitor and Log Analytics (KQL)</td><td>Application Insights</td><td>Managed Grafana</td><td>Third-party tools</td></tr>
+<tr><td>Deliver</td><td>GitHub Actions</td><td>Azure DevOps Pipelines</td><td>Azure Developer CLI (azd)</td><td>Scripts run by hand (avoid)</td></tr>
+<tr><td>Govern</td><td>Azure Policy</td><td>RBAC and management groups</td><td>Defender for Cloud</td><td>Landing zones from Azure Verified Modules</td></tr>
+</tbody></table>
+<p>Two habits pay off at every level: prefer managed identities over secrets wherever a service supports them, and put a budget alert on every subscription you practice in.</p>
+
+<h2>Certification path</h2>
+<p>Microsoft retired or replaced most of its Azure developer, data science and AI exams between June and September 2026, so many old study guides point at exams you can no longer take. Retired certifications stay on your transcript, but you cannot sit or renew the exam after its retirement date.</p>
+<table>
+<thead><tr><th>Exam</th><th>Certification</th><th>Status</th><th>Why you might take it</th></tr></thead>
+<tbody>
+<tr><td>DP-700</td><td>Fabric Data Engineer Associate</td><td>You passed it on 15 September 2026</td><td>Done; covers Fabric, lakehouses, pipelines and real-time</td></tr>
+<tr><td>DP-800</td><td>SQL AI Developer Associate</td><td>Introduced in 2026, one of your two</td><td>Done; SQL, security and AI features in databases</td></tr>
+<tr><td>AZ-104</td><td>Azure Administrator Associate</td><td>Not on the retirement lists</td><td>Fills your biggest gap: identity, networking, storage, compute, monitoring</td></tr>
+<tr><td>DP-750</td><td>Azure Databricks Data Engineer Associate</td><td>New in 2026; was in beta, check if it is generally available</td><td>Fits the Databricks work coming at your company</td></tr>
+<tr><td>AI-103</td><td>Azure AI App and Agent Developer Associate</td><td>New in 2026; replaces AI-102</td><td>Foundry, RAG and agent development</td></tr>
+<tr><td>AI-300</td><td>MLOps Engineer Associate</td><td>New in 2026; replaces DP-100</td><td>ML lifecycle on Azure Machine Learning</td></tr>
+<tr><td>AI-200</td><td>Azure AI Cloud Developer Associate</td><td>New in 2026; replaces AZ-204</td><td>Cloud app development with AI</td></tr>
+<tr><td>AZ-305</td><td>Azure Solutions Architect Expert</td><td>Not on the retirement lists</td><td>Architecture level; check its prerequisites, which changed when AZ-204 retired</td></tr>
+<tr><td>AZ-400</td><td>DevOps Engineer Expert</td><td>Not on the retirement lists</td><td>CI/CD and infrastructure as code at depth; check prerequisites</td></tr>
+<tr><td>SC-500</td><td>Cloud and AI Security Engineer Associate</td><td>New in 2026; replaces AZ-500</td><td>Security for cloud and AI workloads</td></tr>
+<tr><td>AI-901</td><td>Azure AI Fundamentals</td><td>Replaces AI-900</td><td>Optional; you are past this level</td></tr>
+</tbody></table>
+<p>Already retired and not worth studying for: DP-100, AI-102 and AI-900 (June 2026), AZ-204 (31 July 2026) and AZ-500 (31 August 2026). DP-203 was retired earlier, in 2025, per my background knowledge rather than today's search.</p>
+<p>A sensible order, based on your gaps and not on any official ladder: AZ-104, then DP-750, then AI-103, then AI-300, then AZ-400 or AZ-305. Each maps to a stage in this roadmap. Before you book any exam, confirm its code and status on its Microsoft Learn credentials page, because this list is changing fast.</p>
+
+<h2>Practice plan</h2>
+<p>Build each project more than once, using different tools, and write down what differed. That comparison is the real learning and the thing interviewers ask about.</p>
+<table>
+<thead><tr><th>Project</th><th>Build it these ways</th><th>Compare on</th><th>Stage</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>1. App with secrets</td><td>Portal, CLI, Bicep, Terraform</td><td>Time to deploy, drift handling, readability</td><td>1 and 2</td><td>2 to 3 weeks</td></tr>
+<tr><td>2. Private network</td><td>Public endpoint with firewall, private endpoints, hub and spoke</td><td>Reachability, cost, complexity</td><td>1 and 4</td><td>2 weeks</td></tr>
+<tr><td>3. Medallion pipeline on a public dataset such as NYC taxi trips</td><td>Synapse or Data Factory with Spark, Fabric lakehouse, Databricks</td><td>Runtime, cost, lineage, effort</td><td>3</td><td>4 to 6 weeks</td></tr>
+<tr><td>4. Streaming dashboard</td><td>Stream Analytics, Spark Structured Streaming, Fabric Real-Time Intelligence</td><td>Latency, cost, code volume</td><td>3</td><td>2 to 3 weeks</td></tr>
+<tr><td>5. RAG app</td><td>Azure AI Search versus pgvector, Foundry models, Ragas for evaluation</td><td>Recall, latency, cost per query</td><td>3</td><td>3 to 4 weeks</td></tr>
+<tr><td>6. ML lifecycle</td><td>Azure Machine Learning versus Databricks with MLflow</td><td>Tracking, deployment, monitoring</td><td>3</td><td>3 to 4 weeks</td></tr>
+<tr><td>7. Capstone</td><td>Everything above deployed from code with CI/CD, monitoring and a budget</td><td>Reliability, cost, documentation</td><td>4</td><td>4 weeks</td></tr>
+</tbody></table>
+<p>Keep a short comparison table for each project. Every one is a ready-made Medium post and portfolio entry. Use public or synthetic data only, never client data, and tear down resources after each project so your bill stays small.</p>
+
+<h2>Sources</h2>
+<p class="note">These come from web search results on 7 October 2026. I read the excerpts search returned and did not open each page in full, and several are vendor or consultancy blogs, so treat Microsoft Learn as the authority. Your DP-700 pass date and your Databricks migration come from our earlier chats. Facts marked as background knowledge were not looked up today.</p>
+<ul class="src">
+<li><a href="https://learn.microsoft.com/en-us/credentials/retired-certification-exams">Retired certification exams (Microsoft Learn)</a></li>
+<li><a href="https://www.pearsonvue.com/us/en/microsoft/updates.html">Microsoft certification updates (Pearson VUE)</a></li>
+<li><a href="https://techcommunity.microsoft.com/tag/cloud%20ai">Certification changes (Microsoft Tech Community)</a></li>
+<li><a href="https://www.whizlabs.com/blog/microsofts-next-generation-ai-certifications/">Microsoft's Next-Generation AI Certifications 2026 (Whizlabs)</a></li>
+<li><a href="https://www.aicloudpartners.com/guides/microsoft-certification-retirements-2026.html">Microsoft Certification Retirements 2026 (AI Cloud Partners)</a></li>
+<li><a href="https://www.epcgroup.net/azure-synapse-analytics-enterprise-guide-2026">Azure Synapse Analytics enterprise guide, June 2026 (EPC Group)</a></li>
+<li><a href="https://blog.fabric.microsoft.com/blog/microsoft-fabric-explained-for-existing-synapse-users?ft=All">Microsoft Fabric, explained for existing Synapse users (Microsoft Fabric blog)</a></li>
+<li><a href="https://www.directionsonmicrosoft.com/roadmaps/ref/synapse-analytics-roadmap/">Synapse Analytics roadmap (Directions on Microsoft)</a></li>
+<li><a href="https://www.epcgroup.net/answers/microsoft-fabric-vs-synapse-vs-databricks-2026">Fabric vs Synapse vs Databricks 2026 (EPC Group)</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/foundry/whats-new-foundry">What is new in Microsoft Foundry (Microsoft Learn)</a></li>
+<li><a href="https://www.schneider.im/lu/microsoft-foundry-the-new-name-for-azure-ai-foundry/">Microsoft Foundry: the new name for Azure AI Foundry</a></li>
+<li><a href="https://azure.github.io/Azure-Verified-Modules/usage/solution-development">Azure Verified Modules: solution development</a></li>
+<li><a href="https://xebia.com/de/blog/infrastructure-as-code-on-azure-bicep-vs-terraform-vs-pulumi/">Infrastructure as code on Azure: Bicep vs Terraform vs Pulumi (Xebia)</a></li>
+<li><a href="https://www.synextra.co.uk/?p=50391">Bicep vs Terraform: choosing the best IaC tool for Azure (Synextra)</a></li>
+</ul>
+</main>
+</body>
+</html>

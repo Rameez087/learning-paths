@@ -1,0 +1,9 @@
+.rm table{width:100%;border-collapse:collapse;margin:16px 0 22px;font-size:14px;display:block;overflow-x:auto}
+.rm th,.rm td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+.rm th{background:var(--surface-2);color:var(--text);white-space:nowrap}
+.rm td{background:var(--surface);color:var(--text-secondary)}
+.rm td:first-child{color:var(--text);font-weight:600}
+.rm pre{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;overflow-x:auto;font-size:13px;white-space:pre-wrap}
+.rm .note{font-size:13px;color:var(--text-muted)}
+.rm ul.src{font-size:13.5px}
+.rm-back{display:inline-block;margin-bottom:18px;color:var(--accent-text);text-decoration:none;font-size:14px}
