@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 Asking a falsifiable question | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Doing the experiment</div>
+  <h1>4.1 Asking a falsifiable question</h1>
+  <p class="subtitle">A good research question can be proven wrong. If no result could embarrass you, you have a topic, not a question.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Turn a topic into a <strong>claim</strong> with five parts: the method, the baseline, the metric, the dataset and the size of effect you expect. Then write the <strong>falsifier</strong>: the result that would show you wrong. Do this in two sentences before you run anything. It forces precision and protects you from moving the goalposts later.
+  </div>
+
+<h2>From topic to claim</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Stage</th><th>Example</th><th>Problem</th></tr></thead><tbody><tr><td>Topic</td><td>Data quality in RAG</td><td>Too broad to test</td></tr><tr><td>Vague question</td><td>Does bad data hurt RAG?</td><td>Define bad, define hurt, define RAG</td></tr><tr><td>Narrow question</td><td>How much does duplicate documents in the corpus reduce recall at 5 for a fixed retriever?</td><td>Testable</td></tr><tr><td>Falsifiable claim</td><td>Injecting 20 percent duplicate documents lowers recall at 5 by at least 3 points on dataset X over 5 seeds</td><td>Can be shown false by a measurement</td></tr></tbody></table></div>
+<h2>Try it: build a falsifiable claim</h2>
+<p>Fill in every field. The page assembles the claim and its falsifier, and tells you when something is missing. Use any real idea of your own.</p>
+<div class="widget">
+<div class="sim-row"><label>Method or change</label><input type="text" id="cl-method" placeholder="e.g. hybrid retrieval" style="flex:1"></div>
+<div class="sim-row"><label>Baseline</label><input type="text" id="cl-base" placeholder="e.g. dense only retrieval" style="flex:1"></div>
+<div class="sim-row"><label>Metric</label><input type="text" id="cl-metric" placeholder="e.g. recall at 5" style="flex:1"></div>
+<div class="sim-row"><label>Dataset</label><input type="text" id="cl-data" placeholder="e.g. a public QA corpus" style="flex:1"></div>
+<div class="sim-row"><label>Expected size of effect</label><input type="text" id="cl-delta" placeholder="e.g. 3 points" style="flex:1"></div>
+<div class="sim-row"><label>Seeds</label><input type="text" id="cl-seeds" placeholder="e.g. 5" style="flex:1"></div>
+<div class="sim-out" id="cl-out"></div></div>
+<h2>Which of these is falsifiable?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Pick the best research claim.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">RAG systems are better with good data</button><button type="button" class="ch-opt" data-correct="false">Reranking improves search quality</button><button type="button" class="ch-opt" data-correct="true">Reranking raises recall at 5 by at least 2 points over BM25 alone on dataset X, over 5 seeds</button></div><div class="ch-explain">Only the first names a method, baseline, metric, dataset, effect size and number of seeds. The others cannot be shown wrong by a specific result.</div></div><div class="ch-item"><div class="ch-q">Which falsifier is stated correctly?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">The claim cannot fail because we will tune until it works</button><button type="button" class="ch-opt" data-correct="false">The claim fails if it feels unconvincing</button><button type="button" class="ch-opt" data-correct="true">The claim fails if the 95 percent interval of the recall difference includes values below 2 points</button></div><div class="ch-explain">A falsifier is a pre-stated, measurable condition. Tuning until the claim works removes the possibility of being wrong.</div></div></div>
+<div class="callout"><div class="callout-label">Pre-registration, lightweight</div>Write the claim and falsifier in your repo's README and commit it before you run the main experiment. The timestamp shows you did not adjust the question after seeing the data. You can still explore, but label exploration as exploration.</div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What makes a claim falsifiable?</div><div class="q-options"><button class="q-option" data-correct="false">It is stated confidently</button><button class="q-option" data-correct="false">It uses a famous dataset</button><button class="q-option" data-correct="true">A specific measurable result could show it to be wrong</button></div><div class="q-explain">If no outcome could contradict the claim, it is not testable.</div></div>
+<div class="q-block"><div class="q-prompt">2. When should you write the falsifier?</div><div class="q-options"><button class="q-option" data-correct="false">After seeing the results</button><button class="q-option" data-correct="false">Only if the result is negative</button><button class="q-option" data-correct="true">Before running the main experiment</button></div><div class="q-explain">Stating it in advance prevents moving the goalposts.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which part of a claim guards against a fluke?</div><div class="q-options"><button class="q-option" data-correct="false">Naming the author</button><button class="q-option" data-correct="false">Using more adjectives</button><button class="q-option" data-correct="true">Specifying the number of seeds and requiring an interval, not a single value</button></div><div class="q-explain">Seeds and an interval turn a lucky single run into a testable statement.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://karpathy.github.io/2019/04/25/recipe/">A Recipe for Training Neural Networks (Karpathy)</a>; <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a>; <a href="https://arxiv.org/abs/1807.03341">Troubling Trends in ML Scholarship (Lipton, Steinhardt)</a></p>
+
+  <div class="pager">
+    <a href="../phase-03-foundations-you-must-own/3-4-data-systems-foundations.html">&larr; 3.4 Data systems foundations</a>
+    <a href="4-2-baselines-and-ablations.html">4.2 Baselines and ablations &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var ids=["cl-method","cl-base","cl-metric","cl-data","cl-delta","cl-seeds"];
+  function upd(){
+    var v={};ids.forEach(function(i){v[i]=(document.getElementById(i).value||"").trim();});
+    var ok=ids.every(function(i){return v[i];});
+    var s="<b>Claim.</b> On "+(v["cl-data"]||"[dataset]")+", "+(v["cl-method"]||"[method]")+" improves "+(v["cl-metric"]||"[metric]")+" over "+(v["cl-base"]||"[baseline]")+" by at least "+(v["cl-delta"]||"[delta]")+", averaged over "+(v["cl-seeds"]||"[n]")+" seeds.<br><br>"+
+      "<b>Falsifier.</b> The claim is wrong if the 95% confidence interval of the difference ("+(v["cl-method"]||"[method]")+" minus "+(v["cl-base"]||"[baseline]")+") includes "+(v["cl-delta"]?"values below "+v["cl-delta"]:"zero")+".<br><br>"+
+      (ok?"<span class='badge-ok'>Complete: every blank is filled, so someone could run this and prove you wrong.</span>":"<span class='badge-no'>Incomplete: fill every field. A claim you cannot fill in is not yet falsifiable.</span>");
+    document.getElementById("cl-out").innerHTML=s;
+  }
+  ids.forEach(function(i){document.getElementById(i).addEventListener("input",upd);});upd();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.4 PostgreSQL, pgvector and choosing a database | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Storage and databases</div>
+  <h1>4.4 PostgreSQL, pgvector and choosing a database</h1>
+  <p class="subtitle">Azure Database for PostgreSQL is a managed Postgres. With pgvector it doubles as a vector store, which matters for RAG.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Database for PostgreSQL flexible server</strong> runs community PostgreSQL with managed backups, high availability and patching. Many extensions are supported, including <strong>pgvector</strong> for embeddings and similarity search. It is a strong default when you want open source compatibility. Choosing a database is mostly about access pattern, scale and team skills.
+  </div>
+
+<h2>Choosing a data store</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>If you need</th><th>Start with</th></tr></thead><tbody><tr><td>Relational transactions, SQL Server skills</td><td>Azure SQL Database</td></tr><tr><td>Relational transactions, open source, extensions, vectors</td><td>PostgreSQL flexible server</td></tr><tr><td>Massive scale key lookups, global distribution, flexible schema</td><td>Cosmos DB</td></tr><tr><td>Files and raw data for analytics</td><td>Data Lake Storage Gen2</td></tr><tr><td>Analytical SQL over large data</td><td>A warehouse or lakehouse engine (Phase 7)</td></tr><tr><td>Full text and hybrid search</td><td>Azure AI Search (8.2)</td></tr></tbody></table></div>
+<pre><code>-- pgvector basics
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE docs (id bigserial PRIMARY KEY, body text, embedding vector(1536));
+CREATE INDEX ON docs USING hnsw (embedding vector_cosine_ops);
+SELECT id, body FROM docs ORDER BY embedding &lt;=&gt; $1 LIMIT 5;</code></pre>
+<div class="callout"><div class="callout-label">Extensions need enabling</div>On Azure, extensions must be allow listed on the server before CREATE EXTENSION works. Check the current supported list and versions in the docs.</div>
+<p>A single Postgres holding both your relational data and your embeddings keeps joins, transactions and filters simple. A dedicated search service adds richer ranking features and scales retrieval separately. Section 8.2 compares them.</p>
+<h2>Pick</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A small team builds a RAG app and wants relational metadata and vectors in one place.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Blob storage</button><button type="button" class="ch-opt" data-correct="false">Cosmos DB only</button><button type="button" class="ch-opt" data-correct="true">PostgreSQL with pgvector</button></div><div class="ch-explain">One database for both keeps the design simple at modest scale.</div></div><div class="ch-item"><div class="ch-q">Hot, simple key value lookups with global users and unpredictable volume.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Data lake files</button><button type="button" class="ch-opt" data-correct="false">PostgreSQL on one node</button><button type="button" class="ch-opt" data-correct="true">Cosmos DB</button></div><div class="ch-explain">Partitioned NoSQL suits key based access at scale.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does pgvector add?</div><div class="q-options"><button class="q-option" data-correct="false">Cheaper storage</button><button class="q-option" data-correct="false">Networking</button><button class="q-option" data-correct="false">Backups</button><button class="q-option" data-correct="true">Vector columns and similarity search in Postgres</button></div><div class="q-explain">It lets Postgres store and query embeddings.</div></div>
+<div class="q-block"><div class="q-prompt">2. What must you do on Azure before using an extension?</div><div class="q-options"><button class="q-option" data-correct="false">Delete the server</button><button class="q-option" data-correct="false">Buy a licence</button><button class="q-option" data-correct="true">Allow list it on the server</button><button class="q-option" data-correct="false">Nothing</button></div><div class="q-explain">Extensions are controlled by server parameters.</div></div>
+<div class="q-block"><div class="q-prompt">3. Main criteria for choosing a database?</div><div class="q-options"><button class="q-option" data-correct="false">The logo</button><button class="q-option" data-correct="false">Alphabetical order</button><button class="q-option" data-correct="false">Region name length</button><button class="q-option" data-correct="true">Access pattern, scale and team skills</button></div><div class="q-explain">Fit to workload beats fashion.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/overview">Azure Database for PostgreSQL flexible server (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/architecture/guide/technology-choices/data-store-decision-tree">Choose a data store (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/postgresql/extensions/how-to-use-pgvector">pgvector on Azure Database for PostgreSQL (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="4-3-cosmos-db.html">&larr; 4.3 Cosmos DB</a>
+    <a href="../phase-05-security/5-1-managed-identities-and-workload-identity-federation.html">5.1 Managed identities and workload identity federation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

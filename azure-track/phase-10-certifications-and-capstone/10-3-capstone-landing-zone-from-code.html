@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.3 Capstone: a landing zone from code | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 &middot; Certifications and capstone</div>
+  <h1>10.3 Capstone: a landing zone from code</h1>
+  <p class="subtitle">Bring the whole track together: a small, secure, observable environment created entirely from code.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build a miniature landing zone and one workload on it. Everything is created by a pipeline from a Git repository, with no manual portal steps and no stored secrets.
+  </div>
+
+<h2>The brief</h2>
+<ol><li>A management group structure with a platform and a landing zone group (or, in a single subscription, separate resource groups that mimic it).</li><li>A policy baseline: allowed regions, required tags, deny public storage, diagnostics to a central workspace.</li><li>A hub VNet with a firewall or NSG based controls, and one spoke for the workload.</li><li>A workload: a container app or web app with a managed identity, reading a secret from Key Vault and data from a storage account or database through private endpoints.</li><li>Deployment by GitHub Actions with OIDC, a what-if or plan step on pull requests and an approval for the main branch.</li><li>Monitoring: logs to Log Analytics, alerts, and a cost budget.</li><li>Optional: a RAG endpoint or a small lakehouse as the workload.</li></ol>
+<h2>Acceptance checklist</h2>
+<h2>Can you show each of these?</h2>
+<div class="widget checklist" data-w="checklist" data-key="az-capstone"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Destroying and rebuilding the whole environment from the repo works</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>No credentials appear in the repository or pipeline secrets</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Public network access is off for data services, and DNS resolves privately</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>A policy denies a non compliant deployment, and you can show the deny message</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>An alert fires when you trigger a test failure</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span>A README with an architecture diagram, decisions and a cost estimate</span></label></div>
+<div class="callout"><div class="callout-label">Show your thinking</div>Include a short decision record for each major choice, for example why Bicep or Terraform, and which risks you accepted. This is the artefact that demonstrates judgement.</div>
+<h2>Final check</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A teammate asks how to reproduce your environment.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Send a screenshot</button><button type="button" class="ch-opt" data-correct="true">Point to the repo and run the pipeline</button><button type="button" class="ch-opt" data-correct="false">Describe the portal clicks</button></div><div class="ch-explain">Reproducibility from code is the goal of the track.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What proves an environment is code defined?</div><div class="q-options"><button class="q-option" data-correct="false">It has a diagram</button><button class="q-option" data-correct="false">It is in one region</button><button class="q-option" data-correct="false">It has tags</button><button class="q-option" data-correct="true">You can destroy and rebuild it from the repo</button></div><div class="q-explain">Rebuild is the test.</div></div>
+<div class="q-block"><div class="q-prompt">2. Where should secrets be in the capstone?</div><div class="q-options"><button class="q-option" data-correct="false">In app settings as plain text</button><button class="q-option" data-correct="false">In Git history</button><button class="q-option" data-correct="false">In the README</button><button class="q-option" data-correct="true">Nowhere in code; use managed identity and Key Vault</button></div><div class="q-explain">Avoid stored credentials.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why write decision records?</div><div class="q-options"><button class="q-option" data-correct="false">They reduce cost</button><button class="q-option" data-correct="false">They speed up DNS</button><button class="q-option" data-correct="false">They are required by Azure</button><button class="q-option" data-correct="true">They show reasoning and accepted risks</button></div><div class="q-explain">Judgement is what people evaluate.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/">What is an Azure landing zone (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/">Cloud Adoption Framework (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="10-2-practice-projects.html">&larr; 10.2 Practice projects</a>
+    <a href="../index.html">Track overview &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

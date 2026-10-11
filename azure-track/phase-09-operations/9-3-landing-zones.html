@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.3 Landing zones and governance at scale | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 &middot; Operations</div>
+  <h1>9.3 Landing zones and governance at scale</h1>
+  <p class="subtitle">A landing zone is a prepared environment: network, identity, policy and subscriptions ready before workloads arrive.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An <strong>Azure landing zone</strong> is a multi subscription environment built on the <strong>Cloud Adoption Framework</strong>. A management group hierarchy separates <strong>platform</strong> subscriptions (identity, connectivity, management) from <strong>application</strong> subscriptions. Policy and RBAC are assigned at management groups, a hub network provides connectivity, and subscriptions are created on demand (<strong>subscription vending</strong>) so teams get a ready, compliant home.
+  </div>
+
+<div class="figure"><svg viewBox="0 0 680 218" width="100%" role="img" aria-label="Landing zone management groups" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10" y="5" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="25" font-size="12" font-weight="700" fill="var(--text)">Tenant root group</text><text x="26" y="42" font-size="10.5" fill="var(--text-secondary)">Top of the hierarchy</text><rect x="10" y="57" width="660" height="46" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="26" y="77" font-size="12" font-weight="700" fill="var(--text)">Platform</text><text x="26" y="94" font-size="10.5" fill="var(--text-secondary)">Identity, connectivity (hub), management and logging subscriptions</text><rect x="10" y="109" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="129" font-size="12" font-weight="700" fill="var(--text)">Landing zones</text><text x="26" y="146" font-size="10.5" fill="var(--text-secondary)">Corp (private) and Online (internet facing) application subscriptions</text><rect x="10" y="161" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="181" font-size="12" font-weight="700" fill="var(--text)">Sandbox and decommissioned</text><text x="26" y="198" font-size="10.5" fill="var(--text-secondary)">Safe experiments and retired subscriptions</text></svg><div class="figure-caption">Policy flows down. Platform teams run the middle, application teams own their subscriptions.</div></div>
+<ul><li>Deploy it with code (Bicep or Terraform, using the landing zone accelerators and AVM).</li><li>Assign a policy initiative for guardrails: allowed regions, required tags, no public storage, diagnostics on.</li><li>Centralise logs in a workspace owned by the platform.</li><li>Automate subscription vending so a new team gets a subscription, network peering, RBAC and budgets from a request.</li></ul>
+<div class="callout"><div class="callout-label">Scale to need</div>A five person startup does not need the full enterprise reference architecture. Start with a small subset: a management group, a policy baseline and separate production and non production subscriptions, then grow.</div>
+<h2>What belongs where?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A shared firewall and VPN gateway.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A sandbox</button><button type="button" class="ch-opt" data-correct="false">Each application subscription</button><button type="button" class="ch-opt" data-correct="true">The platform connectivity subscription</button></div><div class="ch-explain">Shared services live in the hub.</div></div><div class="ch-item"><div class="ch-q">A team wants to try a service freely, with no connection to company data.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Production</button><button type="button" class="ch-opt" data-correct="true">A sandbox subscription</button><button type="button" class="ch-opt" data-correct="false">The identity subscription</button></div><div class="ch-explain">Sandboxes isolate experiments.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is subscription vending?</div><div class="q-options"><button class="q-option" data-correct="false">Selling subscriptions</button><button class="q-option" data-correct="false">Deleting groups</button><button class="q-option" data-correct="false">Billing by email</button><button class="q-option" data-correct="true">Automatically creating ready, compliant subscriptions on request</button></div><div class="q-explain">It makes onboarding fast and consistent.</div></div>
+<div class="q-block"><div class="q-prompt">2. Where are policies usually assigned?</div><div class="q-options"><button class="q-option" data-correct="false">Subnets</button><button class="q-option" data-correct="false">Individual VMs</button><button class="q-option" data-correct="false">Tags</button><button class="q-option" data-correct="true">Management groups</button></div><div class="q-explain">They inherit downward.</div></div>
+<div class="q-block"><div class="q-prompt">3. Is the full enterprise design needed for a startup?</div><div class="q-options"><button class="q-option" data-correct="false">Never design at all</button><button class="q-option" data-correct="false">Always yes</button><button class="q-option" data-correct="false">Only in the portal</button><button class="q-option" data-correct="true">No, start with a small subset and grow</button></div><div class="q-explain">Fit the design to size.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/">What is an Azure landing zone (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/">Cloud Adoption Framework (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="9-2-reliability-and-waf.html">&larr; 9.2 Reliability and the Well-Architected Framework</a>
+    <a href="9-4-cost-optimisation.html">9.4 Cost optimisation &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

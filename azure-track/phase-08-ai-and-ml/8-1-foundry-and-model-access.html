@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.1 Foundry and model access | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; AI and ML</div>
+  <h1>8.1 Foundry and model access</h1>
+  <p class="subtitle">Azure's AI platform is Microsoft Foundry. It is where you reach models, build agents and run evaluations.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Microsoft Foundry</strong> (formerly Azure AI Foundry) is the platform for building AI apps and agents: a catalog of models from several providers, deployment endpoints, an agent service, evaluation, and safety tooling. You create a <strong>deployment</strong> of a model, get an endpoint, and call it with Entra ID or a key. Plan for <strong>quotas</strong>, <strong>regional availability</strong> and <strong>model retirement</strong>.
+  </div>
+
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Using models in Foundry" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Choose model</text><text x="65.6" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">from catalog</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="202.79999999999998" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Create</text><text x="202.79999999999998" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">deployment</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="340.0" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Endpoint and</text><text x="340.0" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">credentials</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="477.2" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Call from app</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Monitor and</text><text x="614.4" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">evaluate</text></svg><div class="figure-caption">Your app talks to a deployment, not to a model name directly.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Concept</th><th>What to know</th></tr></thead><tbody><tr><td>Deployment</td><td>A named, configured instance of a model with capacity</td></tr><tr><td>Deployment type</td><td>Options like standard pay per token, provisioned throughput, and batch. Trade cost against latency guarantees</td></tr><tr><td>Quota</td><td>Per region and model limits on tokens per minute. Request increases early</td></tr><tr><td>Content filters</td><td>Configurable safety filtering on prompts and responses</td></tr><tr><td>Model lifecycle</td><td>Models are retired on published schedules, so pin versions and plan upgrades</td></tr></tbody></table></div>
+<pre><code># call a deployment with Entra ID (no key)
+from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+token = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+client = AzureOpenAI(azure_endpoint="https://my-resource.openai.azure.com", azure_ad_token_provider=token, api_version="2024-10-21")
+r = client.chat.completions.create(model="my-deployment", messages=[{"role": "user", "content": "Hello"}])
+print(r.choices[0].message.content)</code></pre>
+<div class="callout"><div class="callout-label">Verify names and versions</div>Product names, SDK patterns and API versions change quickly in this area. Treat the sample as a shape, and copy current code from the docs.</div>
+<h2>Design call</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Your app must keep working when a model version is retired.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Hope nothing happens</button><button type="button" class="ch-opt" data-correct="false">Hard code one model forever</button><button type="button" class="ch-opt" data-correct="true">Track the retirement schedule, test the replacement, and deploy by configuration</button></div><div class="ch-explain">Retirement dates are published, so plan upgrades.</div></div><div class="ch-item"><div class="ch-q">Avoid storing API keys for model calls.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Share one key by chat</button><button type="button" class="ch-opt" data-correct="false">Put the key in the front end</button><button type="button" class="ch-opt" data-correct="true">Use Entra ID authentication with a managed identity</button></div><div class="ch-explain">Identity based access removes keys.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is a deployment?</div><div class="q-options"><button class="q-option" data-correct="false">A DNS zone</button><button class="q-option" data-correct="false">A VM image</button><button class="q-option" data-correct="true">A named instance of a model you call through an endpoint</button><button class="q-option" data-correct="false">A resource group</button></div><div class="q-explain">Apps call deployments.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why check quotas early?</div><div class="q-options"><button class="q-option" data-correct="false">They apply to storage only</button><button class="q-option" data-correct="false">They are only cosmetic</button><button class="q-option" data-correct="false">They are unlimited</button><button class="q-option" data-correct="true">Token limits per region can block a launch</button></div><div class="q-explain">Capacity must be arranged.</div></div>
+<div class="q-block"><div class="q-prompt">3. Best auth for production calls?</div><div class="q-options"><button class="q-option" data-correct="false">No auth</button><button class="q-option" data-correct="false">A key in client code</button><button class="q-option" data-correct="false">A shared password</button><button class="q-option" data-correct="true">Entra ID with managed identity</button></div><div class="q-explain">No stored secrets.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/foundry/what-is-foundry">What is Microsoft Foundry (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/foundry-models-overview">Foundry Models overview (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-07-data-engineering/7-7-serving-to-bi.html">&larr; 7.7 Serving to BI: Import, DirectQuery and Direct Lake</a>
+    <a href="8-2-rag-on-azure.html">8.2 RAG on Azure: AI Search or pgvector &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 Virtual networks, subnets and NSGs | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Networking</div>
+  <h1>3.1 Virtual networks, subnets and NSGs</h1>
+  <p class="subtitle">A virtual network is your private address space in Azure. Plan the addresses first, because changing them later is painful.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>virtual network (VNet)</strong> is a private network with one or more address ranges in CIDR notation. You divide it into <strong>subnets</strong>. A <strong>network security group (NSG)</strong> is a stateful set of allow and deny rules attached to a subnet or a network interface. Azure reserves five addresses in every subnet. Plan non overlapping ranges across everything you might ever connect.
+  </div>
+
+<h2>Try it: CIDR calculator</h2>
+<p>Type a network and prefix to see its range and how many addresses you really get in an Azure subnet.</p>
+<div class="widget">
+<div class="sim-row"><label>Address</label><input type="text" id="cd-ip" value="10.20.0.0" style="width:160px"></div>
+<div class="sim-row"><label>Prefix length</label><input type="number" id="cd-px" value="24" min="8" max="30" style="width:80px"></div>
+<div class="sim-out" id="cd-out"></div></div>
+<h2>How the pieces fit</h2>
+<div class="figure"><svg viewBox="0 0 680 218" width="100%" role="img" aria-label="VNet with three tiers of subnets" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10" y="5" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="25" font-size="12" font-weight="700" fill="var(--text)">VNet 10.20.0.0/16</text><text x="26" y="42" font-size="10.5" fill="var(--text-secondary)">One address space in one region</text><rect x="10" y="57" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="77" font-size="12" font-weight="700" fill="var(--text)">Subnet web 10.20.1.0/24</text><text x="26" y="94" font-size="10.5" fill="var(--text-secondary)">NSG allows 443 from the internet</text><rect x="10" y="109" width="660" height="46" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="26" y="129" font-size="12" font-weight="700" fill="var(--text)">Subnet app 10.20.2.0/24</text><text x="26" y="146" font-size="10.5" fill="var(--text-secondary)">NSG allows traffic only from the web subnet</text><rect x="10" y="161" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="181" font-size="12" font-weight="700" fill="var(--text)">Subnet data 10.20.3.0/24</text><text x="26" y="198" font-size="10.5" fill="var(--text-secondary)">NSG allows only the app subnet to reach the database port</text></svg><div class="figure-caption">Each tier gets its own subnet so rules can be written per tier.</div></div>
+<h2>Planning rules</h2>
+<ul><li>Use private ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) and keep a company wide address plan.</li><li>Never overlap ranges between VNets you may peer, or with on premises networks you may connect.</li><li>Leave room to grow. Resizing a subnet that has resources in it is restrictive.</li><li>Some services need their own dedicated subnet with a fixed name, such as GatewaySubnet and AzureFirewallSubnet. Check the minimum size in the docs.</li></ul>
+<h2>NSG rules</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Field</th><th>Meaning</th></tr></thead><tbody><tr><td>Priority</td><td>Lower number is evaluated first, from 100 to 4096</td></tr><tr><td>Source and destination</td><td>IP ranges, service tags (such as Storage or Internet) or application security groups</td></tr><tr><td>Port and protocol</td><td>Which traffic the rule matches</td></tr><tr><td>Action</td><td>Allow or deny</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Default rules</div>NSGs ship with default rules that allow traffic inside the VNet and outbound to the internet, and deny other inbound. Your rules with lower priority numbers override them. Review the defaults before assuming a subnet is closed.</div>
+<h2>Design the rule</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Only the web tier should reach the app tier on port 8080.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Rely on the application to reject strangers</button><button type="button" class="ch-opt" data-correct="false">Open 8080 to the Internet tag</button><button type="button" class="ch-opt" data-correct="true">An inbound NSG rule on the app subnet allowing the web subnet range to port 8080, with the defaults left to deny the rest</button></div><div class="ch-explain">Least privilege at the network layer limits what a compromised host can reach.</div></div><div class="ch-item"><div class="ch-q">You want to manage rules by role instead of IP address.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Longer priority numbers</button><button type="button" class="ch-opt" data-correct="false">More subnets</button><button type="button" class="ch-opt" data-correct="true">Application security groups</button></div><div class="ch-explain">Application security groups let you name groups of network interfaces and write rules against them.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. How many addresses does Azure reserve in each subnet?</div><div class="q-options"><button class="q-option" data-correct="false">None</button><button class="q-option" data-correct="false">Two</button><button class="q-option" data-correct="false">Ten</button><button class="q-option" data-correct="true">Five</button></div><div class="q-explain">The first four and the last address are reserved.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why avoid overlapping address ranges?</div><div class="q-options"><button class="q-option" data-correct="false">NSGs stop working</button><button class="q-option" data-correct="true">You cannot peer or connect networks whose ranges overlap</button><button class="q-option" data-correct="false">DNS fails in the region</button><button class="q-option" data-correct="false">Azure bills extra</button></div><div class="q-explain">Routing needs distinct ranges.</div></div>
+<div class="q-block"><div class="q-prompt">3. What does a lower NSG priority number mean?</div><div class="q-options"><button class="q-option" data-correct="false">The rule applies only outbound</button><button class="q-option" data-correct="false">The rule is weaker</button><button class="q-option" data-correct="false">The rule is ignored</button><button class="q-option" data-correct="true">The rule is evaluated earlier</button></div><div class="q-explain">Rules are processed from the lowest number upward and the first match wins.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview">Virtual network overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview">Network security groups (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-02-compute-and-apps/2-4-containers-aci-container-apps-aks.html">&larr; 2.4 Containers: ACI, Container Apps and AKS</a>
+    <a href="3-2-private-endpoints-and-dns.html">3.2 Private endpoints and DNS &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var ip=document.getElementById("cd-ip"), px=document.getElementById("cd-px"), out=document.getElementById("cd-out");
+  if(!ip||!px||!out) return;
+  function toInt(s){var a=s.split(".");if(a.length!==4)return null;var n=0;for(var i=0;i<4;i++){var v=parseInt(a[i],10);if(isNaN(v)||v<0||v>255)return null;n=n*256+v;}return n;}
+  function toIp(n){return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join(".");}
+  function run(){
+    var base=toInt(ip.value.trim()), len=parseInt(px.value,10);
+    if(base===null||isNaN(len)||len<8||len>30){out.innerHTML="Enter an IPv4 address and a prefix from 8 to 30.";return;}
+    var size=Math.pow(2,32-len), mask=len===0?0:(0xFFFFFFFF<<(32-len))>>>0;
+    var net=(base&mask)>>>0, last=net+size-1;
+    var usable=size-5;
+    var html="<strong>Network:</strong> "+toIp(net)+"/"+len+"<br><strong>Range:</strong> "+toIp(net)+" to "+toIp(last)+"<br><strong>Total addresses:</strong> "+size+"<br><strong>Usable in an Azure subnet:</strong> "+(usable>0?usable:0)+" (Azure reserves 5 per subnet)";
+    if(net!==base) html+="<br><em>Note: the address you typed is not the network start. Azure uses "+toIp(net)+"/"+len+".</em>";
+    if(len>29) html+="<br><em>Azure subnets cannot be smaller than /29.</em>";
+    out.innerHTML=html;
+  }
+  ip.addEventListener("input",run); px.addEventListener("input",run); run();
+})();
+
+</script>
+</body>
+</html>

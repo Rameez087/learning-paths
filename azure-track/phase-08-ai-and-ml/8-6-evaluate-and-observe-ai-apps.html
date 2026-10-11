@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.6 Evaluate and observe AI apps | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.6</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; AI and ML</div>
+  <h1>8.6 Evaluate and observe AI apps</h1>
+  <p class="subtitle">If you cannot measure whether the app is good, every change is a guess.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build a small <strong>evaluation set</strong> of real questions with expected answers or criteria. Measure <strong>retrieval</strong> (did the right chunks come back?) and <strong>generation</strong> (is the answer grounded, relevant, safe?). Foundry offers evaluators for groundedness, relevance and safety; you can add your own checks. In production, <strong>trace</strong> each request with OpenTelemetry into Application Insights, and track cost, latency and quality over time.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Layer</th><th>Measure</th><th>Example check</th></tr></thead><tbody><tr><td>Retrieval</td><td>Recall at k, precision</td><td>Is the gold passage in the top 5?</td></tr><tr><td>Generation</td><td>Groundedness, relevance, completeness</td><td>Is every claim supported by retrieved text?</td></tr><tr><td>Safety</td><td>Harmful content, jailbreak resistance</td><td>Red team prompts in the test set</td></tr><tr><td>Operations</td><td>Latency, tokens, cost, errors</td><td>p95 latency and cost per request</td></tr></tbody></table></div>
+<h2>Evaluation loop</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Collect 50 to 200 real cases</h3><p>Cover common questions and known hard ones. Keep a held out portion.</p></div><div class="st-step"><h3>2. Run the pipeline and score</h3><p>Use automatic evaluators plus human review of a sample. LLM judges have biases, so calibrate them against humans.</p></div><div class="st-step"><h3>3. Change one thing</h3><p>Chunk size, prompt, model, reranker. Compare against the previous run.</p></div><div class="st-step"><h3>4. Gate releases</h3><p>Run the set in CI. Block a release if quality or safety drops.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="callout"><div class="callout-label">Research link</div>Careful evaluation design is the core of the Research Track RAG project. The same discipline makes the production system better.</div>
+<h2>What to do</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Answers sometimes cite facts missing from the retrieved passages.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Ignore it</button><button type="button" class="ch-opt" data-correct="true">Measure groundedness and tighten the prompt and retrieval</button><button type="button" class="ch-opt" data-correct="false">Raise temperature</button></div><div class="ch-explain">Ungrounded claims are a measurable defect.</div></div><div class="ch-item"><div class="ch-q">A new model version is available.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Trust the release notes alone</button><button type="button" class="ch-opt" data-correct="true">Run the evaluation set before switching</button><button type="button" class="ch-opt" data-correct="false">Switch immediately in production</button></div><div class="ch-explain">Regression testing prevents silent quality loss.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why separate retrieval and generation evaluation?</div><div class="q-options"><button class="q-option" data-correct="false">It saves tokens</button><button class="q-option" data-correct="false">They are identical</button><button class="q-option" data-correct="true">A wrong answer may come from either stage</button><button class="q-option" data-correct="false">Retrieval never fails</button></div><div class="q-explain">Diagnosis needs separate measures.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is groundedness?</div><div class="q-options"><button class="q-option" data-correct="false">Network speed</button><button class="q-option" data-correct="true">Whether claims are supported by the provided sources</button><button class="q-option" data-correct="false">A region</button><button class="q-option" data-correct="false">Disk size</button></div><div class="q-explain">It checks against the retrieved text.</div></div>
+<div class="q-block"><div class="q-prompt">3. Where should the eval set run?</div><div class="q-options"><button class="q-option" data-correct="false">On a phone</button><button class="q-option" data-correct="false">Never</button><button class="q-option" data-correct="false">Only after incidents</button><button class="q-option" data-correct="true">In CI before releases</button></div><div class="q-explain">It acts as a quality gate.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/foundry/how-to/evaluate-generative-ai-app">Evaluate generative AI apps (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/overview">Azure Monitor overview (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="8-5-prebuilt-ai-services-vs-llms.html">&larr; 8.5 Prebuilt AI services versus LLMs</a>
+    <a href="../phase-09-operations/9-1-azure-monitor-and-kql.html">9.1 Azure Monitor and KQL &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

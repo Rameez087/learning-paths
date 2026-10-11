@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 Bicep in practice: modules, what-if and deployment stacks | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Infrastructure as code</div>
+  <h1>6.2 Bicep in practice: modules, what-if and deployment stacks</h1>
+  <p class="subtitle">Real infrastructure is many files, previewed before applying, and cleaned up on purpose.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Modules</strong> package reusable Bicep and can be shared through a registry. <strong>What-if</strong> previews changes before you deploy. <strong>Deployment stacks</strong> manage a set of resources as one unit, can protect them from changes outside the stack (deny settings), and can delete resources that you remove from the template. Bicep keeps no state file; Azure itself is the source of truth.
+  </div>
+
+<h2>Modules</h2>
+<pre><code>module storage 'modules/storage.bicep' = {
+  name: 'storageDeploy'
+  params: {
+    env: env
+    location: location
+  }
+}
+
+// or from a private registry
+module net 'br:myregistry.azurecr.io/bicep/network:v1' = {
+  name: 'netDeploy'
+  params: { addressSpace: '10.20.0.0/16' }
+}</code></pre>
+<h2>Preview, then apply</h2>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Bicep workflow" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Edit .bicep</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">bicep build /</text><text x="202.79999999999998" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">lint</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">what-if</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="477.2" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Review changes</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Deploy</text></svg><div class="figure-caption">What-if output shows create, modify, delete and ignore per resource. Read it before you deploy.</div></div>
+<p>What-if is best effort: some properties produce noise, and not every change is predicted perfectly. Treat it as strong guidance, not a guarantee.</p>
+<h2>Deployment stacks</h2>
+<p>A plain deployment never deletes things you removed from the file (incremental mode). A stack tracks the resources it created and can detach or delete them when they leave the template, and can apply deny settings so people cannot edit managed resources by hand. This answers the old question of how to clean up in Bicep without a state file.</p>
+<pre><code>az stack group create --name stack-demo --resource-group rg-demo \
+  --template-file main.bicep \
+  --action-on-unmanage deleteResources \
+  --deny-settings-mode denyDelete</code></pre>
+<div class="callout"><div class="callout-label">Check stack availability</div>Deployment stacks have been maturing. Confirm the current support level, scopes and deny settings behaviour in the docs before relying on them in production.</div>
+<h2>Which tool step?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You want to see what a template change would do before applying it.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Deploy to production first</button><button type="button" class="ch-opt" data-correct="false">Delete the group and retry</button><button type="button" class="ch-opt" data-correct="true">az deployment group what-if</button></div><div class="ch-explain">What-if previews without changing anything.</div></div><div class="ch-item"><div class="ch-q">You removed a resource from the template and want it deleted in Azure too.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Nothing, it happens automatically</button><button type="button" class="ch-opt" data-correct="false">A normal incremental deployment</button><button type="button" class="ch-opt" data-correct="true">A deployment stack with action on unmanage set to delete</button></div><div class="ch-explain">Incremental deployments leave removed resources in place.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does what-if do?</div><div class="q-options"><button class="q-option" data-correct="false">Estimates cost exactly</button><button class="q-option" data-correct="false">Compiles to Terraform</button><button class="q-option" data-correct="false">Deletes unused resources</button><button class="q-option" data-correct="true">Previews changes without applying them</button></div><div class="q-explain">It is a dry run.</div></div>
+<div class="q-block"><div class="q-prompt">2. Does Bicep keep a state file?</div><div class="q-options"><button class="q-option" data-correct="false">Yes, in Git</button><button class="q-option" data-correct="false">Yes, in a blob</button><button class="q-option" data-correct="true">No, Azure is the source of truth</button><button class="q-option" data-correct="false">Yes, locally</button></div><div class="q-explain">Bicep is stateless.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why use deployment stacks?</div><div class="q-options"><button class="q-option" data-correct="false">To avoid RBAC</button><button class="q-option" data-correct="true">To manage resources as a unit with cleanup and protection</button><button class="q-option" data-correct="false">To make templates shorter</button><button class="q-option" data-correct="false">To rename regions</button></div><div class="q-explain">Stacks can delete unmanaged resources and block outside edits.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deploy-what-if">Bicep deployment what-if (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/deployment-stacks">Deployment stacks (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules">Bicep modules (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="6-1-bicep-fundamentals.html">&larr; 6.1 Bicep fundamentals</a>
+    <a href="6-3-terraform-on-azure.html">6.3 Terraform on Azure &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

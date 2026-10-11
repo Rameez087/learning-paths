@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.3 Machine learning core you must be fluent in | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Foundations you must own</div>
+  <h1>3.3 Machine learning core you must be fluent in</h1>
+  <p class="subtitle">Reading research assumes a shared vocabulary: bias, variance, generalisation, validation and metrics. Fluency here saves you from the most common mistakes.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    You should be able to explain <strong>overfitting</strong>, the <strong>bias variance trade-off</strong>, why we hold out <strong>validation and test sets</strong>, how <strong>cross validation</strong> works, and which <strong>metric</strong> fits which problem. Most reproducibility failures come back to one of these basics.
+  </div>
+
+<h2>Concepts you will meet in every paper</h2>
+<h2>Fluency cards</h2>
+<div class="widget flips" data-w="flip"><button type="button" class="flip-card"><span class="flip-front">Overfitting</span><span class="flip-back">The model fits noise in the training data and does worse on new data.</span></button><button type="button" class="flip-card"><span class="flip-front">Bias and variance</span><span class="flip-back">Bias is error from too simple a model. Variance is error from sensitivity to the training sample.</span></button><button type="button" class="flip-card"><span class="flip-front">Validation set</span><span class="flip-back">Used to choose hyperparameters. Never used to report final results.</span></button><button type="button" class="flip-card"><span class="flip-front">Test set</span><span class="flip-back">Touched once, at the end, to estimate real world performance.</span></button><button type="button" class="flip-card"><span class="flip-front">Cross validation</span><span class="flip-back">Rotate which fold is held out so every example is used for validation once.</span></button><button type="button" class="flip-card"><span class="flip-front">Regularisation</span><span class="flip-back">A penalty or constraint that discourages overly complex fits.</span></button><button type="button" class="flip-card"><span class="flip-front">Generalisation</span><span class="flip-back">How well performance carries from training data to unseen data.</span></button><button type="button" class="flip-card"><span class="flip-front">Data leakage</span><span class="flip-back">Information from the test set sneaking into training, giving falsely good results. See 4.4.</span></button></div>
+<h2>Choosing a metric</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Situation</th><th>Accuracy misleads because</th><th>Prefer</th></tr></thead><tbody><tr><td>99% of examples are negative</td><td>Predicting negative always scores 99%</td><td>Precision, recall, F1, PR curve</td></tr><tr><td>Ranking search results</td><td>Order matters, not a single label</td><td>Recall at k, MRR, nDCG</td></tr><tr><td>Regression with outliers</td><td>Large errors dominate squared error</td><td>MAE or a robust loss alongside RMSE</td></tr><tr><td>Generated answers</td><td>There may be many correct phrasings</td><td>Task specific evaluation, human or model judged, with care</td></tr></tbody></table></div>
+<h2>Pick the right measure</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A fraud model sees fraud in 0.5% of transactions and reports 99.5% accuracy.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">That is excellent performance</button><button type="button" class="ch-opt" data-correct="false">Accuracy is the standard so it is fine</button><button type="button" class="ch-opt" data-correct="true">That says little; a model that predicts no fraud scores the same. Check recall and precision on the fraud class</button></div><div class="ch-explain">On heavily imbalanced data accuracy is dominated by the majority class.</div></div><div class="ch-item"><div class="ch-q">You tune hyperparameters on the test set and report the best test score.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">It is fine if the dataset is large</button><button type="button" class="ch-opt" data-correct="true">The reported score is optimistic because the test set was used for selection</button><button type="button" class="ch-opt" data-correct="false">That is the standard procedure</button></div><div class="ch-explain">Selecting on the test set leaks information. Tune on validation data and test once.</div></div><div class="ch-item"><div class="ch-q">Training accuracy is 99% and validation accuracy is 71%.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Validation data is always lower</button><button type="button" class="ch-opt" data-correct="false">The model is underfitting</button><button type="button" class="ch-opt" data-correct="true">Likely overfitting: the model memorised the training data</button></div><div class="ch-explain">A large gap between training and validation performance is the classic overfitting signature.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the validation set used for?</div><div class="q-options"><button class="q-option" data-correct="false">Training the model</button><button class="q-option" data-correct="false">Reporting final results</button><button class="q-option" data-correct="true">Choosing hyperparameters and model variants</button></div><div class="q-explain">Validation guides choices. The test set gives the final, untouched estimate.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why is accuracy a poor metric on a 99:1 imbalanced dataset?</div><div class="q-options"><button class="q-option" data-correct="false">Accuracy cannot be computed on imbalanced data</button><button class="q-option" data-correct="true">A trivial majority class predictor already scores 99%</button><button class="q-option" data-correct="false">It always underestimates performance</button></div><div class="q-explain">Accuracy hides failure on the rare class, which is usually what you care about.</div></div>
+<div class="q-block"><div class="q-prompt">3. A large gap between training and validation scores most likely signals:</div><div class="q-options"><button class="q-option" data-correct="false">A broken metric</button><button class="q-option" data-correct="false">Perfect generalisation</button><button class="q-option" data-correct="true">Overfitting</button></div><div class="q-explain">The model performs far better on data it has seen than on new data.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://cs229.stanford.edu/">Stanford CS229 course notes</a>; <a href="https://scikit-learn.org/stable/modules/model_evaluation.html">scikit-learn model evaluation guide</a></p>
+
+  <div class="pager">
+    <a href="3-2-statistics-for-experiments.html">&larr; 3.2 Statistics for experiments</a>
+    <a href="3-4-data-systems-foundations.html">3.4 Data systems foundations &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

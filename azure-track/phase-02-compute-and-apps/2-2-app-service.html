@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.2 App Service | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Compute and apps</div>
+  <h1>2.2 App Service</h1>
+  <p class="subtitle">A managed place to run web apps and APIs without managing servers. The first platform service most teams reach for.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>App Service</strong> runs web apps, APIs and mobile backends on a managed platform. Pick a <strong>plan</strong> (the compute and price tier), deploy code or a container, use <strong>deployment slots</strong> for safe releases, and configure <strong>app settings</strong>, <strong>managed identity</strong> and <strong>scaling</strong>. You manage the app, Azure manages the servers.
+  </div>
+
+<h2>Concepts</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Concept</th><th>What it is</th></tr></thead><tbody><tr><td>App Service plan</td><td>The compute (size, instances, region) that one or more apps share, and what you pay for</td></tr><tr><td>Web app</td><td>Your application running on the plan, as code or a container</td></tr><tr><td>Deployment slot</td><td>A live staging copy of an app that you can swap into production (available on Standard and higher plans)</td></tr><tr><td>App settings</td><td>Configuration exposed as environment variables; reference Key Vault for secrets</td></tr><tr><td>Scaling</td><td>Scale up (bigger instance) or scale out (more instances), manually or by rule</td></tr><tr><td>Managed identity</td><td>An identity for the app so it can reach Azure resources without stored secrets</td></tr></tbody></table></div>
+<h2>A safe release with slots</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Deploy to staging</h3><p>Push the new version to the staging slot. Users still see production.</p></div><div class="st-step"><h3>2. Warm and test</h3><p>The slot has its own URL. Run smoke tests. Slot specific settings stay with the slot.</p></div><div class="st-step"><h3>3. Swap</h3><p>Swap staging and production. The swap warms instances first, so there is little or no downtime.</p></div><div class="st-step"><h3>4. Roll back if needed</h3><p>If something is wrong, swap back. The previous version is now in the staging slot.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<pre><code># create a plan and web app, then turn on a system assigned managed identity
+az appservice plan create -g rg-demo -n plan-demo --sku B1 --is-linux
+az webapp create -g rg-demo -p plan-demo -n app-demo-&lt;unique&gt; --runtime "PYTHON:3.12"
+az webapp identity assign -g rg-demo -n app-demo-&lt;unique&gt;</code></pre>
+<div class="callout"><div class="callout-label">When not to use it</div>If you need to run many small containers with independent scaling or event driven scale to zero, Container Apps may fit better (2.4). For short event triggered code, consider Functions (2.3).</div>
+<h2>Right feature?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You want to test a release with production settings before users see it.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A new subscription</button><button type="button" class="ch-opt" data-correct="true">A deployment slot</button><button type="button" class="ch-opt" data-correct="false">A bigger plan</button></div><div class="ch-explain">Slots let you stage, test and swap with minimal downtime.</div></div><div class="ch-item"><div class="ch-q">The app needs a database password and you do not want it in code.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Hard code it in settings</button><button type="button" class="ch-opt" data-correct="true">Managed identity with Key Vault references or passwordless access</button><button type="button" class="ch-opt" data-correct="false">Email it to the team</button></div><div class="ch-explain">Managed identity and Key Vault keep secrets out of code and config files.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What do you pay for in App Service?</div><div class="q-options"><button class="q-option" data-correct="false">Each deployment</button><button class="q-option" data-correct="false">Each line of code</button><button class="q-option" data-correct="true">The App Service plan's compute</button></div><div class="q-explain">The plan defines the compute, and apps on it share it.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is the benefit of deployment slots?</div><div class="q-options"><button class="q-option" data-correct="false">Faster databases</button><button class="q-option" data-correct="true">Testing and swapping releases with little downtime</button><button class="q-option" data-correct="false">Cheaper storage</button></div><div class="q-explain">Slots enable staged, reversible releases.</div></div>
+<div class="q-block"><div class="q-prompt">3. How should an app reach a database without a stored password?</div><div class="q-options"><button class="q-option" data-correct="false">Embed credentials in code</button><button class="q-option" data-correct="true">Use a managed identity with passwordless authentication</button><button class="q-option" data-correct="false">Share an admin password</button></div><div class="q-explain">Managed identities remove stored secrets.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/app-service/overview">App Service overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/app-service/deploy-staging-slots">Deployment slots in App Service (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="2-1-virtual-machines-and-scale-sets.html">&larr; 2.1 Virtual machines and scale sets</a>
+    <a href="2-3-azure-functions.html">2.3 Azure Functions &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

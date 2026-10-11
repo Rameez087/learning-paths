@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.1 Bicep fundamentals | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Infrastructure as code</div>
+  <h1>6.1 Bicep fundamentals</h1>
+  <p class="subtitle">Bicep is Azure's own infrastructure language. It compiles to ARM templates and is declarative: you describe the end state.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Bicep</strong> is a domain specific language for deploying Azure resources. It compiles to ARM JSON, has clean syntax, type safety and editor support, and supports every new Azure resource and API version from day one. A Bicep file has <strong>parameters</strong>, <strong>variables</strong>, <strong>resources</strong>, <strong>modules</strong> and <strong>outputs</strong>. Deployments are idempotent: running again makes Azure match the file.
+  </div>
+
+<h2>A first file</h2>
+<pre><code>param location string = resourceGroup().location
+param env string = 'dev'
+@allowed(['Standard_LRS', 'Standard_GRS'])
+param sku string = 'Standard_LRS'
+
+var name = 'st${env}${uniqueString(resourceGroup().id)}'
+
+resource sa 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: name
+  location: location
+  sku: { name: sku }
+  kind: 'StorageV2'
+  properties: {
+    isHnsEnabled: true
+    allowBlobPublicAccess: false
+    minimumTlsVersion: 'TLS1_2'
+  }
+}
+
+output id string = sa.id</code></pre>
+<h2>Deploy it</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Create a resource group</h3><p><code>az group create -n rg-demo -l westeurope</code></p></div><div class="st-step"><h3>2. Preview</h3><p><code>az deployment group what-if -g rg-demo -f main.bicep</code> shows what would change (6.2).</p></div><div class="st-step"><h3>3. Deploy</h3><p><code>az deployment group create -g rg-demo -f main.bicep -p env=dev</code></p></div><div class="st-step"><h3>4. Change and redeploy</h3><p>Edit the file and run again. Azure applies the difference.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Piece</th><th>Purpose</th></tr></thead><tbody><tr><td>param</td><td>Inputs, with types, defaults and decorators like @allowed and @secure</td></tr><tr><td>var</td><td>Computed values</td></tr><tr><td>resource</td><td>An Azure resource, with a type and API version</td></tr><tr><td>module</td><td>Reuse another Bicep file</td></tr><tr><td>output</td><td>Values returned after deployment</td></tr><tr><td>existing</td><td>Reference a resource that already exists without managing it</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Use @secure for secrets</div>Mark secret parameters with @secure() so values are not logged in deployment history. Better still, avoid passing secrets and use managed identities.</div>
+<h2>Bicep concept</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Reference an existing Key Vault in another file without redeploying it.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">An output</button><button type="button" class="ch-opt" data-correct="true">The existing keyword</button><button type="button" class="ch-opt" data-correct="false">A new resource block</button></div><div class="ch-explain">existing looks up a resource without managing it.</div></div><div class="ch-item"><div class="ch-q">Restrict a parameter to two allowed values.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A module</button><button type="button" class="ch-opt" data-correct="false">A variable</button><button type="button" class="ch-opt" data-correct="true">The @allowed decorator</button></div><div class="ch-explain">Decorators validate parameters before deployment.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does Bicep compile to?</div><div class="q-options"><button class="q-option" data-correct="false">Terraform plans</button><button class="q-option" data-correct="false">Shell scripts</button><button class="q-option" data-correct="true">ARM JSON templates</button><button class="q-option" data-correct="false">Docker images</button></div><div class="q-explain">Azure Resource Manager is the deployment engine.</div></div>
+<div class="q-block"><div class="q-prompt">2. What does declarative mean here?</div><div class="q-options"><button class="q-option" data-correct="false">No parameters</button><button class="q-option" data-correct="false">You write loops of API calls</button><button class="q-option" data-correct="false">Only one deploy is allowed</button><button class="q-option" data-correct="true">You describe the desired end state, not the steps</button></div><div class="q-explain">The engine works out the changes.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why mark a parameter @secure?</div><div class="q-options"><button class="q-option" data-correct="false">It makes it faster</button><button class="q-option" data-correct="false">It makes it optional</button><button class="q-option" data-correct="false">It encrypts the disk</button><button class="q-option" data-correct="true">So its value is not logged or shown</button></div><div class="q-explain">Secure parameters are hidden from deployment history.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview">What is Bicep (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/file">Bicep file structure and syntax (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-05-security/5-3-policy-defender-and-security-posture.html">&larr; 5.3 Policy, Defender and security posture</a>
+    <a href="6-2-bicep-modules-what-if-deployment-stacks.html">6.2 Bicep in practice: modules, what-if and deployment stacks &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.6 Governance and lineage: Purview, Unity Catalog and OpenLineage | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.6</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.6 Governance and lineage: Purview, Unity Catalog and OpenLineage</h1>
+  <p class="subtitle">If nobody can find a dataset, trust it, or tell who is allowed to use it, the platform fails regardless of speed.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Governance</strong> covers a catalog (what exists), classification (what is sensitive), access control, quality and <strong>lineage</strong> (where data came from and what depends on it). <strong>Microsoft Purview</strong> catalogs and classifies data across sources. <strong>Unity Catalog</strong> governs Databricks assets with lineage built in. <strong>OpenLineage</strong> is an open standard for emitting lineage events from tools like Spark and Airflow, so lineage is not locked to one vendor.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Tool</th><th>Does</th><th>Best fit</th></tr></thead><tbody><tr><td>Purview</td><td>Catalog, scanning, classification, data map across many sources</td><td>Estate wide discovery and policy</td></tr><tr><td>Unity Catalog</td><td>Access control, lineage and audit for lakehouse tables, volumes and models</td><td>Databricks centred platforms</td></tr><tr><td>OpenLineage</td><td>Open event format for run level lineage</td><td>Mixed tools, avoiding lock in</td></tr></tbody></table></div>
+<h2>What good governance looks like in practice</h2>
+<ul><li>Every dataset has an <strong>owner</strong>, a description and a sensitivity label.</li><li>Access is granted to <strong>groups</strong> through the catalog, not to individuals on storage.</li><li>Lineage lets you answer: if this source column changes, what breaks?</li><li>Quality checks run in the pipeline and failures are visible, not silent.</li></ul>
+<div class="callout"><div class="callout-label">Link to research</div>Lineage and provenance are active research topics. The Research Track covers provenance and lineage as a project area if you want to explore it more deeply.</div>
+<h2>Governance question</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You must find every table containing national ID numbers.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Search folder names</button><button type="button" class="ch-opt" data-correct="true">Scan and classify data in a catalog such as Purview</button><button type="button" class="ch-opt" data-correct="false">Ask each team by email</button></div><div class="ch-explain">Automated classification scales better.</div></div><div class="ch-item"><div class="ch-q">A column rename upstream; which dashboards break?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Cost reports</button><button type="button" class="ch-opt" data-correct="true">Lineage</button><button type="button" class="ch-opt" data-correct="false">NSG logs</button></div><div class="ch-explain">Lineage maps dependencies.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does lineage show?</div><div class="q-options"><button class="q-option" data-correct="false">Only its size</button><button class="q-option" data-correct="false">Its region</button><button class="q-option" data-correct="false">Who pays</button><button class="q-option" data-correct="true">Where data came from and what depends on it</button></div><div class="q-explain">It traces flows between datasets and jobs.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is OpenLineage?</div><div class="q-options"><button class="q-option" data-correct="false">A Microsoft SKU</button><button class="q-option" data-correct="false">A storage tier</button><button class="q-option" data-correct="false">A DNS record</button><button class="q-option" data-correct="true">An open standard for lineage events</button></div><div class="q-explain">It works across tools.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why grant access to groups?</div><div class="q-options"><button class="q-option" data-correct="false">It hides data</button><button class="q-option" data-correct="true">It scales and is easier to audit</button><button class="q-option" data-correct="false">Groups are free</button><button class="q-option" data-correct="false">It avoids RBAC</button></div><div class="q-explain">Individual grants do not scale.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/purview/data-governance-overview">Microsoft Purview data governance (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/databricks/data-governance/unity-catalog/">What is Unity Catalog (Microsoft Learn)</a>; <a href="https://openlineage.io/">OpenLineage</a></p>
+
+  <div class="pager">
+    <a href="7-5-streaming.html">&larr; 7.5 Streaming: Event Hubs, Stream Analytics, Spark and Fabric real time</a>
+    <a href="7-7-serving-to-bi.html">7.7 Serving to BI: Import, DirectQuery and Direct Lake &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

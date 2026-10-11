@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.4 Data systems foundations | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Foundations you must own</div>
+  <h1>3.4 Data systems foundations</h1>
+  <p class="subtitle">Your edge over most beginners is production data experience. This page names the database concepts research papers assume, so you can connect your daily work to the literature.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Database research asks questions about <strong>storage, query processing, transactions, dataflow and data quality</strong>. You already use these daily. Learning the vocabulary (indexes, ACID, schemas, lineage, batch versus stream) lets you read data management papers and see where your own experience supplies the questions.
+  </div>
+
+<h2>Your daily work, in research vocabulary</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>What you do at work</th><th>Research term</th><th>Where it is studied</th></tr></thead><tbody><tr><td>Moving data between ADLS, Synapse and Power BI</td><td>Data integration, ETL and ELT</td><td>Data management venues such as SIGMOD and VLDB</td></tr><tr><td>Fixing wrong totals and missing keys</td><td>Data quality, data cleaning, constraint repair</td><td>Data cleaning and data-centric AI work</td></tr><tr><td>Knowing where a column came from</td><td>Provenance and lineage</td><td>Provenance literature, OpenLineage as an open standard</td></tr><tr><td>Schema changes breaking a pipeline</td><td>Schema evolution and drift</td><td>Data engineering and ML systems</td></tr><tr><td>Joining SAP tables from different systems</td><td>Entity resolution and schema matching</td><td>Data integration</td></tr><tr><td>Pipelines that retrain on new data</td><td>ML systems, MLOps, data drift</td><td>Systems for ML work</td></tr></tbody></table></div>
+<h2>Concepts to be fluent in</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Storage and indexes</button><button type="button" class="tab-btn" data-t="1">Transactions</button><button type="button" class="tab-btn" data-t="2">Dataflow</button><button type="button" class="tab-btn" data-t="3">Quality and lineage</button></div><div class="tab-pane active" data-t="0"><p>Row stores suit transactions, column stores suit analytics. An index trades write cost and space for faster reads. Know what a B-tree and a hash index each do.</p></div><div class="tab-pane" data-t="1"><p>ACID: atomicity, consistency, isolation, durability. Isolation levels trade correctness against concurrency. These are the guarantees databases give so applications do not have to.</p></div><div class="tab-pane" data-t="2"><p>Batch processing handles bounded data. Streaming handles unbounded data. Systems such as Spark sit in this space, and papers on them often discuss fault tolerance and exactly once semantics.</p></div><div class="tab-pane" data-t="3"><p>Constraints, profiling and validation catch bad data. Lineage records how a value was derived, at table, column or row level. The finer the granularity, the more costly it is to capture.</p></div></div>
+<div class="callout"><div class="callout-label">Two free resources</div>Designing Data-Intensive Applications by Martin Kleppmann explains storage, replication, transactions and dataflow clearly. CMU 15-445 publishes its database systems lectures publicly. Between them you can cover the vocabulary that data management papers assume.</div>
+<h2>Name the concept</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Your Power BI total disagrees with the SAP source because two systems use different customer IDs for the same company.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Backpropagation</button><button type="button" class="ch-opt" data-correct="false">Sharding</button><button type="button" class="ch-opt" data-correct="true">Entity resolution</button></div><div class="ch-explain">Deciding that two records refer to the same real world entity is entity resolution, an active research area that LLMs are now applied to.</div></div><div class="ch-item"><div class="ch-q">You want to know which source columns feed a particular dashboard measure.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Cross validation</button><button type="button" class="ch-opt" data-correct="false">Gradient clipping</button><button type="button" class="ch-opt" data-correct="true">Column level lineage</button></div><div class="ch-explain">Tracing derived values back to their source columns is lineage, which you have already built a tool for.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does the I in ACID, isolation, protect against?</div><div class="q-options"><button class="q-option" data-correct="false">Slow queries</button><button class="q-option" data-correct="false">Data being deleted</button><button class="q-option" data-correct="true">Concurrent transactions interfering with each other</button></div><div class="q-explain">Isolation governs how concurrent transactions see each other's changes.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is entity resolution?</div><div class="q-options"><button class="q-option" data-correct="false">Compressing tables</button><button class="q-option" data-correct="true">Deciding which records refer to the same real world entity</button><button class="q-option" data-correct="false">Encrypting columns</button></div><div class="q-explain">It is a core data integration problem and a common research topic.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why does column level lineage cost more than table level lineage to capture?</div><div class="q-options"><button class="q-option" data-correct="false">Table lineage does not exist</button><button class="q-option" data-correct="false">Columns are larger than tables</button><button class="q-option" data-correct="true">It needs to track how each derived column was computed through transformations</button></div><div class="q-explain">Finer granularity requires parsing or instrumenting the transformations, not just the job graph.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://dataintensive.net/">Designing Data-Intensive Applications (Kleppmann)</a>; <a href="https://15445.courses.cs.cmu.edu/">CMU 15-445 Database Systems</a>; <a href="https://openlineage.io/">OpenLineage</a></p>
+
+  <div class="pager">
+    <a href="3-3-machine-learning-core.html">&larr; 3.3 Machine learning core you must be fluent in</a>
+    <a href="../phase-04-doing-the-experiment/4-1-asking-a-falsifiable-question.html">4.1 Asking a falsifiable question &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

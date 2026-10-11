@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.5 Streaming: Event Hubs, Stream Analytics, Spark and Fabric real time | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.5 Streaming: Event Hubs, Stream Analytics, Spark and Fabric real time</h1>
+  <p class="subtitle">Some data cannot wait for a nightly batch. Streaming is a separate way of thinking, with its own failure modes.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Event Hubs</strong> ingests millions of events per second and has a Kafka compatible endpoint. <strong>Stream Analytics</strong> runs SQL like queries over streams. <strong>Spark Structured Streaming</strong> (Databricks or Fabric) processes streams with the same APIs as batch. <strong>Fabric Real-Time Intelligence</strong> adds eventstreams and a KQL based store. Key ideas: <strong>event time versus processing time</strong>, <strong>windows</strong>, <strong>watermarks</strong> and <strong>exactly-once versus at-least-once</strong> delivery.
+  </div>
+
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Streaming path" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Producers</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Event Hubs</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="340.0" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Stream</text><text x="340.0" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">processing</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="477.2" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Lake and</text><text x="477.2" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">serving store</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Dashboards and</text><text x="614.4" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">alerts</text></svg><div class="figure-caption">The log decouples producers from consumers and lets you replay.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Idea</th><th>Meaning</th></tr></thead><tbody><tr><td>Event time</td><td>When the event happened. Use it for correct answers</td></tr><tr><td>Processing time</td><td>When your system saw it. Easy but wrong when data arrives late</td></tr><tr><td>Window</td><td>A bounded slice of the stream: tumbling, hopping, sliding, session</td></tr><tr><td>Watermark</td><td>How long to wait for late events before closing a window</td></tr><tr><td>At-least-once</td><td>Duplicates possible, so consumers must be idempotent</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Do you need streaming at all?</div>Streaming costs more to build and operate. If a five minute micro batch meets the business need, it is often simpler. Ask what decision changes if data arrives in seconds.</div>
+<h2>Choose</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Ingest telemetry from thousands of devices and replay it later for new consumers.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Blob upload by hand</button><button type="button" class="ch-opt" data-correct="false">SQL Database inserts</button><button type="button" class="ch-opt" data-correct="true">Event Hubs</button></div><div class="ch-explain">A partitioned, retained log supports many consumers and replay.</div></div><div class="ch-item"><div class="ch-q">Simple tumbling window counts per minute written to Power BI, SQL skills only.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A custom Spark cluster</button><button type="button" class="ch-opt" data-correct="false">AKS operators</button><button type="button" class="ch-opt" data-correct="true">Stream Analytics</button></div><div class="ch-explain">Stream Analytics offers a SQL query language over streams.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why prefer event time over processing time?</div><div class="q-options"><button class="q-option" data-correct="false">It avoids windows</button><button class="q-option" data-correct="false">It is faster</button><button class="q-option" data-correct="false">It uses less memory</button><button class="q-option" data-correct="true">It reflects when things actually happened, even if data arrives late</button></div><div class="q-explain">Late data is normal.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is a watermark?</div><div class="q-options"><button class="q-option" data-correct="false">A subnet</button><button class="q-option" data-correct="false">A storage tier</button><button class="q-option" data-correct="false">An encryption key</button><button class="q-option" data-correct="true">A rule for how long to wait for late events</button></div><div class="q-explain">It lets windows close.</div></div>
+<div class="q-block"><div class="q-prompt">3. What follows from at-least-once delivery?</div><div class="q-options"><button class="q-option" data-correct="false">Nothing</button><button class="q-option" data-correct="false">Disable windows</button><button class="q-option" data-correct="false">Delete retries</button><button class="q-option" data-correct="true">Consumers should be idempotent</button></div><div class="q-explain">Duplicates must be harmless.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-about">Azure Event Hubs features (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/stream-analytics/stream-analytics-introduction">Azure Stream Analytics introduction (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="7-4-data-modeling-scd.html">&larr; 7.4 Data modeling: facts, dimensions and slowly changing data</a>
+    <a href="7-6-governance-and-lineage.html">7.6 Governance and lineage: Purview, Unity Catalog and OpenLineage &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

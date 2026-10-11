@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.4 Ways to drive Azure | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 &middot; Cloud foundations</div>
+  <h1>1.4 Ways to drive Azure</h1>
+  <p class="subtitle">The same task can be done in the portal, with a command line, in a script, from code or from a template. Knowing all of them is the foundation of this entire track.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Azure offers the <strong>portal</strong> (clicking), the <strong>Azure CLI</strong> and <strong>PowerShell</strong> (commands and scripts), <strong>SDKs</strong> (from code), <strong>REST APIs</strong> (what everything uses underneath) and <strong>infrastructure as code</strong> (Bicep, Terraform). All of them call Azure Resource Manager. Do each task in at least two ways: the portal to learn, the CLI or code to repeat.
+  </div>
+
+<h2>The same job, five ways</h2>
+<div class="figure"><svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Four ways to manage Azure" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10.0" y="6" width="154.5" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="87.2" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Portal</text><text x="87.2" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Click through UI</text><text x="87.2" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Best for learning</text><text x="87.2" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Not repeatable</text><rect x="178.5" y="6" width="154.5" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="255.8" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">CLI or PowerShell</text><text x="255.8" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Imperative commands</text><text x="255.8" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Scriptable</text><text x="255.8" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">You manage order</text><rect x="347.0" y="6" width="154.5" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="424.2" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">SDK</text><text x="424.2" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">From application code</text><text x="424.2" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Python, .NET, JS</text><text x="424.2" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">For apps and tools</text><rect x="515.5" y="6" width="154.5" height="108" rx="8" fill="var(--surface-2)" stroke="var(--accent)"/><text x="592.8" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-text)">IaC</text><text x="592.8" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Declare the result</text><text x="592.8" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Bicep or Terraform</text><text x="592.8" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Repeatable, reviewable</text></svg><div class="figure-caption">Everything on this page ends up as calls to Azure Resource Manager.</div></div>
+<h2>Create a resource group</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Portal</button><button type="button" class="tab-btn" data-t="1">Azure CLI</button><button type="button" class="tab-btn" data-t="2">PowerShell</button><button type="button" class="tab-btn" data-t="3">Bicep</button><button type="button" class="tab-btn" data-t="4">Python SDK</button></div><div class="tab-pane active" data-t="0"><p>Open Resource groups, choose Create, pick subscription, name and region. Quick to explore, but nothing records what you did.</p></div><div class="tab-pane" data-t="1"><p>One line, repeatable, easy to paste into documentation.</p><pre><code>az group create --name rg-demo --location westeurope --tags project=learning</code></pre>
+</div><div class="tab-pane" data-t="2"><p>The same task using the Az module.</p><pre><code>New-AzResourceGroup -Name rg-demo -Location westeurope -Tag @{project='learning'}</code></pre>
+</div><div class="tab-pane" data-t="3"><p>Declare the group in a template, deployed at subscription scope.</p><pre><code>targetScope = 'subscription'
+
+resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+  name: 'rg-demo'
+  location: 'westeurope'
+  tags: { project: 'learning' }
+}</code></pre>
+</div><div class="tab-pane" data-t="4"><p>Create it from application code.</p><pre><code>from azure.identity import DefaultAzureCredential
+from azure.mgmt.resource import ResourceManagementClient
+
+client = ResourceManagementClient(DefaultAzureCredential(), '&lt;subscription-id&gt;')
+client.resource_groups.create_or_update('rg-demo', {'location': 'westeurope', 'tags': {'project': 'learning'}})</code></pre>
+</div></div>
+<p>Azure Cloud Shell gives you a browser based terminal with the CLI and PowerShell preinstalled, which is handy for a first experiment. For daily work, install the Azure CLI locally and sign in with <code>az login</code>.</p>
+<h2>Which tool fits?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You need to explore a new service for ten minutes to see what it offers.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A Terraform module</button><button type="button" class="ch-opt" data-correct="true">The portal</button><button type="button" class="ch-opt" data-correct="false">A pipeline</button></div><div class="ch-explain">The portal is the fastest way to explore. Convert the useful parts to code afterwards.</div></div><div class="ch-item"><div class="ch-q">You must create the same environment in dev, test and production, reviewed in pull requests.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Asking a colleague</button><button type="button" class="ch-opt" data-correct="false">Clicking in the portal each time</button><button type="button" class="ch-opt" data-correct="true">Infrastructure as code (Bicep or Terraform)</button></div><div class="ch-explain">Declarative code is repeatable and reviewable.</div></div><div class="ch-item"><div class="ch-q">A one off clean up script for tagged resources across subscriptions.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A full Terraform project</button><button type="button" class="ch-opt" data-correct="false">The portal</button><button type="button" class="ch-opt" data-correct="true">Azure CLI or PowerShell script</button></div><div class="ch-explain">Quick imperative automation suits small tasks and glue.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What do the portal, CLI, SDKs and IaC tools all call underneath?</div><div class="q-options"><button class="q-option" data-correct="false">Entra ID only</button><button class="q-option" data-correct="true">Azure Resource Manager</button><button class="q-option" data-correct="false">The billing system</button></div><div class="q-explain">Every management tool talks to Resource Manager's API.</div></div>
+<div class="q-block"><div class="q-prompt">2. When is the portal the best choice?</div><div class="q-options"><button class="q-option" data-correct="false">Deploying identical environments repeatedly</button><button class="q-option" data-correct="false">Large scale automation</button><button class="q-option" data-correct="true">Exploring and learning a new service</button></div><div class="q-explain">The portal is best for discovery. Repeatable work belongs in code.</div></div>
+<div class="q-block"><div class="q-prompt">3. What is a strength of infrastructure as code?</div><div class="q-options"><button class="q-option" data-correct="false">It needs no learning</button><button class="q-option" data-correct="false">It is always faster the first time</button><button class="q-option" data-correct="true">Repeatable, reviewable and version controlled environments</button></div><div class="q-explain">Code captures the desired state and can be reviewed and rerun.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/cli/azure/what-is-azure-cli">What is the Azure CLI (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview">Azure Resource Manager overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/cloud-shell/overview">Azure Cloud Shell overview (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="1-3-cost-management-and-budgets.html">&larr; 1.3 Cost management and budgets</a>
+    <a href="../phase-02-compute-and-apps/2-1-virtual-machines-and-scale-sets.html">2.1 Virtual machines and scale sets &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

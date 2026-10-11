@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2 Pitfalls clinic | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 &middot; Plan and capstone</div>
+  <h1>9.2 Pitfalls clinic</h1>
+  <p class="subtitle">Most first attempts at research fail in the same few ways. Practise recognising them before they cost you weeks.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The common traps: emailing before you have an artifact, sending the same text to everyone, using employer data in public work, chasing novelty, claiming gains without seeds, outsourcing your first read of a paper, reading silence as a no, relying on professors alone and missing deadlines while you build.
+  </div>
+
+<h2>What went wrong?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You send 30 identical emails to professors in week 1. You get no replies.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Professors never reply</button><button type="button" class="ch-opt" data-correct="false">You should have sent 300</button><button type="button" class="ch-opt" data-correct="true">No artifact and no specifics; build the repo and tailor each email</button></div><div class="ch-explain">Generic emails without evidence are easy to ignore.</div></div><div class="ch-item"><div class="ch-q">Your reproduction beats the paper's number after you tuned your seed and settings against the test set.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Great success</button><button type="button" class="ch-opt" data-correct="false">A normal procedure</button><button type="button" class="ch-opt" data-correct="true">Test set leakage and seed hunting; report mean over fixed seeds and tune on validation</button></div><div class="ch-explain">Tuning on the test set and picking seeds inflates results (3.2, 4.4).</div></div><div class="ch-item"><div class="ch-q">You ask a chatbot to summarise a paper and never read it. You cite its claims in your email and get one wrong.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">AI summaries are always correct</button><button type="button" class="ch-opt" data-correct="false">Professors will not notice</button><button type="button" class="ch-opt" data-correct="true">Outsourced reading; read the method yourself, then use AI to explain specific equations</button></div><div class="ch-explain">Errors expose you immediately to experts. Do your own pass first.</div></div><div class="ch-item"><div class="ch-q">You put a work notebook in your public repo as an example.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Fine if the repo is small</button><button type="button" class="ch-opt" data-correct="true">Confidentiality breach risk; use public or synthetic data only and ask before sharing work</button><button type="button" class="ch-opt" data-correct="false">Fine if the notebook is well commented</button></div><div class="ch-explain">Employer code and data must not be published without permission.</div></div><div class="ch-item"><div class="ch-q">You hear nothing for five days after emailing and conclude the answer is no.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Send three more emails tomorrow</button><button type="button" class="ch-opt" data-correct="true">Premature; follow up once after about a week</button><button type="button" class="ch-opt" data-correct="false">Correct</button></div><div class="ch-explain">Inboxes are busy. One polite follow up is normal.</div></div><div class="ch-item"><div class="ch-q">You spend six months trying to invent a new architecture and have nothing to show.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">You should have used a bigger GPU</button><button type="button" class="ch-opt" data-correct="false">Persistence always pays</button><button type="button" class="ch-opt" data-correct="true">Chasing novelty; a careful reproduction finishes and counts</button></div><div class="ch-explain">Start with a finishable project and build up.</div></div></div>
+<h2>A short list to keep</h2>
+<ul><li>Build the artifact before the outreach.</li><li>Make each email specific to that group.</li><li>Use public or synthetic data only in anything public.</li><li>Report seeds and intervals for every claim.</li><li>Do your own first read of every paper.</li><li>Follow up once after about a week.</li><li>Run open community routes in parallel.</li><li>List deadlines in week 4 and apply with work in progress if needed.</li></ul>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the most common reason cold emails fail?</div><div class="q-options"><button class="q-option" data-correct="false">They mention a paper</button><button class="q-option" data-correct="false">They are too polite</button><button class="q-option" data-correct="true">No evidence of work and no specifics</button></div><div class="q-explain">Replies go to emails that are specific and backed by an artifact.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is a safe use of AI when reading papers?</div><div class="q-options"><button class="q-option" data-correct="false">Writing your claims for you</button><button class="q-option" data-correct="true">Explaining a specific equation after you read the method yourself</button><button class="q-option" data-correct="false">Replacing your first read</button></div><div class="q-explain">AI is a helper after you have read, not a substitute.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why should a reproduction be your first project?</div><div class="q-options"><button class="q-option" data-correct="false">It requires no code</button><button class="q-option" data-correct="false">It is the only allowed type</button><button class="q-option" data-correct="true">It finishes, teaches the loop and produces an artifact</button></div><div class="q-explain">Scoped, finishable work is the best starting point.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/1807.03341">Troubling Trends in ML Scholarship (Lipton, Steinhardt)</a>; <a href="https://arxiv.org/abs/2003.12206">Improving Reproducibility in ML Research (Pineau et al.)</a>; <a href="https://academicpositions.com/career-advice/how-to-email-a-potential-supervisor">How to Email a Potential Supervisor (Academic Positions)</a></p>
+
+  <div class="pager">
+    <a href="9-1-the-12-week-plan.html">&larr; 9.1 The 12 week plan</a>
+    <a href="9-3-capstone-your-outreach-package.html">9.3 Capstone: your outreach package &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

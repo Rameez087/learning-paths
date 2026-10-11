@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.2 Figures, tables and honest results | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Writing and sharing</div>
+  <h1>7.2 Figures, tables and honest results</h1>
+  <p class="subtitle">A good figure lets a reader check your claim in seconds. A misleading one does the opposite, even when no one intends it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Show <strong>spread</strong>, not just means. Label axes and units. Start bars at zero. Use the same scale when comparing panels. Report negative and mixed results. Make the main results table report mean and standard deviation over seeds, and bold only differences that are supported by your statistics.
+  </div>
+
+<h2>Principles</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Do</th><th>Avoid</th></tr></thead><tbody><tr><td>Error bars or intervals with the number of seeds stated</td><td>Single point estimates with no spread</td></tr><tr><td>Bars starting at zero, or clearly marked truncated axes</td><td>Truncated axes that exaggerate small differences</td></tr><tr><td>One message per figure, with a title that states it</td><td>Overloaded plots with eight series</td></tr><tr><td>Colour blind safe palettes and direct labels</td><td>Relying on colour alone</td></tr><tr><td>Bold only differences you can support</td><td>Bolding the best number regardless of noise</td></tr><tr><td>Showing failure cases</td><td>Only showing cherry picked examples</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">The table template</div>Method, metric mean, standard deviation, number of seeds, and a note on the significance test. Put the baseline first. If your method is not clearly better, say so in the text. Honest mixed results are respected.</div>
+<h2>Spot the problem</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A bar chart shows accuracy 78.1 vs 78.4, with the vertical axis running from 78.0 to 78.5.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">No problem</button><button type="button" class="ch-opt" data-correct="true">Truncated axis makes a tiny difference look huge</button><button type="button" class="ch-opt" data-correct="false">Colour issue</button></div><div class="ch-explain">Truncation exaggerates the gap, especially without error bars.</div></div><div class="ch-item"><div class="ch-q">A table bolds the best score in every row even where differences are within seed noise.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">The table is too wide</button><button type="button" class="ch-opt" data-correct="false">That is standard and fine</button><button type="button" class="ch-opt" data-correct="true">Bolding implies significance that the data do not support</button></div><div class="ch-explain">Bold only differences backed by intervals or tests.</div></div><div class="ch-item"><div class="ch-q">A figure shows only five hand picked good examples of your system.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Excellent evidence</button><button type="button" class="ch-opt" data-correct="true">Cherry picked; add random samples and failure cases</button><button type="button" class="ch-opt" data-correct="false">Fine if labelled as a figure</button></div><div class="ch-explain">Random samples and failures give an honest picture.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What should a results table include beyond means?</div><div class="q-options"><button class="q-option" data-correct="false">The date</button><button class="q-option" data-correct="true">Spread and the number of seeds</button><button class="q-option" data-correct="false">Only the best run</button></div><div class="q-explain">Spread and seed count let readers judge significance.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why is a truncated y axis risky?</div><div class="q-options"><button class="q-option" data-correct="false">It breaks the plot</button><button class="q-option" data-correct="false">It hides the title</button><button class="q-option" data-correct="true">It exaggerates small differences</button></div><div class="q-explain">Readers compare bar heights visually, so truncation misleads.</div></div>
+<div class="q-block"><div class="q-prompt">3. When should you bold a number in a table?</div><div class="q-options"><button class="q-option" data-correct="false">Never</button><button class="q-option" data-correct="false">Always for the best number</button><button class="q-option" data-correct="true">When the difference is supported by your statistics</button></div><div class="q-explain">Bold implies a real difference, so back it with evidence.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a>; <a href="https://arxiv.org/abs/2003.12206">Improving Reproducibility in ML Research (Pineau et al.)</a></p>
+
+  <div class="pager">
+    <a href="7-1-writing-the-paper.html">&larr; 7.1 Writing the paper</a>
+    <a href="7-3-releasing-code-data-and-preprints.html">7.3 Releasing code, data and preprints &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

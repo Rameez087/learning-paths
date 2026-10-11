@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.2 The cold email | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; Getting into research groups</div>
+  <h1>8.2 The cold email</h1>
+  <p class="subtitle">A short email that shows you read their work and asks one answerable question gets read. Most long, generic ones do not.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Keep it <strong>short</strong>, put the topic in the subject line, mention <strong>one or two specifics from their work</strong>, attach your CV, link your artifact, and ask <strong>one question they can answer in a line</strong>. Offer a small next step such as a 15 minute call. Follow up once after about a week. Write it in your own voice.
+  </div>
+
+<h2>The rules the guides agree on</h2>
+<ul><li>Keep it short, and say who you are and what you are asking for.</li><li>Put the topic in the subject line.</li><li>Mention one or two specifics from their work, so it is clear this is not a mass email.</li><li>Ask a question they can answer in a line, not an open request for mentorship.</li><li>Attach your CV, and link your repo once you have one.</li><li>If there is no reply after about a week, send one gentle follow up.</li><li>Write it in your own voice. An AI tool can help with structure, but the words should be yours.</li></ul>
+<h2>Try it: check your draft</h2>
+<p>Paste a draft, including a line starting with Subject:. The checker applies the rules above. Nothing you type leaves your browser.</p>
+<div class="widget"><textarea class="sim-ta" id="em-text" placeholder="Subject: Question on [paper title]: ...&#10;&#10;Dear Professor ..."></textarea><div class="sim-out" id="em-out"></div></div>
+<h2>Template to adapt</h2>
+<pre><code>Subject: Question on [paper title]: data defects in RAG pipelines
+
+Dear Professor [Surname],
+
+I am a software engineer working on data pipelines for enterprise systems, and I am applying to [programme] for [intake]. I read your paper "[title]" and was interested in [one specific point, one sentence].
+
+Over the last [N] weeks I reproduced [paper] and extended it with [one change]. The repo and a two page report are here: [link]. My question is whether [narrow question] is still open, or whether your group has already covered it.
+
+Would you be open to a 15 minute call, or could you point me to someone in your group I should speak with? My CV is attached.
+
+Thank you for your time,
+[Your name]</code></pre>
+<div class="callout"><div class="callout-label">Send only when the link works</div>Without a public artifact the email asks for a favour. With it, the email offers evidence. Build the repo first (Project A, 6.1).</div>
+<h2>Pick the better opening</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Which opening is stronger?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">I have always been a huge fan of your world renowned research and it is my dream to work with you.</button><button type="button" class="ch-opt" data-correct="true">I read your paper on entity resolution with human feedback and wondered whether the approach extends to cryptic column names in enterprise schemas.</button></div><div class="ch-explain">The first shows you read the work and asks something specific. The second is flattery with no content.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the best kind of question to ask in a first email?</div><div class="q-options"><button class="q-option" data-correct="false">A list of ten questions</button><button class="q-option" data-correct="false">A request to be mentored</button><button class="q-option" data-correct="true">One they can answer in a line</button></div><div class="q-explain">Easy to answer means more likely to be answered.</div></div>
+<div class="q-block"><div class="q-prompt">2. When should you follow up if there is no reply?</div><div class="q-options"><button class="q-option" data-correct="false">Never</button><button class="q-option" data-correct="false">Daily</button><button class="q-option" data-correct="true">Once, after about a week</button></div><div class="q-explain">A single polite follow up is standard. Silence is often just a busy inbox.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why mention specifics from their work?</div><div class="q-options"><button class="q-option" data-correct="false">It makes the email longer</button><button class="q-option" data-correct="false">Professors require citations</button><button class="q-option" data-correct="true">It shows this is not a mass email</button></div><div class="q-explain">Specifics signal real interest and effort.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://academicpositions.com/career-advice/how-to-email-a-potential-supervisor">How to Email a Potential Supervisor (Academic Positions)</a>; <a href="https://psychology.ucdavis.edu/cold-emailing-guide">Cold Emailing Guide (UC Davis Psychology)</a></p>
+
+  <div class="pager">
+    <a href="8-1-finding-and-vetting-groups.html">&larr; 8.1 Finding and vetting research groups</a>
+    <a href="8-3-calls-follow-ups-and-what-to-ask.html">8.3 Calls, follow-ups and what to ask &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var ta=document.getElementById("em-text");
+  function upd(){
+    var t=ta.value.trim();var body=t.replace(/^subject:.*$/im,"").trim();var w=body?body.split(/\s+/).length:0;
+    var checks=[
+      ["Has a subject line (starts with Subject:)",/^subject:\s*\S+/im.test(t),""],
+      ["Short enough: 90 to 220 words in the body",w>=90&&w<=220,w+" words"],
+      ["Names one specific piece of their work (quote or 'your paper')",/(["“].{6,}["”]|your (paper|work|article|talk|group))/i.test(t),""],
+      ["Shows evidence of your own work (link to repo or report)",/(https?:\/\/|github\.com|\[link\])/i.test(t),""],
+      ["Asks one concrete question",(t.match(/\?/g)||[]).length>=1&&(t.match(/\?/g)||[]).length<=3,""],
+      ["Makes a small ask (a short call or a pointer)",/(15|10|20)\s*(minute|min)|short call|point me to|redirect/i.test(t),""],
+      ["Mentions an attached CV",/(CV|r&eacute;sum|resume|attached)/i.test(t),""],
+      ["No flattery clichés",!/(big fan|dream|passionate|honou?r|world.renowned|great admirer)/i.test(t),"avoid: big fan, dream, passionate, honor"],
+      ["No open ended mentorship request",!/(mentor me|be my mentor|guide me)/i.test(t),""]
+    ];
+    var n=checks.filter(function(c){return c[1];}).length;
+    var h="";checks.forEach(function(c){h+=(c[1]?"<span class='badge-ok'>&#10003;</span> ":"<span class='badge-no'>&#10007;</span> ")+c[0]+(c[2]?" <span style='color:var(--text-muted)'>("+c[2]+")</span>":"")+"<br>";});
+    document.getElementById("em-out").innerHTML=h+"<br>Score: <b>"+n+" / "+checks.length+"</b>. Rules of thumb only. A high score does not make an email good, and a human read always matters.";
+  }
+  ta.addEventListener("input",upd);upd();
+})();
+
+</script>
+</body>
+</html>

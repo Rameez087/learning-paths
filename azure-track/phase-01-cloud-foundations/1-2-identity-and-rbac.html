@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 Identity and RBAC | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 &middot; Cloud foundations</div>
+  <h1>1.2 Identity and RBAC</h1>
+  <p class="subtitle">Every action in Azure is a request from an identity to a scope. Understand who can do what, and where, before you build anything.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Microsoft Entra ID</strong> is the identity service: users, groups, service principals and managed identities. <strong>Azure RBAC</strong> controls what an identity can do on Azure resources through <strong>role assignments</strong>: a security principal, a role definition and a scope. Assign roles to groups, at the narrowest scope that works, and prefer least privilege.
+  </div>
+
+<h2>Three parts of a role assignment</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Part</th><th>Meaning</th><th>Example</th></tr></thead><tbody><tr><td>Security principal</td><td>Who gets access</td><td>A user, group, service principal or managed identity</td></tr><tr><td>Role definition</td><td>What actions are allowed</td><td>Reader, Contributor, Owner, or a custom role</td></tr><tr><td>Scope</td><td>Where it applies</td><td>Management group, subscription, resource group or single resource</td></tr></tbody></table></div>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Role assignment formula" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="145.5" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="82.75" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Principal</text><text x="82.75" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">(who)</text><line x1="157.5" y1="45" x2="178.5" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="181.5" y="20" width="145.5" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="254.25" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Role (what)</text><line x1="329.0" y1="45" x2="350.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="353.0" y="20" width="145.5" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="425.75" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Scope (where)</text><line x1="500.5" y1="45" x2="521.5" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="524.5" y="20" width="145.5" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="597.25" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Access granted</text></svg><div class="figure-caption">Assignments at a higher scope are inherited by everything below.</div></div>
+<h2>Common built-in roles</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Role</th><th>Can do</th><th>Use for</th></tr></thead><tbody><tr><td>Reader</td><td>View resources</td><td>Auditors, read only access</td></tr><tr><td>Contributor</td><td>Create and manage resources, but not grant access</td><td>Engineers deploying infrastructure</td></tr><tr><td>Owner</td><td>Everything including granting access</td><td>Few, trusted administrators</td></tr><tr><td>User Access Administrator</td><td>Manage access only</td><td>Delegated access management</td></tr><tr><td>Storage Blob Data Reader and similar data roles</td><td>Read data inside a service</td><td>Data plane access, separate from management access</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Control plane and data plane</div>Azure RBAC separates managing a resource (control plane: create a storage account) from using its data (data plane: read a blob). Being Contributor on a storage account does not by itself let you read its blobs. Data roles grant that. This catches many beginners out.</div>
+<div class="callout"><div class="callout-label">Entra roles are different</div>Microsoft Entra roles (such as Global Administrator) manage the directory itself, not Azure resources. Azure RBAC roles manage Azure resources. They are separate systems, though an Entra administrator can elevate access to Azure in specific cases.</div>
+<h2>Pick the role and scope</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A data analyst needs to read blobs in one storage account and nothing else.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Contributor on the resource group</button><button type="button" class="ch-opt" data-correct="false">Owner on the subscription</button><button type="button" class="ch-opt" data-correct="true">Storage Blob Data Reader on that storage account</button></div><div class="ch-explain">A data plane role at the narrowest scope gives exactly the needed access.</div></div><div class="ch-item"><div class="ch-q">A deployment team needs to create resources in a project's resource group but must not manage who has access.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Owner on the subscription</button><button type="button" class="ch-opt" data-correct="true">Contributor on that resource group</button><button type="button" class="ch-opt" data-correct="false">Reader on the subscription</button></div><div class="ch-explain">Contributor can create and manage resources but cannot assign roles.</div></div><div class="ch-item"><div class="ch-q">Ten engineers need the same access, and people join and leave often.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Share one account</button><button type="button" class="ch-opt" data-correct="true">Assign the role to an Entra group and manage membership</button><button type="button" class="ch-opt" data-correct="false">Assign the role to each person individually</button></div><div class="ch-explain">Group based assignment scales and keeps access reviewable.</div></div></div>
+<pre><code># grant a group read access on one resource group with the Azure CLI
+az role assignment create \
+  --assignee-object-id &lt;group-object-id&gt; \
+  --assignee-principal-type Group \
+  --role "Reader" \
+  --scope /subscriptions/&lt;sub-id&gt;/resourceGroups/rg-demo</code></pre>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which three elements make up a role assignment?</div><div class="q-options"><button class="q-option" data-correct="false">Group, region and tag</button><button class="q-option" data-correct="false">User, password and subscription</button><button class="q-option" data-correct="true">Security principal, role definition and scope</button></div><div class="q-explain">This formula is the basis of Azure RBAC.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why does being Contributor not let you read blob data by default?</div><div class="q-options"><button class="q-option" data-correct="false">Blobs are encrypted</button><button class="q-option" data-correct="false">Contributor is a read only role</button><button class="q-option" data-correct="true">Management access and data access are separate; data roles grant data plane access</button></div><div class="q-explain">Control plane and data plane permissions are separate in Azure.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which practice follows least privilege?</div><div class="q-options"><button class="q-option" data-correct="false">Assign roles at the tenant root</button><button class="q-option" data-correct="false">Make everyone Owner</button><button class="q-option" data-correct="true">Assign the narrowest role at the narrowest scope that does the job</button></div><div class="q-explain">Narrow access limits the damage from mistakes and compromised accounts.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/role-based-access-control/overview">What is Azure RBAC (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/entra/fundamentals/whatis">What is Microsoft Entra ID (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles">Azure built-in roles (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="1-1-how-azure-is-organised.html">&larr; 1.1 How Azure is organised</a>
+    <a href="1-3-cost-management-and-budgets.html">1.3 Cost management and budgets &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

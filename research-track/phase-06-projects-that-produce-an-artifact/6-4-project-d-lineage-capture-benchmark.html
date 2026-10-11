@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.4 Project D: a lineage capture benchmark | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Projects that produce an artifact</div>
+  <h1>6.4 Project D: a lineage capture benchmark</h1>
+  <p class="subtitle">A benchmark of how well open lineage integrations capture column level lineage for data transformations. A pure data engineering question with little prior benchmarking.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Build public or synthetic <strong>PySpark pipelines with known ground truth lineage</strong>, run lineage tools on them and measure what they capture or miss. The result is an open benchmark and an analysis of failure modes. Check novelty carefully first. Plan 8 to 12 weeks.
+  </div>
+
+<h2>Design</h2>
+<h2>Project at a glance</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Question</button><button type="button" class="tab-btn" data-t="1">Method</button><button type="button" class="tab-btn" data-t="2">Measures</button><button type="button" class="tab-btn" data-t="3">Artifact</button></div><div class="tab-pane active" data-t="0"><p>For common PySpark transformation patterns (joins, aggregations, window functions, UDFs, dynamic column names), how complete and correct is the column level lineage captured by OpenLineage style integrations?</p></div><div class="tab-pane" data-t="1"><p>Write a suite of small pipelines in which the true column dependencies are known by construction. Run each with the lineage integration enabled. Compare captured lineage with ground truth.</p></div><div class="tab-pane" data-t="2"><p>Precision and recall of lineage edges, per transformation pattern. Overhead in runtime and storage. Failure cases catalogued.</p></div><div class="tab-pane" data-t="3"><p>The pipeline suite, the ground truth files, a scoring script and a results table. Public repo.</p></div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Pattern</th><th>Why it is hard for lineage</th></tr></thead><tbody><tr><td>Simple select and rename</td><td>Easy baseline; should be captured</td></tr><tr><td>Joins with ambiguous names</td><td>Same column name from two sources</td></tr><tr><td>Window functions</td><td>Dependencies on partition and order columns</td></tr><tr><td>UDFs</td><td>Opaque code hides dependencies</td></tr><tr><td>Dynamic column names</td><td>Dependencies are decided at runtime</td></tr><tr><td>SQL strings built in code</td><td>Static analysis cannot see the final query</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Protect your employer</div>Do not use work pipelines, schemas or data. Write synthetic pipelines. The research question stands without them, and nothing confidential can leak.</div>
+<h2>Milestones</h2>
+<div class="widget checklist" data-w="checklist" data-key="proj-d"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Literature check: does a lineage capture benchmark already exist?</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>Ten to twenty synthetic pipelines with ground truth</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Lineage tooling set up and producing output</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>Scoring script computing edge precision and recall</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>Results by pattern with failure examples</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span>Report and public repo</span></label></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why use synthetic pipelines with known ground truth?</div><div class="q-options"><button class="q-option" data-correct="false">They run faster than real data</button><button class="q-option" data-correct="true">You can score captured lineage exactly and avoid confidentiality problems</button><button class="q-option" data-correct="false">Lineage tools only work on synthetic data</button></div><div class="q-explain">Ground truth by construction enables precision and recall, and nothing private is exposed.</div></div>
+<div class="q-block"><div class="q-prompt">2. Which transformation is likely hardest for static lineage capture?</div><div class="q-options"><button class="q-option" data-correct="false">A simple column rename</button><button class="q-option" data-correct="true">UDFs and dynamically named columns</button><button class="q-option" data-correct="false">A plain select</button></div><div class="q-explain">Opaque code and runtime decided dependencies hide the true lineage.</div></div>
+<div class="q-block"><div class="q-prompt">3. What should you do before committing weeks to this project?</div><div class="q-options"><button class="q-option" data-correct="false">Skip related work</button><button class="q-option" data-correct="true">Search for an existing benchmark</button><button class="q-option" data-correct="false">Assume none exists</button></div><div class="q-explain">Novelty must be checked, as for any project.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://openlineage.io/">OpenLineage</a>; <a href="https://papers.nips.cc/paper/2015/hash/86df7dcfd896fcaf2674f757a2463eba-Abstract.html">Hidden Technical Debt in Machine Learning Systems (Sculley et al.)</a></p>
+
+  <div class="pager">
+    <a href="6-3-project-c-your-rag-evaluation-study.html">&larr; 6.3 Project C: your RAG evaluation study</a>
+    <a href="../phase-07-writing-and-sharing/7-1-writing-the-paper.html">7.1 Writing the paper &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

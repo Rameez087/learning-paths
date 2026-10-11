@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.3 Policy, Defender and security posture | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 &middot; Security</div>
+  <h1>5.3 Policy, Defender and security posture</h1>
+  <p class="subtitle">Rules that enforce themselves beat documents that ask nicely. Policy prevents, Defender detects and advises.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Policy</strong> evaluates resources against rules and can <strong>deny</strong>, <strong>audit</strong>, or <strong>modify</strong> and <strong>deploy</strong> settings automatically. Group policies into <strong>initiatives</strong> and assign them at a management group. <strong>Microsoft Defender for Cloud</strong> assesses your configuration (posture management) and offers threat protection for specific services. Both are central to landing zones (9.3).
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Effect</th><th>What it does</th><th>Example</th></tr></thead><tbody><tr><td>Deny</td><td>Blocks non compliant create or update</td><td>Only allow approved regions</td></tr><tr><td>Audit</td><td>Flags non compliance without blocking</td><td>Report storage accounts allowing public blobs</td></tr><tr><td>Modify</td><td>Changes properties on create or update</td><td>Add a required tag</td></tr><tr><td>DeployIfNotExists</td><td>Deploys a related resource when missing</td><td>Install diagnostic settings</td></tr></tbody></table></div>
+<h2>Rolling out a policy safely</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Start in audit mode</h3><p>See what would be affected before blocking anyone.</p></div><div class="st-step"><h3>2. Review the results</h3><p>Fix or exempt legitimate exceptions with documented reasons.</p></div><div class="st-step"><h3>3. Switch to deny</h3><p>Communicate the change, then enforce at the right scope.</p></div><div class="st-step"><h3>4. Remediate existing resources</h3><p>Policy mostly acts on new changes. Remediation tasks fix existing ones for modify and deploy effects.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="callout"><div class="callout-label">Policy is not RBAC</div>RBAC answers who can act. Policy answers what a resource is allowed to look like, whoever acts. Use both.</div>
+<p>Defender for Cloud gives a secure score and recommendations across subscriptions. Its paid plans add protection for servers, databases, storage, containers and more. Check what each plan covers and costs before enabling widely.</p>
+<h2>Policy or RBAC?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Nobody, including owners, may create storage accounts with public blob access.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">An RBAC role removal for everyone</button><button type="button" class="ch-opt" data-correct="false">A wiki page</button><button type="button" class="ch-opt" data-correct="true">Azure Policy with a deny effect</button></div><div class="ch-explain">Policy enforces resource properties regardless of who deploys.</div></div><div class="ch-item"><div class="ch-q">Only the data team may read a specific storage account.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Defender plan</button><button type="button" class="ch-opt" data-correct="true">RBAC role assignment</button><button type="button" class="ch-opt" data-correct="false">A tag policy</button></div><div class="ch-explain">Access to data is an identity question.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which effect blocks non compliant deployments?</div><div class="q-options"><button class="q-option" data-correct="false">Audit</button><button class="q-option" data-correct="false">Disabled</button><button class="q-option" data-correct="false">Log</button><button class="q-option" data-correct="true">Deny</button></div><div class="q-explain">Deny prevents the create or update.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why start a new policy in audit mode?</div><div class="q-options"><button class="q-option" data-correct="false">Deny does not exist</button><button class="q-option" data-correct="false">Azure requires it</button><button class="q-option" data-correct="false">Audit is faster</button><button class="q-option" data-correct="true">To see impact before blocking</button></div><div class="q-explain">It avoids breaking teams unexpectedly.</div></div>
+<div class="q-block"><div class="q-prompt">3. What is Defender for Cloud's posture feature?</div><div class="q-options"><button class="q-option" data-correct="false">Compiling code</button><button class="q-option" data-correct="false">Billing</button><button class="q-option" data-correct="true">Assessing configuration and recommending fixes</button><button class="q-option" data-correct="false">DNS hosting</button></div><div class="q-explain">It scores and recommends security improvements.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/governance/policy/overview">Azure Policy overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-cloud-introduction">Microsoft Defender for Cloud introduction (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="5-2-key-vault-and-app-configuration.html">&larr; 5.2 Key Vault and App Configuration</a>
+    <a href="../phase-06-infrastructure-as-code/6-1-bicep-fundamentals.html">6.1 Bicep fundamentals &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

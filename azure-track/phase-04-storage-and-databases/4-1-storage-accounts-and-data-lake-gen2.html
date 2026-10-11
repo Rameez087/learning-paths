@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 Storage accounts and Data Lake Gen2 | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Storage and databases</div>
+  <h1>4.1 Storage accounts and Data Lake Gen2</h1>
+  <p class="subtitle">A storage account is the front door to blobs, files, queues and tables. Turn on the hierarchical namespace and it becomes a data lake.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>storage account</strong> holds blob containers, file shares, queues and tables. Choose the <strong>redundancy</strong> (LRS, ZRS, GRS and variants) and the <strong>access tier</strong> (hot, cool, cold, archive). Enabling the <strong>hierarchical namespace</strong> gives <strong>Azure Data Lake Storage Gen2</strong>: real directories, atomic renames and POSIX style ACLs, which analytics engines depend on.
+  </div>
+
+<h2>Redundancy</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Option</th><th>Copies</th><th>Protects against</th></tr></thead><tbody><tr><td>LRS</td><td>3 in one datacentre</td><td>Hardware failure</td></tr><tr><td>ZRS</td><td>3 across zones in a region</td><td>A datacentre or zone failure</td></tr><tr><td>GRS</td><td>LRS plus 3 in a paired region</td><td>A regional disaster, with asynchronous replication</td></tr><tr><td>GZRS</td><td>ZRS plus a paired region</td><td>Both zone and regional failures</td></tr></tbody></table></div>
+<p>Read access variants (RA-GRS, RA-GZRS) let you read from the secondary. Replication to the secondary region is asynchronous, so a failover can lose recent writes.</p>
+<h2>Access tiers</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Tier</th><th>Storage cost</th><th>Access cost</th><th>Use for</th></tr></thead><tbody><tr><td>Hot</td><td>Highest</td><td>Lowest</td><td>Active data</td></tr><tr><td>Cool</td><td>Lower</td><td>Higher</td><td>Data read rarely, kept 30+ days</td></tr><tr><td>Cold</td><td>Lower still</td><td>Higher still</td><td>Rarely read, kept 90+ days</td></tr><tr><td>Archive</td><td>Lowest</td><td>Highest, hours to rehydrate</td><td>Long term retention</td></tr></tbody></table></div>
+<p>Lifecycle management policies move or delete blobs automatically based on age. Early deletion fees apply if you move data out of cool, cold or archive too soon. Check current minimum durations.</p>
+<h2>Why the hierarchical namespace matters</h2>
+<div class="figure"><svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Flat versus hierarchical" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10.0" y="6" width="323.0" height="128" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="171.5" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Flat blob namespace</text><text x="171.5" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Folders are only name prefixes</text><text x="171.5" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Rename = copy and delete</text><text x="171.5" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Slow on millions of files</text><rect x="347.0" y="6" width="323.0" height="128" rx="8" fill="var(--surface-2)" stroke="var(--accent)"/><text x="508.5" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-text)">Hierarchical namespace (ADLS Gen2)</text><text x="508.5" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Real directories</text><text x="508.5" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Atomic rename and delete</text><text x="508.5" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">ACLs per folder and file</text><text x="508.5" y="110" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Fits Spark, Synapse, Fabric</text></svg><div class="figure-caption">Analytics jobs rename directories constantly when committing output, so the hierarchical namespace makes them fast and safe.</div></div>
+<div class="callout"><div class="callout-label">Security basics</div>Prefer Entra ID authentication with RBAC roles over account keys and SAS tokens. Disable shared key access if your tools allow it, turn off anonymous blob access, and use private endpoints for sensitive data.</div>
+<h2>Choose the setting</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Raw files for Spark pipelines with heavy directory renames.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">File shares</button><button type="button" class="ch-opt" data-correct="false">A flat blob account</button><button type="button" class="ch-opt" data-correct="true">Storage account with hierarchical namespace enabled</button></div><div class="ch-explain">Gen2 gives atomic directory operations that analytics engines rely on.</div></div><div class="ch-item"><div class="ch-q">Compliance data kept seven years, almost never read.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A VM disk</button><button type="button" class="ch-opt" data-correct="false">Hot tier forever</button><button type="button" class="ch-opt" data-correct="true">Archive tier through a lifecycle policy</button></div><div class="ch-explain">Archive is cheapest for long retention, with slow retrieval.</div></div><div class="ch-item"><div class="ch-q">A business critical dataset must survive losing a whole region.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">LRS</button><button type="button" class="ch-opt" data-correct="false">Cool tier</button><button type="button" class="ch-opt" data-correct="true">GRS or GZRS</button></div><div class="ch-explain">Only geo redundant options replicate to a second region.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does the hierarchical namespace add?</div><div class="q-options"><button class="q-option" data-correct="false">Faster networks</button><button class="q-option" data-correct="false">Free storage</button><button class="q-option" data-correct="false">More regions</button><button class="q-option" data-correct="true">Real directories, atomic renames and ACLs</button></div><div class="q-explain">It turns blob storage into Data Lake Storage Gen2.</div></div>
+<div class="q-block"><div class="q-prompt">2. Is geo replication synchronous?</div><div class="q-options"><button class="q-option" data-correct="false">Only in cool tier</button><button class="q-option" data-correct="true">No, it is asynchronous, so recent writes can be lost on failover</button><button class="q-option" data-correct="false">Only with LRS</button><button class="q-option" data-correct="false">Yes, always</button></div><div class="q-explain">The secondary region lags the primary.</div></div>
+<div class="q-block"><div class="q-prompt">3. Preferred way to authorise access?</div><div class="q-options"><button class="q-option" data-correct="false">Anonymous access</button><button class="q-option" data-correct="true">Entra ID with RBAC rather than account keys</button><button class="q-option" data-correct="false">Share the account key</button><button class="q-option" data-correct="false">Email SAS tokens</button></div><div class="q-explain">Identity based access is auditable and revocable.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview">Storage account overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction">Azure Data Lake Storage Gen2 introduction (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview">Access tiers for blob data (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-03-networking/3-4-load-balancing-options.html">&larr; 3.4 Load balancing options</a>
+    <a href="4-2-azure-sql.html">4.2 Azure SQL &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 Private endpoints and DNS | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Networking</div>
+  <h1>3.2 Private endpoints and DNS</h1>
+  <p class="subtitle">Most Azure services have a public address by default. Private endpoints bring them into your network, and DNS is the part that goes wrong.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>private endpoint</strong> gives a PaaS resource (storage, SQL, Key Vault and more) a private IP address inside your subnet, using Azure Private Link. Traffic stays on the Microsoft network and you can turn off public access. The catch is <strong>DNS</strong>: the service name must resolve to the private IP from inside your network, normally through a private DNS zone linked to the VNet.
+  </div>
+
+<h2>What changes</h2>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Private endpoint flow" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">App in VNet</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Resolves</text><text x="202.79999999999998" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">mystore.blob.core.windows.net</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="340.0" y="34.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Private DNS</text><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">zone returns</text><text x="340.0" y="62.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">10.20.3.5</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="477.2" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Private</text><text x="477.2" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">endpoint</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Storage</text><text x="614.4" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">account</text></svg><div class="figure-caption">Without the DNS step the name still resolves to the public address and the connection fails once public access is off.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Option</th><th>What it does</th><th>Note</th></tr></thead><tbody><tr><td>Service endpoint</td><td>Keeps a subnet's traffic to a service on the Azure backbone, still to the public IP</td><td>Simpler, older, less isolation</td></tr><tr><td>Private endpoint</td><td>A private IP in your subnet for one resource</td><td>Works from on premises too, needs DNS</td></tr><tr><td>Public access restricted by IP</td><td>Firewall allow list on the service</td><td>Easiest, still a public address</td></tr></tbody></table></div>
+<h2>Setting one up</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Create the endpoint</h3><p>Pick the resource and the sub resource (for storage, blob or dfs) and the subnet. It gets a network interface with a private IP.</p></div><div class="st-step"><h3>2. Create or reuse a private DNS zone</h3><p>Each service type has a standard zone name, such as privatelink.blob.core.windows.net. The docs list them.</p></div><div class="st-step"><h3>3. Link the zone to your VNets</h3><p>Every network that must resolve the private address needs a link. Hub and spoke designs often centralise zones in the hub.</p></div><div class="st-step"><h3>4. Handle on premises resolution</h3><p>On premises DNS must forward those names to Azure, for example through Azure DNS Private Resolver.</p></div><div class="st-step"><h3>5. Disable public network access</h3><p>Only after testing. Check every client, including build agents and data tools.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="callout"><div class="callout-label">Most common failure</div>A private endpoint exists but the name still resolves publicly. Run nslookup from the client and check it returns the private IP before debugging anything else.</div>
+<h2>Which fits?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A database must never be reachable from the internet and on premises tools must also reach it.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Service endpoint only</button><button type="button" class="ch-opt" data-correct="false">Public access with a firewall rule</button><button type="button" class="ch-opt" data-correct="true">Private endpoint with private DNS, plus DNS forwarding from on premises</button></div><div class="ch-explain">Private endpoints work across connected networks, but DNS must resolve them.</div></div><div class="ch-item"><div class="ch-q">A quick dev setup where a single office IP needs to reach storage.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Build a full private DNS design</button><button type="button" class="ch-opt" data-correct="false">Open it to all networks</button><button type="button" class="ch-opt" data-correct="true">Restrict public access to that IP</button></div><div class="ch-explain">For low risk dev work an IP allow list is enough, though weaker.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the usual cause of a private endpoint not working?</div><div class="q-options"><button class="q-option" data-correct="false">Private endpoints need a VM</button><button class="q-option" data-correct="false">The subscription is too old</button><button class="q-option" data-correct="false">The region is wrong</button><button class="q-option" data-correct="true">DNS still resolves to the public address</button></div><div class="q-explain">Name resolution must return the private IP.</div></div>
+<div class="q-block"><div class="q-prompt">2. What does a private endpoint give a resource?</div><div class="q-options"><button class="q-option" data-correct="false">A new region</button><button class="q-option" data-correct="false">A faster SKU</button><button class="q-option" data-correct="false">Free egress</button><button class="q-option" data-correct="true">A private IP address in your subnet</button></div><div class="q-explain">It maps the service into your network via Private Link.</div></div>
+<div class="q-block"><div class="q-prompt">3. What helps on premises clients resolve private zones?</div><div class="q-options"><button class="q-option" data-correct="false">Disabling DNS</button><button class="q-option" data-correct="true">DNS forwarding, for example Azure DNS Private Resolver</button><button class="q-option" data-correct="false">A bigger VNet</button><button class="q-option" data-correct="false">Using IP addresses only</button></div><div class="q-explain">On premises DNS must forward the private link names to Azure.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview">What is a private endpoint (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns">Private endpoint DNS configuration (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="3-1-virtual-networks-subnets-nsgs.html">&larr; 3.1 Virtual networks, subnets and NSGs</a>
+    <a href="3-3-hub-spoke-vpn-expressroute-firewall.html">3.3 Hub and spoke, VPN, ExpressRoute and Firewall &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

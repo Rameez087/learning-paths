@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.3 Agents on Azure | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; AI and ML</div>
+  <h1>8.3 Agents on Azure</h1>
+  <p class="subtitle">An agent is a model that can call tools in a loop. The hard parts are control, safety and cost, not the loop itself.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    An <strong>agent</strong> combines a model, instructions, <strong>tools</strong> (functions, search, code execution, APIs) and memory or state, and repeats: decide, act, observe. On Azure you can use the Foundry <strong>Agent Service</strong> as a managed runtime, or frameworks such as Semantic Kernel, the Microsoft Agent Framework or others, hosted on Container Apps or Functions. Start with the least autonomy that works.
+  </div>
+
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Agent loop" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">User goal</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Model decides</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Calls a tool</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="477.2" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Observes</text><text x="477.2" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">result</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Repeat or</text><text x="614.4" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">answer</text></svg><div class="figure-caption">Every extra loop costs tokens and time, and adds a chance to go wrong.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Option</th><th>Use when</th></tr></thead><tbody><tr><td>Plain workflow with model steps</td><td>The steps are known in advance. Prefer this, it is cheaper and testable</td></tr><tr><td>Foundry Agent Service</td><td>You want a managed runtime with built in tools, threads and tracing</td></tr><tr><td>Framework on Container Apps</td><td>You need custom orchestration, multi agent patterns or portability</td></tr></tbody></table></div>
+<h2>Guardrails</h2>
+<ul><li>Give tools least privilege: a read only database role, not the admin one.</li><li>Require human approval for irreversible actions such as sending email or deleting data.</li><li>Limit steps and tokens per run, and log every tool call.</li><li>Treat tool outputs and retrieved text as untrusted: they can contain injected instructions.</li><li>Evaluate with scenario tests, not only a few demos (8.6).</li></ul>
+<div class="callout"><div class="callout-label">Check the current product names</div>Agent products and frameworks in the Microsoft ecosystem have been renamed and merged recently. Confirm the current names and support status in the docs.</div>
+<h2>Autonomy level</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Summarise a ticket, look up the customer, draft a reply for a human to approve.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">No model at all</button><button type="button" class="ch-opt" data-correct="false">A fully autonomous agent that sends replies</button><button type="button" class="ch-opt" data-correct="true">A fixed workflow with a human approval step</button></div><div class="ch-explain">Known steps and approval give control.</div></div><div class="ch-item"><div class="ch-q">An agent can delete database rows.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Hide the risk</button><button type="button" class="ch-opt" data-correct="true">Restrict its database role and add approval</button><button type="button" class="ch-opt" data-correct="false">Give it the admin role</button></div><div class="ch-explain">Least privilege limits damage when the model errs.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What defines an agent loop?</div><div class="q-options"><button class="q-option" data-correct="false">Train, test, deploy</button><button class="q-option" data-correct="false">Plan, bill</button><button class="q-option" data-correct="false">Backup, restore</button><button class="q-option" data-correct="true">Decide, act with a tool, observe, repeat</button></div><div class="q-explain">Tool use in a loop is the core.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why prefer a fixed workflow when steps are known?</div><div class="q-options"><button class="q-option" data-correct="false">It is illegal</button><button class="q-option" data-correct="false">It needs no logs</button><button class="q-option" data-correct="true">It is cheaper, faster and easier to test</button><button class="q-option" data-correct="false">Models cannot call tools</button></div><div class="q-explain">Autonomy should be earned.</div></div>
+<div class="q-block"><div class="q-prompt">3. How treat retrieved text?</div><div class="q-options"><button class="q-option" data-correct="false">As system prompt</button><button class="q-option" data-correct="false">As encrypted</button><button class="q-option" data-correct="false">As trusted commands</button><button class="q-option" data-correct="true">As untrusted input that may contain injected instructions</button></div><div class="q-explain">Prompt injection is a known risk.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview">Foundry Agent Service (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="8-2-rag-on-azure.html">&larr; 8.2 RAG on Azure: AI Search or pgvector</a>
+    <a href="8-4-training-and-serving-ml.html">8.4 Training and serving ML: Azure ML or Databricks &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 Azure SQL | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Storage and databases</div>
+  <h1>4.2 Azure SQL</h1>
+  <p class="subtitle">Azure SQL is a family. Pick by how much of SQL Server compatibility and control you need.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure SQL Database</strong> is a fully managed single database or elastic pool, the usual choice for new apps. <strong>SQL Managed Instance</strong> is near full SQL Server compatibility for lifting existing workloads. <strong>SQL Server on a VM</strong> gives complete control and the most to manage. Purchasing models are vCore based or DTU based, and a serverless compute tier can pause when idle.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Option</th><th>Best for</th><th>You manage</th></tr></thead><tbody><tr><td>SQL Database</td><td>New cloud apps, SaaS, many small databases (elastic pool)</td><td>Schema and data</td></tr><tr><td>Managed Instance</td><td>Migrating instance scoped features like SQL Agent, cross database queries</td><td>Schema, data, instance settings</td></tr><tr><td>SQL Server on a VM</td><td>Unsupported features, full OS access</td><td>Everything from the OS up</td></tr></tbody></table></div>
+<h2>Concepts you will meet</h2>
+<ul><li><strong>Serverless</strong>: auto scales compute and can auto pause, billed per second of use. Good for intermittent workloads.</li><li><strong>Elastic pools</strong>: share resources across databases with different peak times.</li><li><strong>High availability and backups</strong>: automatic backups with point in time restore, optional zone redundancy and geo replication.</li><li><strong>Security</strong>: Entra authentication, private endpoints, transparent data encryption by default, and auditing.</li></ul>
+<div class="callout"><div class="callout-label">Check the current limits</div>Service tiers, sizes and features change. Read the current docs before committing to a design, especially for Hyperscale, serverless pause delays and zone redundancy support.</div>
+<h2>Which Azure SQL option?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A new multi tenant SaaS app with hundreds of small databases with uneven load.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">One giant Managed Instance database</button><button type="button" class="ch-opt" data-correct="false">SQL Server on a VM per tenant</button><button type="button" class="ch-opt" data-correct="true">SQL Database elastic pool</button></div><div class="ch-explain">Pools share compute across databases whose peaks differ.</div></div><div class="ch-item"><div class="ch-q">Moving an on premises instance that uses SQL Agent jobs and linked servers.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Cosmos DB</button><button type="button" class="ch-opt" data-correct="false">SQL Database single</button><button type="button" class="ch-opt" data-correct="true">SQL Managed Instance</button></div><div class="ch-explain">Managed Instance supports instance level features.</div></div><div class="ch-item"><div class="ch-q">A dev database used a few hours a day.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Provisioned business critical</button><button type="button" class="ch-opt" data-correct="true">SQL Database serverless</button><button type="button" class="ch-opt" data-correct="false">A large VM</button></div><div class="ch-explain">Serverless pauses and bills only for use.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which option has near full SQL Server instance compatibility as a managed service?</div><div class="q-options"><button class="q-option" data-correct="false">Cosmos DB</button><button class="q-option" data-correct="true">SQL Managed Instance</button><button class="q-option" data-correct="false">SQL Database single</button><button class="q-option" data-correct="false">Storage account</button></div><div class="q-explain">It supports instance scoped features.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is an elastic pool for?</div><div class="q-options"><button class="q-option" data-correct="false">Encrypting keys</button><button class="q-option" data-correct="false">Routing traffic</button><button class="q-option" data-correct="true">Sharing compute across databases with different peak times</button><button class="q-option" data-correct="false">Storing blobs</button></div><div class="q-explain">It saves cost when databases do not peak together.</div></div>
+<div class="q-block"><div class="q-prompt">3. When can serverless help most?</div><div class="q-options"><button class="q-option" data-correct="false">Archival</button><button class="q-option" data-correct="false">Constant heavy load</button><button class="q-option" data-correct="false">DNS</button><button class="q-option" data-correct="true">Intermittent workloads with idle periods</button></div><div class="q-explain">It can pause when idle.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-paas-overview">What is Azure SQL Database (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-sql/azure-sql-iaas-vs-paas-what-is-overview">Compare Azure SQL options (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="4-1-storage-accounts-and-data-lake-gen2.html">&larr; 4.1 Storage accounts and Data Lake Gen2</a>
+    <a href="4-3-cosmos-db.html">4.3 Cosmos DB &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

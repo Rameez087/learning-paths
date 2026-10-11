@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2 Reliability and the Well-Architected Framework | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 &middot; Operations</div>
+  <h1>9.2 Reliability and the Well-Architected Framework</h1>
+  <p class="subtitle">Good architecture is a set of trade offs made on purpose. The Well-Architected Framework gives you the checklist.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    The <strong>Azure Well-Architected Framework</strong> has five pillars: <strong>Reliability, Security, Cost Optimization, Operational Excellence, Performance Efficiency</strong>. For reliability, define <strong>SLOs</strong>, design for failure with <strong>zones</strong> and <strong>regions</strong>, set <strong>RTO</strong> (how fast to recover) and <strong>RPO</strong> (how much data you may lose), and test recovery.
+  </div>
+
+<div class="figure"><svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Five pillars" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10.0" y="6" width="120.8" height="108" rx="8" fill="var(--surface-2)" stroke="var(--accent)"/><text x="70.4" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-text)">Reliability</text><text x="70.4" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Zones</text><text x="70.4" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Backups</text><text x="70.4" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Failover tests</text><rect x="144.8" y="6" width="120.8" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="205.2" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Security</text><text x="205.2" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Identity</text><text x="205.2" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Network</text><text x="205.2" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Data</text><rect x="279.6" y="6" width="120.8" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="340.0" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Cost</text><text x="340.0" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Right size</text><text x="340.0" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Commitments</text><text x="340.0" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Cleanup</text><rect x="414.4" y="6" width="120.8" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="474.8" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Operations</text><text x="474.8" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">IaC</text><text x="474.8" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Monitoring</text><text x="474.8" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Runbooks</text><rect x="549.2" y="6" width="120.8" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="609.6" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Performance</text><text x="609.6" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Scale</text><text x="609.6" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Caching</text><text x="609.6" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Load tests</text></svg><div class="figure-caption">Pillars pull against each other: more resilience costs more.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Term</th><th>Meaning</th><th>Drives</th></tr></thead><tbody><tr><td>SLO</td><td>Target level, such as 99.9 percent availability</td><td>Architecture choices</td></tr><tr><td>RTO</td><td>Maximum acceptable downtime</td><td>Standby strategy (cold, warm, hot)</td></tr><tr><td>RPO</td><td>Maximum acceptable data loss</td><td>Replication method</td></tr></tbody></table></div>
+<p>Availability maths: composite availability is the product of dependencies in series. Two services at 99.9 percent in series give about 99.8 percent. Redundant paths in parallel raise it. Always check each service's published SLA and its conditions.</p>
+<div class="callout"><div class="callout-label">A backup you never restored is a hope</div>Schedule restore tests and failover drills. Document results and fix what they reveal.</div>
+<h2>Match the need</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Losing five minutes of data is acceptable but a day is not.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Daily backups only</button><button type="button" class="ch-opt" data-correct="false">No backups</button><button type="button" class="ch-opt" data-correct="true">RPO of about five minutes, so use asynchronous replication or frequent log backups</button></div><div class="ch-explain">RPO sets how much loss you can tolerate.</div></div><div class="ch-item"><div class="ch-q">The app must stay up if a datacentre fails.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Bigger disks</button><button type="button" class="ch-opt" data-correct="true">Zone redundant deployment</button><button type="button" class="ch-opt" data-correct="false">A single instance</button></div><div class="ch-explain">Zones isolate datacentre failures.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does RPO measure?</div><div class="q-options"><button class="q-option" data-correct="false">Latency</button><button class="q-option" data-correct="false">Cost</button><button class="q-option" data-correct="true">Acceptable data loss</button><button class="q-option" data-correct="false">Acceptable downtime</button></div><div class="q-explain">Recovery point objective.</div></div>
+<div class="q-block"><div class="q-prompt">2. Two 99.9 percent services in series give roughly?</div><div class="q-options"><button class="q-option" data-correct="false">100 percent</button><button class="q-option" data-correct="false">99.95 percent</button><button class="q-option" data-correct="true">99.8 percent</button><button class="q-option" data-correct="false">99.99 percent</button></div><div class="q-explain">Multiply the availabilities.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which is a WAF pillar?</div><div class="q-options"><button class="q-option" data-correct="false">Licensing</button><button class="q-option" data-correct="false">Branding</button><button class="q-option" data-correct="false">Marketing</button><button class="q-option" data-correct="true">Operational Excellence</button></div><div class="q-explain">Five pillars cover quality.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/well-architected/">Azure Well-Architected Framework (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="9-1-azure-monitor-and-kql.html">&larr; 9.1 Azure Monitor and KQL</a>
+    <a href="9-3-landing-zones.html">9.3 Landing zones and governance at scale &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

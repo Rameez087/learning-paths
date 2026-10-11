@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.2 Orchestration: Data Factory, Synapse, Fabric and workflows | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.2 Orchestration: Data Factory, Synapse, Fabric and workflows</h1>
+  <p class="subtitle">Something has to run your pipelines in order, retry them and tell you when they fail.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Data Factory</strong> orchestrates and moves data with pipelines, activities and triggers, using the Copy activity and mapping data flows. <strong>Synapse pipelines</strong> and <strong>Fabric Data Factory</strong> offer similar capabilities inside their platforms. <strong>Databricks Workflows</strong> orchestrate notebooks and jobs near the compute. Open source tools such as Airflow can run on Azure too. Choose based on where your compute lives and your team's skills.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Orchestrator</th><th>Strength</th><th>Consider when</th></tr></thead><tbody><tr><td>Data Factory</td><td>Mature, 100+ connectors, copy at scale, scheduling and triggers</td><td>Moving data between many systems; orchestrating other engines</td></tr><tr><td>Synapse pipelines</td><td>Same engine as ADF inside Synapse</td><td>You already work in a Synapse workspace</td></tr><tr><td>Fabric Data Factory</td><td>Pipelines integrated with OneLake and Fabric items</td><td>Your platform is Fabric</td></tr><tr><td>Databricks Workflows</td><td>Jobs, tasks and dependencies beside the notebooks and Delta tables</td><td>Your logic is mostly in Databricks</td></tr><tr><td>Airflow or similar</td><td>Code defined DAGs, large ecosystem</td><td>Complex dependencies, existing Airflow skills</td></tr></tbody></table></div>
+<h2>Concepts that transfer</h2>
+<ul><li><strong>Idempotency</strong>: a rerun must not duplicate data. Use merge or overwrite by partition.</li><li><strong>Retries and alerts</strong>: expect transient failures, alert on persistent ones.</li><li><strong>Parameters</strong>: one pipeline for many tables, driven by a metadata table.</li><li><strong>Triggers</strong>: schedule, tumbling window, storage event.</li><li><strong>Dependencies and backfills</strong>: design so you can reprocess a date range safely.</li></ul>
+<div class="callout"><div class="callout-label">Check product direction</div>Microsoft's data platform is evolving, with Fabric receiving much of the investment. Read the current guidance on which products fit new projects before committing.</div>
+<h2>Pick the orchestrator</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Copy tables nightly from five different databases into a lake.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Event Grid</button><button type="button" class="ch-opt" data-correct="false">A notebook with hand written connectors</button><button type="button" class="ch-opt" data-correct="true">Data Factory</button></div><div class="ch-explain">Copy at scale with built in connectors is its main job.</div></div><div class="ch-item"><div class="ch-q">Your whole stack is Databricks and you need task dependencies between notebooks.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Data Factory only</button><button type="button" class="ch-opt" data-correct="false">Cron on a VM</button><button type="button" class="ch-opt" data-correct="true">Databricks Workflows</button></div><div class="ch-explain">Orchestration beside the compute is simplest.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does idempotent mean for a pipeline?</div><div class="q-options"><button class="q-option" data-correct="false">It runs once ever</button><button class="q-option" data-correct="false">It runs faster</button><button class="q-option" data-correct="false">It needs no data</button><button class="q-option" data-correct="true">Rerunning it gives the same result without duplicates</button></div><div class="q-explain">Safe reruns make recovery easy.</div></div>
+<div class="q-block"><div class="q-prompt">2. Which has 100+ built in connectors for moving data?</div><div class="q-options"><button class="q-option" data-correct="false">NSG</button><button class="q-option" data-correct="false">Key Vault</button><button class="q-option" data-correct="true">Data Factory</button><button class="q-option" data-correct="false">Azure Policy</button></div><div class="q-explain">Connectors and copy are its strength.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why parameterise pipelines?</div><div class="q-options"><button class="q-option" data-correct="false">To hide errors</button><button class="q-option" data-correct="false">To avoid triggers</button><button class="q-option" data-correct="true">One pipeline can serve many tables or dates</button><button class="q-option" data-correct="false">To skip testing</button></div><div class="q-explain">Metadata driven design reduces duplication.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/data-factory/introduction">What is Azure Data Factory (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/microsoft-fabric-overview">What is Microsoft Fabric (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/databricks/jobs/">Databricks Lakeflow Jobs (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="7-1-lake-design-and-medallion.html">&larr; 7.1 Lake design and the medallion pattern</a>
+    <a href="7-3-engines-synapse-fabric-databricks.html">7.3 Engines: Synapse, Fabric and Databricks &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

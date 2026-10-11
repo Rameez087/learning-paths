@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.2 LLMs for data management | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 &middot; Fields that fit you</div>
+  <h1>5.2 LLMs for data management</h1>
+  <p class="subtitle">Schema matching, entity resolution, cleaning and text to SQL are classic data engineering problems that language models now attack. Where they fail is the research.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Foundation models can be <strong>prompted to do data wrangling tasks</strong>, often with few or no labelled examples. Narayan and colleagues showed this for entity matching, error detection and imputation. The open questions are <strong>where they fail</strong> (scale, cost, hallucination, domain specific schemas) and how to evaluate them on enterprise style data.
+  </div>
+
+<h2>Tasks that now have LLM approaches</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Task</th><th>What it is</th><th>Typical failure to study</th></tr></thead><tbody><tr><td>Entity resolution</td><td>Decide whether two records are the same real world entity</td><td>Cost per pair at scale; inconsistent answers across runs</td></tr><tr><td>Schema matching</td><td>Align columns across two schemas</td><td>Cryptic column names such as SAP style codes</td></tr><tr><td>Data cleaning and error detection</td><td>Find and fix wrong or inconsistent values</td><td>Confident but wrong fixes with no way to verify</td></tr><tr><td>Imputation</td><td>Fill missing values</td><td>Plausible but invented values</td></tr><tr><td>Text to SQL</td><td>Translate a question into a query</td><td>Wrong joins on large, ambiguously named schemas</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">The enterprise gap</div>Many benchmarks use clean, well named public tables. Enterprise systems have thousands of tables, opaque names, local conventions and strict correctness needs. Studying how methods behave on messy, large schemas is a gap you are unusually well placed to examine, using public or synthetic stand-ins so you never expose employer data.</div>
+<h2>Design a small study</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Choose a task</h3><p>Pick one: for example entity matching between two product catalogs from a public benchmark.</p></div><div class="st-step"><h3>2. Choose a baseline</h3><p>Start with string similarity and a simple classifier. The LLM has to beat this to matter.</p></div><div class="st-step"><h3>3. Vary the condition</h3><p>Add one stress factor at a time: abbreviated names, extra columns, larger candidate sets.</p></div><div class="st-step"><h3>4. Measure cost and consistency</h3><p>Report accuracy, cost per decision and agreement across repeated runs, not only accuracy.</p></div><div class="st-step"><h3>5. Report failures</h3><p>Classify the errors. A taxonomy of failures is often the most useful part of the paper.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<h2>Pick the stronger research question</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Which is better scoped?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Are LLMs good at databases?</button><button type="button" class="ch-opt" data-correct="true">How does LLM based schema matching degrade as column names become more cryptic, compared with a string similarity baseline?</button><button type="button" class="ch-opt" data-correct="false">Can AI replace data engineers?</button></div><div class="ch-explain">The first names a task, a stress factor, a baseline and a measurable degradation.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which gap is a data engineer well placed to study?</div><div class="q-options"><button class="q-option" data-correct="false">How to train a trillion parameter model</button><button class="q-option" data-correct="false">How to design a new tokenizer</button><button class="q-option" data-correct="true">How LLM data wrangling behaves on large, messy, enterprise style schemas</button></div><div class="q-explain">Enterprise style data is underrepresented in clean public benchmarks.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why report cost and consistency, not just accuracy?</div><div class="q-options"><button class="q-option" data-correct="false">Reviewers dislike accuracy</button><button class="q-option" data-correct="false">Accuracy is not measurable</button><button class="q-option" data-correct="true">LLM calls cost money and may give different answers on repeat, which matters in pipelines</button></div><div class="q-explain">Practicality in pipelines depends on cost and repeatability.</div></div>
+<div class="q-block"><div class="q-prompt">3. What should an LLM method be compared against first?</div><div class="q-options"><button class="q-option" data-correct="false">Nothing</button><button class="q-option" data-correct="false">Another LLM only</button><button class="q-option" data-correct="true">A simple baseline such as string similarity or rules</button></div><div class="q-explain">A simple baseline shows whether the LLM adds anything.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/2205.09911">Can Foundation Models Wrangle Your Data? (Narayan et al.)</a>; <a href="https://arxiv.org/abs/2301.04819">Data-centric AI: Perspectives and Challenges (Zha et al.)</a></p>
+
+  <div class="pager">
+    <a href="5-1-data-centric-ai-and-data-quality.html">&larr; 5.1 Data-centric AI and data quality</a>
+    <a href="5-3-rag-evaluation-and-data-defects.html">5.3 RAG evaluation and data defects &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

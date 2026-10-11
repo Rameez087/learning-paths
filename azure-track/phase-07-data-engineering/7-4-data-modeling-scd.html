@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.4 Data modeling: facts, dimensions and slowly changing data | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.4 Data modeling: facts, dimensions and slowly changing data</h1>
+  <p class="subtitle">A model that matches how people ask questions is worth more than a clever pipeline.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>star schema</strong> has <strong>fact tables</strong> (measurable events such as orders) surrounded by <strong>dimension tables</strong> (descriptive context such as customer, product, date). Fix the <strong>grain</strong> of a fact first: what one row means. When a dimension attribute changes, a <strong>slowly changing dimension</strong> strategy decides whether history is kept: type 1 overwrites, type 2 adds a new versioned row.
+  </div>
+
+<h2>Try it: type 1 versus type 2</h2>
+<p>A customer moves city several times. Press the button and watch how each approach stores it.</p>
+<div class="widget">
+<button type="button" id="sc-move" class="st-next">Customer moves to a new city</button> <button type="button" id="sc-reset" class="st-prev">Reset</button>
+<h3>Type 1: overwrite</h3><table id="sc-t1"></table>
+<h3>Type 2: keep history</h3><table id="sc-t2"></table></div>
+<p>With type 1 you can only answer questions about where the customer lives now. With type 2 a fact row joins to the dimension version that was valid when the order happened, so last year's sales stay attributed to last year's city.</p>
+<div class="figure"><svg viewBox="0 0 680 180" width="100%" role="img" aria-label="Star schema" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10.0" y="6" width="323.0" height="168" rx="8" fill="var(--surface-2)" stroke="var(--accent)"/><text x="171.5" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-text)">Fact: orders</text><text x="171.5" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">order_id</text><text x="171.5" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">date_key</text><text x="171.5" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">customer_key</text><text x="171.5" y="110" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">product_key</text><text x="171.5" y="130" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">quantity</text><text x="171.5" y="150" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">amount</text><rect x="347.0" y="6" width="323.0" height="168" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="508.5" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Dimensions</text><text x="508.5" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">dim_customer (type 2)</text><text x="508.5" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">dim_product</text><text x="508.5" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">dim_date</text></svg><div class="figure-caption">Facts hold numbers and keys. Dimensions hold descriptions.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Decision</th><th>Guidance</th></tr></thead><tbody><tr><td>Grain</td><td>Write it as a sentence: one row per order line. Everything in the table must fit that grain</td></tr><tr><td>Keys</td><td>Use surrogate keys in dimensions so you can version rows</td></tr><tr><td>Type 1</td><td>Corrections, or attributes where history does not matter</td></tr><tr><td>Type 2</td><td>Attributes where history changes the answers, such as region or segment</td></tr><tr><td>Dates</td><td>Use a date dimension, not raw timestamps, for calendar logic</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Do not model everything as one wide table</div>Wide tables are fine as a gold layer product for one purpose, but a conformed set of dimensions lets many facts share definitions and keeps numbers consistent across reports.</div>
+<h2>Which SCD type?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A typo in a customer name is corrected.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Type 2: new version</button><button type="button" class="ch-opt" data-correct="false">Delete the customer</button><button type="button" class="ch-opt" data-correct="true">Type 1: overwrite</button></div><div class="ch-explain">Corrections should not create fake history.</div></div><div class="ch-item"><div class="ch-q">Sales reports by customer region must not change when the customer later moves.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Drop the region</button><button type="button" class="ch-opt" data-correct="true">Type 2: add a versioned row</button><button type="button" class="ch-opt" data-correct="false">Type 1</button></div><div class="ch-explain">History must be preserved to keep past results stable.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the grain of a fact table?</div><div class="q-options"><button class="q-option" data-correct="false">Its file size</button><button class="q-option" data-correct="false">Its owner</button><button class="q-option" data-correct="false">Its region</button><button class="q-option" data-correct="true">What one row represents</button></div><div class="q-explain">Fixing the grain first prevents ambiguous measures.</div></div>
+<div class="q-block"><div class="q-prompt">2. What does SCD type 2 do?</div><div class="q-options"><button class="q-option" data-correct="false">Hides the column</button><button class="q-option" data-correct="false">Deletes the row</button><button class="q-option" data-correct="false">Overwrites the old value</button><button class="q-option" data-correct="true">Adds a new row version to keep history</button></div><div class="q-explain">Validity dates distinguish the versions.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why surrogate keys in dimensions?</div><div class="q-options"><button class="q-option" data-correct="false">To encrypt data</button><button class="q-option" data-correct="false">To avoid joins</button><button class="q-option" data-correct="true">So multiple versions of one business entity can coexist</button><button class="q-option" data-correct="false">To save disk</button></div><div class="q-explain">The business key repeats across versions.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/power-bi/guidance/star-schema">Understand star schema (Microsoft Learn)</a>; <a href="https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/">Kimball Group dimensional modeling techniques</a></p>
+
+  <div class="pager">
+    <a href="7-3-engines-synapse-fabric-databricks.html">&larr; 7.3 Engines: Synapse, Fabric and Databricks</a>
+    <a href="7-5-streaming.html">7.5 Streaming: Event Hubs, Stream Analytics, Spark and Fabric real time &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var t1=document.getElementById("sc-t1"), t2=document.getElementById("sc-t2");
+  if(!t1||!t2) return;
+  var cities=["Lahore","Berlin","Dubai","Karachi"], step=0, key=7;
+  var type1=[{k:key,c:cities[0]}], type2=[{k:100,nk:key,c:cities[0],from:"2024-01-01",to:"9999-12-31",cur:true}];
+  function render(){
+    t1.innerHTML="<tr><th>customer_id</th><th>city</th></tr>"+type1.map(function(r){return "<tr><td>"+r.k+"</td><td>"+r.c+"</td></tr>";}).join("");
+    t2.innerHTML="<tr><th>surrogate_key</th><th>customer_id</th><th>city</th><th>valid_from</th><th>valid_to</th><th>current</th></tr>"+type2.map(function(r){return "<tr><td>"+r.k+"</td><td>"+r.nk+"</td><td>"+r.c+"</td><td>"+r.from+"</td><td>"+(r.to==="9999-12-31"?"open":r.to)+"</td><td>"+(r.cur?"yes":"no")+"</td></tr>";}).join("");
+  }
+  document.getElementById("sc-move").addEventListener("click",function(){
+    step++; var city=cities[step%cities.length];
+    var d="2024-0"+(1+Math.min(step,8))+"-15";
+    type1[0].c=city;
+    var cur=type2[type2.length-1]; cur.to=d; cur.cur=false;
+    type2.push({k:100+step,nk:key,c:city,from:d,to:"9999-12-31",cur:true});
+    render();
+  });
+  document.getElementById("sc-reset").addEventListener("click",function(){
+    step=0; type1=[{k:key,c:cities[0]}]; type2=[{k:100,nk:key,c:cities[0],from:"2024-01-01",to:"9999-12-31",cur:true}]; render();
+  });
+  render();
+})();
+
+</script>
+</body>
+</html>

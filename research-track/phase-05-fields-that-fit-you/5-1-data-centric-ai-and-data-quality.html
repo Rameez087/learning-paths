@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.1 Data-centric AI and data quality | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 &middot; Fields that fit you</div>
+  <h1>5.1 Data-centric AI and data quality</h1>
+  <p class="subtitle">Most of machine learning research improves models. A growing field improves the data. That is where your daily work already lives.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Data-centric AI</strong> treats the data as the thing to engineer and improve, holding the model fixed. Zha and colleagues organise the field into three goals: <strong>training data development</strong>, <strong>inference (evaluation) data development</strong> and <strong>data maintenance</strong>. Data quality problems you fix in pipelines every week are research questions here.
+  </div>
+
+<h2>The three goals</h2>
+<h2>Goals of data-centric AI</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Training data development</button><button type="button" class="tab-btn" data-t="1">Evaluation data development</button><button type="button" class="tab-btn" data-t="2">Data maintenance</button></div><div class="tab-pane active" data-t="0"><p>Collecting, labelling, cleaning, augmenting and selecting the data a model learns from. Research asks which defects matter, how to detect them automatically and how to repair them cheaply.</p><p><strong>Your hook:</strong> you clean and transform messy enterprise data every day.</p></div><div class="tab-pane" data-t="1"><p>Building test sets and benchmarks that expose what models get wrong. A benchmark with duplicates, leakage or label errors gives false confidence.</p><p><strong>Your hook:</strong> building trustworthy test data is your reproduction and benchmark path.</p></div><div class="tab-pane" data-t="2"><p>Keeping data healthy over time: monitoring drift, versioning, refreshing and tracing lineage. Pipelines break quietly when upstream data changes.</p><p><strong>Your hook:</strong> production pipelines, lineage and drift are your territory.</p></div></div>
+<p>Whang and colleagues survey data collection and quality challenges for deep learning, covering acquisition, labelling, cleaning and the interaction between data quality and model robustness. Both papers are good entry points for building your literature map (2.2).</p>
+<h2>Which goal is it?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Detecting mislabelled rows in a training set before fitting a model.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Data maintenance</button><button type="button" class="ch-opt" data-correct="true">Training data development</button><button type="button" class="ch-opt" data-correct="false">Evaluation data development</button></div><div class="ch-explain">Cleaning and label repair improve the data the model learns from.</div></div><div class="ch-item"><div class="ch-q">Building a held out test set with documented construction and no overlap with training.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Training data development</button><button type="button" class="ch-opt" data-correct="false">Data maintenance</button><button type="button" class="ch-opt" data-correct="true">Evaluation data development</button></div><div class="ch-explain">Constructing a trustworthy test set is evaluation data development.</div></div><div class="ch-item"><div class="ch-q">Monitoring a feature's distribution and alerting when upstream data changes.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Evaluation data development</button><button type="button" class="ch-opt" data-correct="false">Training data development</button><button type="button" class="ch-opt" data-correct="true">Data maintenance</button></div><div class="ch-explain">Ongoing monitoring and upkeep belongs to data maintenance.</div></div></div>
+<h2>Starter questions</h2>
+<ul><li>Which data defects (duplicates, missing values, label noise, staleness) hurt model quality most, and by how much?</li><li>Can data defects be detected automatically on enterprise style tables?</li><li>How do cleaning choices change downstream model fairness or accuracy?</li><li>What is the cheapest data change that gives the largest quality gain?</li></ul>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does data-centric AI hold fixed while improving results?</div><div class="q-options"><button class="q-option" data-correct="false">The data</button><button class="q-option" data-correct="false">The metric only</button><button class="q-option" data-correct="true">The model, while the data is engineered and improved</button></div><div class="q-explain">The focus shifts from changing the model to improving the data.</div></div>
+<div class="q-block"><div class="q-prompt">2. Which is evaluation data development?</div><div class="q-options"><button class="q-option" data-correct="false">Retraining on drifting data</button><button class="q-option" data-correct="true">Building a benchmark with documented construction</button><button class="q-option" data-correct="false">Hyperparameter tuning</button></div><div class="q-explain">Creating trustworthy test data is one of the three goals.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why is this field a strong fit for a data engineer?</div><div class="q-options"><button class="q-option" data-correct="false">It requires no statistics</button><button class="q-option" data-correct="false">It never uses real data</button><button class="q-option" data-correct="true">Its core problems are the data cleaning, lineage and maintenance work already done in production</button></div><div class="q-explain">The field's research tasks overlap closely with everyday pipeline work.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/2301.04819">Data-centric AI: Perspectives and Challenges (Zha et al.)</a>; <a href="https://arxiv.org/pdf/2112.06409">Data Collection and Quality Challenges in Deep Learning (Whang et al.)</a></p>
+
+  <div class="pager">
+    <a href="../phase-04-doing-the-experiment/4-5-compute-budgets-and-cheap-experiments.html">&larr; 4.5 Compute budgets and cheap experiments</a>
+    <a href="5-2-llms-for-data-management.html">5.2 LLMs for data management &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

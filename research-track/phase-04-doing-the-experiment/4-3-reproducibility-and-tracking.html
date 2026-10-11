@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.3 Reproducibility and tracking | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Doing the experiment</div>
+  <h1>4.3 Reproducibility and tracking</h1>
+  <p class="subtitle">A result you cannot rerun next month is not a result. Tracking turns your experiments into something you, and others, can trust.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Record everything needed to rerun an experiment: <strong>code version, data version, seeds, hyperparameters, environment and compute</strong>. Use an experiment tracker (MLflow or Weights &amp; Biases), pin your dependencies, and keep a config file for each run. If you can rerun it from a clean machine with one command, you are in good shape.
+  </div>
+
+<h2>The reproducibility pack</h2>
+<p>Pineau and colleagues describe the NeurIPS reproducibility effort, which includes a checklist authors fill in covering code, data, hyperparameters and compute. Treat that checklist as a design brief for your own repository, not paperwork to complete at the end.</p>
+<h2>Your repo must contain</h2>
+<div class="widget checklist" data-w="checklist" data-key="repro-pack"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>A README with the single command to reproduce the main table</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>A pinned environment file (requirements with versions, or a lock file or container)</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>A config file per experiment with all hyperparameters</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>Fixed and logged random seeds for every run</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>A data section: source, version, licence and how to download</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span>Saved raw results, not only plots</span></label><label class="cl-item"><input type="checkbox" data-i="6"><span>The exact commit hash used for the reported numbers</span></label></div>
+<h2>Track runs: two common options</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">MLflow</button><button type="button" class="tab-btn" data-t="1">Weights &amp; Biases</button><button type="button" class="tab-btn" data-t="2">Plain files</button></div><div class="tab-pane active" data-t="0"><p>Open source and self hostable. Log parameters, metrics and artifacts per run, then compare runs in a UI. It is also widely used on Databricks, so it connects to your work stack.</p></div><div class="tab-pane" data-t="1"><p>A hosted tracker with strong dashboards and collaboration. Convenient for sharing results with a supervisor. Check the current free tier terms before depending on it.</p></div><div class="tab-pane" data-t="2"><p>A results folder with one JSON per run plus the config. It is the minimum, and it works. You can add a tracker later without changing your habits.</p></div></div>
+<pre><code># minimal seed and tracking pattern (Python)
+import random, numpy as np, mlflow
+
+def set_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    # also seed your ML framework here, e.g. torch.manual_seed(seed)
+
+for seed in [0, 1, 2, 3, 4]:
+    set_seed(seed)
+    with mlflow.start_run():
+        mlflow.log_param("seed", seed)
+        mlflow.log_param("retriever", "hybrid")
+        score = run_experiment()          # your code
+        mlflow.log_metric("recall_at_5", score)</code></pre>
+<div class="callout"><div class="callout-label">Data versioning</div>Results depend on data as much as code. Tools such as DVC version datasets alongside git, or you can store a dated, hashed snapshot and record its hash in the config. Either way, a future you must be able to tell which data produced which number.</div>
+<h2>Why did the rerun disagree?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You rerun last month's experiment and get different numbers. You did not pin library versions or record the seed.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">The dataset must have changed</button><button type="button" class="ch-opt" data-correct="true">The environment or seed changed; pin versions and log seeds so reruns are exact</button><button type="button" class="ch-opt" data-correct="false">Machine learning is random so this is unavoidable</button></div><div class="ch-explain">Unpinned dependencies and unlogged seeds are the most common causes of unrepeatable runs.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What belongs in a reproducibility pack?</div><div class="q-options"><button class="q-option" data-correct="false">Only the final plots</button><button class="q-option" data-correct="false">Only a PDF of the paper</button><button class="q-option" data-correct="true">Code version, data version, seeds, hyperparameters and environment</button></div><div class="q-explain">Everything needed to rerun the experiment from scratch must be recorded.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why log the seed for every run?</div><div class="q-options"><button class="q-option" data-correct="false">Trackers require it</button><button class="q-option" data-correct="true">So a specific result can be regenerated and variance can be reported</button><button class="q-option" data-correct="false">Seeds make training faster</button></div><div class="q-explain">Seeds let you reproduce a run exactly and quantify run to run variation.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which is the best test of reproducibility?</div><div class="q-options"><button class="q-option" data-correct="false">Asking a friend whether it looks right</button><button class="q-option" data-correct="true">Running the whole pipeline from a clean machine with a single command</button><button class="q-option" data-correct="false">Rerunning on the same laptop with cached files</button></div><div class="q-explain">A clean machine exposes hidden dependencies and manual steps.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/2003.12206">Improving Reproducibility in ML Research (Pineau et al.)</a>; <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a>; <a href="https://mlflow.org/docs/latest/">MLflow documentation</a>; <a href="https://dvc.org/">DVC</a></p>
+
+  <div class="pager">
+    <a href="4-2-baselines-and-ablations.html">&larr; 4.2 Baselines and ablations</a>
+    <a href="4-4-data-hygiene-and-leakage.html">4.4 Data hygiene and leakage &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

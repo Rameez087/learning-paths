@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 Statistics for experiments | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Foundations you must own</div>
+  <h1>3.2 Statistics for experiments</h1>
+  <p class="subtitle">Every claim of improvement is a statistical claim. This page lets you see how often a single lucky run misleads, and how many seeds it takes to be sure.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Training is random, so one run of each method is one draw from a distribution. Report the <strong>mean and spread over several seeds</strong> (3 is the floor, 5 or more is better), add a <strong>confidence interval</strong>, and only claim a gain when the intervals clearly separate or a suitable test agrees. Whatever you report, say how many seeds you used.
+  </div>
+
+<h2>Try it: how many seeds do you need?</h2>
+<p>Method B is truly better than A by the gap you set. Each seed adds random noise. Change the seeds, noise and gap, then press the button to draw a fresh set of runs. Watch how often a small true gap hides inside the intervals, and how a single run can even show the wrong winner.</p>
+<div class="widget">
+<div class="sim-row"><label>Seeds per method</label><input type="range" id="st-n" min="2" max="30" value="3"><span id="st-n-v"></span></div>
+<div class="sim-row"><label>Run to run noise (sd)</label><input type="range" id="st-sd" min="0.2" max="3" step="0.1" value="1.0"><span id="st-sd-v"></span></div>
+<div class="sim-row"><label>True gap (B minus A)</label><input type="range" id="st-gap" min="0" max="3" step="0.1" value="0.5"><span id="st-gap-v"></span></div>
+<div class="sim-row"><button type="button" id="st-again" class="ch-opt" style="width:auto">Draw new seeds</button></div>
+<div id="st-fig"></div><div class="sim-out" id="st-out"></div></div>
+<p>These numbers are simulated from a normal distribution, so the exact values mean nothing. The point is the pattern: more seeds shrink the interval, and a true gap smaller than the noise needs many seeds to show.</p>
+<h2>What to report</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Item</th><th>Why</th><th>Minimum</th></tr></thead><tbody><tr><td>Number of seeds</td><td>Lets readers judge the evidence</td><td>3, ideally 5 or more</td></tr><tr><td>Mean and standard deviation</td><td>Shows the spread across seeds</td><td>Always</td></tr><tr><td>Confidence interval or standard error</td><td>Shows how precisely the mean is known</td><td>Always for comparisons</td></tr><tr><td>A significance test</td><td>Backs a claim of difference</td><td>When claiming one method beats another</td></tr><tr><td>Same data splits and tuning budget</td><td>Keeps the comparison fair</td><td>Always</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Common traps</div>Tuning your new method hard while leaving the baseline at defaults is the quietest way to fake a gain. Picking the best seed after the fact does the same. Giving every method the same tuning budget and reporting all seeds avoids both. The NeurIPS checklist asks authors whether they report error bars and how they were computed.</div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why can one run of each method mislead?</div><div class="q-options"><button class="q-option" data-correct="false">Seeds only affect the test set</button><button class="q-option" data-correct="true">Training is random, so a single run is one draw and may differ from the typical result</button><button class="q-option" data-correct="false">Single runs are always biased downward</button></div><div class="q-explain">Run to run variance can be as large as the gap you are claiming, which is why several seeds are needed.</div></div>
+<div class="q-block"><div class="q-prompt">2. Two methods have overlapping 95% intervals. What is the careful conclusion?</div><div class="q-options"><button class="q-option" data-correct="false">The one with the higher mean wins</button><button class="q-option" data-correct="true">You cannot yet claim one is better; get more seeds or a stronger test</button><button class="q-option" data-correct="false">The methods are identical</button></div><div class="q-explain">Overlap means the data do not separate the methods. More seeds narrow the intervals.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which practice most clearly makes a comparison unfair?</div><div class="q-options"><button class="q-option" data-correct="false">Using the same splits for both</button><button class="q-option" data-correct="true">Tuning only the new method while leaving the baseline at defaults</button><button class="q-option" data-correct="false">Reporting all seeds</button></div><div class="q-explain">Unequal tuning effort inflates the apparent gain. Give each method a comparable budget.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a>; <a href="https://arxiv.org/abs/2003.12206">Improving Reproducibility in ML Research (Pineau et al.)</a>; <a href="https://en.wikipedia.org/wiki/Welch%27s_t-test">Welch's t-test, overview</a></p>
+
+  <div class="pager">
+    <a href="3-1-the-math-map.html">&larr; 3.1 The math map</a>
+    <a href="3-3-machine-learning-core.html">3.3 Machine learning core you must be fluent in &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  function rng(seed){var a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  function norm(r){var u=0,v=0;while(u===0)u=r();v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+  var T=[0,12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.160,2.145,2.131,2.120,2.110,2.101,2.093,2.086,2.080,2.074,2.069,2.064,2.060,2.056,2.052,2.048,2.045,2.042];
+  function tcrit(df){return df<=30?T[df]:1.96;}
+  function stats(a){var n=a.length,m=a.reduce(function(x,y){return x+y;},0)/n;var s=Math.sqrt(a.reduce(function(x,y){return x+(y-m)*(y-m);},0)/(n-1));var h=tcrit(n-1)*s/Math.sqrt(n);return{m:m,s:s,lo:m-h,hi:m+h,n:n};}
+  var seed=1;
+  function run(){
+    var n=+document.getElementById("st-n").value, sd=+document.getElementById("st-sd").value, gap=+document.getElementById("st-gap").value;
+    document.getElementById("st-n-v").textContent=n;document.getElementById("st-sd-v").textContent=sd.toFixed(1);document.getElementById("st-gap-v").textContent=gap.toFixed(1);
+    var r=rng(seed*7919),a=[],b=[];
+    for(var i=0;i<n;i++){a.push(80+sd*norm(r));b.push(80+gap+sd*norm(r));}
+    var A=stats(a),B=stats(b);
+    var overlap=!(A.hi<B.lo||B.hi<A.lo);
+    var single=(b[0]-a[0]).toFixed(2);
+    var out="Method A (baseline): mean <b>"+A.m.toFixed(2)+"</b>, sd "+A.s.toFixed(2)+", 95% CI ["+A.lo.toFixed(2)+", "+A.hi.toFixed(2)+"]<br>"+
+      "Method B (new):      mean <b>"+B.m.toFixed(2)+"</b>, sd "+B.s.toFixed(2)+", 95% CI ["+B.lo.toFixed(2)+", "+B.hi.toFixed(2)+"]<br>"+
+      "True gap you set: <b>"+gap.toFixed(1)+"</b> points. Gap a single run would report (first seed): <b>"+single+"</b><br>"+
+      "Intervals "+(overlap?"<span class='badge-no'>overlap: you cannot claim B is better yet</span>":"<span class='badge-ok'>do not overlap: the gap looks real</span>");
+    document.getElementById("st-out").innerHTML=out;
+    var W=640,H=90,lo=76,hi=88;function X(v){return 20+(v-lo)/(hi-lo)*(W-40);}
+    var s="<svg viewBox='0 0 "+W+" "+H+"' width='100%'><line x1='20' y1='70' x2='"+(W-20)+"' y2='70' stroke='var(--border)'/>";
+    function bar(S,y,c,l){return "<line x1='"+X(S.lo)+"' y1='"+y+"' x2='"+X(S.hi)+"' y2='"+y+"' stroke='"+c+"' stroke-width='4'/><circle cx='"+X(S.m)+"' cy='"+y+"' r='5' fill='"+c+"'/><text x='"+X(S.lo)+"' y='"+(y-9)+"' font-size='11' fill='var(--text-secondary)'>"+l+"</text>";}
+    s+=bar(A,28,"#9aa4b5","A")+bar(B,52,"var(--accent)","B");
+    for(var v=76;v<=88;v+=2){s+="<text x='"+X(v)+"' y='86' text-anchor='middle' font-size='10' fill='var(--text-muted)'>"+v+"</text>";}
+    document.getElementById("st-fig").innerHTML=s+"</svg>";
+  }
+  ["st-n","st-sd","st-gap"].forEach(function(id){document.getElementById(id).addEventListener("input",run);});
+  document.getElementById("st-again").addEventListener("click",function(){seed++;run();});
+  run();
+})();
+
+</script>
+</body>
+</html>

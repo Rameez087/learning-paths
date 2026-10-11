@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 Project B: data defects in RAG | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Projects that produce an artifact</div>
+  <h1>6.2 Project B: data defects in RAG</h1>
+  <p class="subtitle">A benchmark that measures how upstream data problems damage a RAG system. Original enough to be interesting, small enough to finish.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Take a public question answering corpus, <strong>inject controlled defects</strong> (duplicates, stale documents, missing fields, schema drift) at several rates, hold the pipeline fixed and measure retrieval and answer quality. The artifact is a benchmark script, a results table and the degradation curves. Plan 8 to 12 weeks, after Project A.
+  </div>
+
+<h2>Design</h2>
+<h2>Project at a glance</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Question</button><button type="button" class="tab-btn" data-t="1">Method</button><button type="button" class="tab-btn" data-t="2">Measures</button><button type="button" class="tab-btn" data-t="3">Artifact</button></div><div class="tab-pane active" data-t="0"><p>How much does each type of data defect, at increasing rates, degrade retrieval recall and answer faithfulness for a fixed RAG pipeline, and how much can simple cleaning recover?</p></div><div class="tab-pane" data-t="1"><p>Public corpus with questions and known relevant documents. One fixed retriever, embedder, chunker and generator. Defect injectors written as small functions with a rate and a seed. Controls with zero defects.</p></div><div class="tab-pane" data-t="2"><p>Recall at k, MRR, faithfulness and answer relevance (Ragas), with seeds and intervals. Cost and runtime per condition.</p></div><div class="tab-pane" data-t="3"><p>Public repo, one command to rerun the benchmark, a results table, degradation curves and a short write-up.</p></div></div>
+<pre><code># repo layout
+rag-defects/
+  README.md            # claim, falsifier, one command to reproduce
+  environment.txt      # pinned versions
+  config/              # one yaml per experiment
+  injectors/           # duplicates.py, stale.py, missing_fields.py, drift.py
+  pipeline/            # fixed retriever + generator
+  eval/                # recall_at_k.py, ragas_eval.py
+  results/             # raw JSON per run + summary tables
+  report.md</code></pre>
+<h2>Milestones</h2>
+<div class="widget checklist" data-w="checklist" data-key="proj-b"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Corpus chosen and licence checked</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>Clean baseline pipeline runs and metrics reproduce on the control</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>First injector (duplicates) works at 0, 10, 20 and 40 percent</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>Remaining injectors added, one at a time</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>Five seeds per condition completed</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span>Degradation curves plotted with intervals</span></label><label class="cl-item"><input type="checkbox" data-i="6"><span>Simple cleaning step tested for recovery</span></label><label class="cl-item"><input type="checkbox" data-i="7"><span>Report written and repo published</span></label></div>
+<div class="callout"><div class="callout-label">Check novelty first</div>Before you commit weeks, spend two days on Google Scholar and arXiv searching for your exact question with several phrasings. Related work likely exists on data quality in RAG, so decide how yours differs, for example the specific defect types or the recovery analysis.</div>
+<h2>Scope check</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You want to test 6 defect types, 5 retrievers, 4 generators and 3 corpora. What should you do?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Pick the most complicated setup</button><button type="button" class="ch-opt" data-correct="true">Fix the retriever and generator, start with 2 defects on 1 corpus, and expand only if time allows</button><button type="button" class="ch-opt" data-correct="false">Run everything at once</button></div><div class="ch-explain">A narrow design that finishes beats a broad one that never does. Hold the pipeline fixed so the data effect is clear.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why hold the pipeline fixed while injecting defects?</div><div class="q-options"><button class="q-option" data-correct="false">Because retrievers cannot change</button><button class="q-option" data-correct="false">To make the benchmark run faster only</button><button class="q-option" data-correct="true">To isolate the effect of the data change</button></div><div class="q-explain">If several things vary, you cannot attribute degradation to the defect.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is the control condition?</div><div class="q-options"><button class="q-option" data-correct="false">A pipeline with the highest defect rate</button><button class="q-option" data-correct="false">A different dataset</button><button class="q-option" data-correct="true">The same pipeline with zero injected defects</button></div><div class="q-explain">The clean control provides the reference for measuring degradation.</div></div>
+<div class="q-block"><div class="q-prompt">3. What belongs in the artifact?</div><div class="q-options"><button class="q-option" data-correct="false">Only a slide deck</button><button class="q-option" data-correct="false">Only a tweet thread</button><button class="q-option" data-correct="true">Script, raw results, curves and a short write-up, runnable with one command</button></div><div class="q-explain">Reproducible code and results are what make it citable and checkable.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/2309.15217">Ragas: Automated Evaluation of Retrieval Augmented Generation</a>; <a href="https://arxiv.org/abs/2005.11401">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks (Lewis et al.)</a>; <a href="https://arxiv.org/pdf/2112.06409">Data Collection and Quality Challenges in Deep Learning (Whang et al.)</a></p>
+
+  <div class="pager">
+    <a href="6-1-project-a-reproduce-and-extend.html">&larr; 6.1 Project A: reproduce and extend one paper</a>
+    <a href="6-3-project-c-your-rag-evaluation-study.html">6.3 Project C: your RAG evaluation study &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

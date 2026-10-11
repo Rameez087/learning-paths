@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 The three-pass method | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Reading and mapping papers</div>
+  <h1>2.1 The three-pass method</h1>
+  <p class="subtitle">Reading a paper from the first word to the last is the slowest way to understand it. Keshav's method gets you the gist in minutes and the depth only when it is worth it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Read every paper in <strong>three passes</strong>. Pass one (5 to 10 minutes) decides whether the paper deserves more time. Pass two (up to an hour) lets you explain the paper and its evidence while skipping proofs. Pass three (hours) rebuilds the argument as if you were the author. Most papers should only ever get pass one.
+  </div>
+
+<h2>Why three passes</h2>
+<p>Keshav's short paper on reading is the most widely cited advice on the subject in computer science. Its central idea is that reading is a funnel. You cannot afford a deep read of everything, so each pass is a filter that decides whether the next one is worth your time. It also notes that most reviewers give a paper only one pass, which is a useful reminder of what your own abstract and introduction have to carry.</p>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Three pass reading funnel" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="202.7" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="111.33333333333333" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Pass 1: 5 to 10 min</text><line x1="214.7" y1="45" x2="235.7" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="238.7" y="20" width="202.7" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Pass 2: up to 1 hour</text><line x1="443.3" y1="45" x2="464.3" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="467.3" y="20" width="202.7" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="568.6666666666666" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Pass 3: several</text><text x="568.6666666666666" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">hours</text></svg><div class="figure-caption">Each pass is a filter. Most papers should stop after the first.</div></div>
+<h2>Walk through the passes</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>Pass 1: the bird's eye view</h3><p>Read the title, abstract and introduction. Read the section and subsection headings and ignore everything else. Read the conclusions. Glance at the references and tick the ones you already know.</p><p>You should now be able to answer the <strong>five Cs</strong>: <em>Category</em> (what type of paper is this), <em>Context</em> (which other papers and theory it relates to), <em>Correctness</em> (do the assumptions look valid), <em>Contributions</em> (what the main ones are) and <em>Clarity</em> (is it well written).</p></div><div class="st-step"><h3>Pass 2: the content, not the details</h3><p>Read with care but skip proofs. Study the figures, diagrams and tables closely. Check that axes are labelled, that results have error bars and that comparisons are fair. Mark references you have not read and might read next.</p><p>After this pass you should be able to summarise the paper and its main evidence to someone else.</p></div><div class="st-step"><h3>Pass 3: virtual re-implementation</h3><p>Recreate the paper in your head: make the same assumptions and work out the method yourself, then compare it with the paper. This is how you find hidden assumptions and the places where the authors glossed over a difficulty.</p><p>Do this only for the few papers that matter to your project, such as the one you will reproduce.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<h2>Pass 1 drill: the five Cs</h2>
+<p>Pick any paper and try this against the clock. If you cannot tick all five in ten minutes, that tells you something about the paper or about your background in the area.</p>
+<div class="widget checklist" data-w="checklist" data-key="five-cs"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Category: I can say whether this is a new method, an analysis, a benchmark, a system or a survey</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>Context: I can name two related papers or the area it sits in</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Correctness: the main assumptions look reasonable at first glance</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>Contributions: I can list the claimed contributions in my own words</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>Clarity: I could follow the introduction without rereading it</span></label></div>
+<div class="callout"><div class="callout-label">Budget your reading</div>Reading three to five recent papers on one topic is usually enough to map a subfield. For each, do pass one. Choose one or two for pass two. Choose a single paper for pass three. That ratio keeps you from drowning in PDFs.</div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What should you be able to answer after the first pass?</div><div class="q-options"><button class="q-option" data-correct="false">The exact hyperparameters used</button><button class="q-option" data-correct="false">Every proof in the paper</button><button class="q-option" data-correct="true">The five Cs: category, context, correctness, contributions and clarity</button></div><div class="q-explain">Pass one is a triage. It gives you enough to decide whether to continue, not enough to reproduce the work.</div></div>
+<div class="q-block"><div class="q-prompt">2. When is a full third pass worth the hours?</div><div class="q-options"><button class="q-option" data-correct="false">For every paper you download</button><button class="q-option" data-correct="true">For the one or two papers central to your own project, such as the paper you will reproduce</button><button class="q-option" data-correct="false">Never, because reading is enough</button></div><div class="q-explain">Pass three is expensive. It pays off when you need to reimplement or critique the work in depth.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why does Keshav's observation that reviewers often make one pass matter for your own writing?</div><div class="q-options"><button class="q-option" data-correct="false">Reviewers never read the experiments</button><button class="q-option" data-correct="false">It means papers should have no figures</button><button class="q-option" data-correct="true">Your abstract and introduction have to carry the whole message for a one pass reader</button></div><div class="q-explain">If a reader only gives you one pass, the title, abstract, headings and conclusions need to deliver the gist.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos561/papers/HowToRead05.pdf">How to Read a Paper (Keshav)</a></p>
+
+  <div class="pager">
+    <a href="../phase-01-how-research-works/1-3-venues-preprints-and-peer-review.html">&larr; 1.3 Venues, preprints and peer review</a>
+    <a href="2-2-finding-and-mapping-the-literature.html">2.2 Finding and mapping the literature &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

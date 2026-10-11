@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.3 Releasing code, data and preprints | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Writing and sharing</div>
+  <h1>7.3 Releasing code, data and preprints</h1>
+  <p class="subtitle">Releasing your work is what turns private effort into evidence others can check. It also needs a few decisions about licences, privacy and your employer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Publish a <strong>public repository</strong> with a clear README and one command to reproduce your main table, a <strong>licence</strong>, and documentation for any dataset you create. Post a <strong>preprint</strong> to make the work citable. Before anything is public, confirm it contains no employer data, code or confidential details, and check dataset licences.
+  </div>
+
+<h2>Release checklist</h2>
+<div class="widget checklist" data-w="checklist" data-key="release"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Repo has a README: claim, setup, one command to reproduce, expected runtime</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>A licence file (MIT or Apache 2.0 are common choices for code)</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Data source, version and licence documented; no redistribution of data you may not share</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>Seeds, configs and raw results included</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>A datasheet for any dataset you created</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span>No credentials, tokens, private paths or employer data anywhere in history</span></label><label class="cl-item"><input type="checkbox" data-i="6"><span>Employer or institution permission checked if any work knowledge was involved</span></label><label class="cl-item"><input type="checkbox" data-i="7"><span>Preprint written, with the repo link in the abstract or first page</span></label></div>
+<h2>Documents that build trust</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Datasheet</button><button type="button" class="tab-btn" data-t="1">Model card</button><button type="button" class="tab-btn" data-t="2">README</button></div><div class="tab-pane active" data-t="0"><p>Gebru and colleagues propose documenting datasets: why it was created, what it contains, how it was collected, known limitations and recommended uses. A short datasheet in your repo is a courtesy and a credibility signal.</p></div><div class="tab-pane" data-t="1"><p>Mitchell and colleagues propose model cards that state intended use, evaluation data and limits. Useful if you release a model.</p></div><div class="tab-pane" data-t="2"><p>The most read document. State the claim, show the results, give the single command. A reader should reproduce your main table in under an hour.</p></div></div>
+<div class="callout"><div class="callout-label">Preprints</div>arXiv lets you post quickly and get a citable record. arXiv requires an endorsement before your first submission and before a new category, so plan ahead. Check each venue's policy on preprints during review before posting.</div>
+<div class="callout"><div class="callout-label">Protect your employer</div>Never publish work code, schemas, client names or derived data, and ask before sharing anything built at work. Use public or synthetic data for every public result. When unsure, ask and get the answer in writing.</div>
+<h2>Safe to publish?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Your repo's git history contains a commit with a company connection string, later deleted.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Safe, since it was deleted</button><button type="button" class="ch-opt" data-correct="true">Not safe: the secret remains in history; rotate it and rewrite or start a clean repo</button><button type="button" class="ch-opt" data-correct="false">Safe if the repo is private</button></div><div class="ch-explain">Deleted files remain in git history. Rotate any exposed secret and publish from a clean history.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What belongs in the first README paragraph?</div><div class="q-options"><button class="q-option" data-correct="false">A list of tools</button><button class="q-option" data-correct="true">The claim and how to reproduce the main result</button><button class="q-option" data-correct="false">Your biography</button></div><div class="q-explain">Readers need to know what you claim and how to check it.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why document a dataset you built?</div><div class="q-options"><button class="q-option" data-correct="false">It makes it larger</button><button class="q-option" data-correct="false">It is legally required everywhere</button><button class="q-option" data-correct="true">So others know its origin, contents and limits</button></div><div class="q-explain">Datasheets support responsible reuse.</div></div>
+<div class="q-block"><div class="q-prompt">3. What must you check before publishing work related to your job?</div><div class="q-options"><button class="q-option" data-correct="false">That it is long</button><button class="q-option" data-correct="true">That it contains no employer data and that you have permission</button><button class="q-option" data-correct="false">Nothing</button></div><div class="q-explain">Confidentiality obligations apply to code, data and schemas.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/1803.09010">Datasheets for Datasets (Gebru et al.)</a>; <a href="https://arxiv.org/abs/1810.03993">Model Cards for Model Reporting (Mitchell et al.)</a>; <a href="https://info.arxiv.org/help/endorsement.html">arXiv endorsement policy</a></p>
+
+  <div class="pager">
+    <a href="7-2-figures-tables-and-honest-results.html">&larr; 7.2 Figures, tables and honest results</a>
+    <a href="../phase-08-getting-into-research-groups/8-1-finding-and-vetting-groups.html">8.1 Finding and vetting research groups &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

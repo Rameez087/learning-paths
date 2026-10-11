@@ -614,3 +614,12 @@ body.has-sidebar .topnav { padding-left: 20px; }
 .track-card.sysdesign:hover { border-color: #f5a623; }
 .track-card.sysdesign .track-card-icon { background: rgba(245,166,35,0.14); border: 1px solid #f5a623; }
 .track-card.sysdesign .track-card-cta { color: #f5c168; }
+
+.track-card.research::before { background: linear-gradient(135deg, rgba(244,114,182,0.14), transparent 65%); }
+.track-card.research:hover { border-color: #f472b6; }
+.track-card.research .track-card-icon { background: rgba(244,114,182,0.14); border: 1px solid #f472b6; }
+.track-card.research .track-card-cta { color: #f9a8d4; }
+.track-card.azure::before { background: linear-gradient(135deg, rgba(34,184,207,0.14), transparent 65%); }
+.track-card.azure:hover { border-color: #22b8cf; }
+.track-card.azure .track-card-icon { background: rgba(34,184,207,0.14); border: 1px solid #22b8cf; }
+.track-card.azure .track-card-cta { color: #7ddcea; }

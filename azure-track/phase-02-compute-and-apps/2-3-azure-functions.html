@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 Azure Functions | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Compute and apps</div>
+  <h1>2.3 Azure Functions</h1>
+  <p class="subtitle">Small pieces of code that run when something happens: a request, a message, a file, a timer. You pay for what runs and skip the servers.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Functions</strong> runs code in response to <strong>triggers</strong> (HTTP, timer, queue, blob, event hub) with <strong>bindings</strong> that connect input and output without boilerplate. Hosting plans include <strong>Consumption</strong>, <strong>Flex Consumption</strong>, <strong>Premium</strong> and <strong>Dedicated</strong>, trading cost, cold start behaviour and networking features.
+  </div>
+
+<h2>Triggers and bindings</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Trigger</th><th>Runs when</th><th>Typical use</th></tr></thead><tbody><tr><td>HTTP</td><td>A request arrives</td><td>Small APIs and webhooks</td></tr><tr><td>Timer</td><td>On a schedule</td><td>Nightly jobs, clean up</td></tr><tr><td>Queue or Service Bus</td><td>A message arrives</td><td>Background processing</td></tr><tr><td>Blob</td><td>A file is added or changed</td><td>Process uploads</td></tr><tr><td>Event Hub or Event Grid</td><td>An event arrives</td><td>Streams and reactions to Azure events</td></tr></tbody></table></div>
+<p>A <strong>binding</strong> declares an input or output, for example write a result to a queue or read a blob, so your code focuses on logic. Hosting plans differ in scale, networking and cold starts, so check current limits and pricing before choosing.</p>
+<pre><code># Python v2 programming model: a timer function writing to a queue
+import azure.functions as func
+
+app = func.FunctionApp()
+
+@app.timer_trigger(schedule="0 */5 * * * *", arg_name="timer")
+@app.queue_output(arg_name="out", queue_name="jobs", connection="AzureWebJobsStorage")
+def every_five_minutes(timer: func.TimerRequest, out: func.Out[str]):
+    out.set('{"task": "refresh"}')</code></pre>
+<h2>Choosing a hosting plan</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Consumption</button><button type="button" class="tab-btn" data-t="1">Flex Consumption</button><button type="button" class="tab-btn" data-t="2">Premium</button><button type="button" class="tab-btn" data-t="3">Dedicated</button></div><div class="tab-pane active" data-t="0"><p>Scales to zero and bills per execution. Cheapest for sporadic work. Cold starts and limited networking options.</p></div><div class="tab-pane" data-t="1"><p>A newer serverless option with faster scaling, virtual network support and more control over instance sizes. Check the current regions and features.</p></div><div class="tab-pane" data-t="2"><p>Pre-warmed instances, virtual network integration and longer runtimes. Higher baseline cost.</p></div><div class="tab-pane" data-t="3"><p>Run on an App Service plan you already pay for. Predictable cost and full platform features.</p></div></div>
+<div class="callout"><div class="callout-label">Keep functions small and idempotent</div>Triggers can fire more than once (retries, redelivery). Design functions to be safe to run twice. For long workflows use Durable Functions or an orchestrator rather than one huge function.</div>
+<h2>Is Functions a fit?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Process each image uploaded to a storage container and write a thumbnail.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">No: it needs a VM</button><button type="button" class="ch-opt" data-correct="false">No: Functions cannot read blobs</button><button type="button" class="ch-opt" data-correct="true">Yes: a blob triggered function</button></div><div class="ch-explain">Blob triggers react to new files, and the work is short and event driven.</div></div><div class="ch-item"><div class="ch-q">A long running service that holds persistent connections and needs custom OS packages.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Yes: Functions is ideal</button><button type="button" class="ch-opt" data-correct="true">Probably not: use Container Apps, App Service or a VM</button><button type="button" class="ch-opt" data-correct="false">Use a timer trigger</button></div><div class="ch-explain">Functions suits short, event driven work. Long lived services fit other platforms better.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What starts a function running?</div><div class="q-options"><button class="q-option" data-correct="false">A binding</button><button class="q-option" data-correct="false">A subscription</button><button class="q-option" data-correct="true">A trigger</button></div><div class="q-explain">Triggers define what causes execution.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why should functions be idempotent?</div><div class="q-options"><button class="q-option" data-correct="false">Azure forbids repeats</button><button class="q-option" data-correct="false">It saves memory</button><button class="q-option" data-correct="true">Triggers may deliver the same event more than once</button></div><div class="q-explain">Retries and redelivery mean duplicates can happen.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which plan type scales to zero and bills per execution?</div><div class="q-options"><button class="q-option" data-correct="false">Premium always warm</button><button class="q-option" data-correct="false">Dedicated</button><button class="q-option" data-correct="true">Consumption</button></div><div class="q-explain">Consumption is the classic pay per use serverless plan.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview">Azure Functions overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale">Azure Functions hosting options (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="2-2-app-service.html">&larr; 2.2 App Service</a>
+    <a href="2-4-containers-aci-container-apps-aks.html">2.4 Containers: ACI, Container Apps and AKS &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

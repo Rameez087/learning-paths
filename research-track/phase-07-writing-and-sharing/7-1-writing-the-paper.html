@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.1 Writing the paper | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Writing and sharing</div>
+  <h1>7.1 Writing the paper</h1>
+  <p class="subtitle">Writing is not a final chore. It is how you discover whether you have a result. Draft the abstract and the main results figure first.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Write in this order: <strong>main results figure and table</strong>, abstract, method, experiments, introduction, related work, limitations. A good abstract has four moves: context, gap, what you did, what you found. A reader making a single pass should still get the whole message from the title, abstract, headings and figures.
+  </div>
+
+<h2>The four move abstract</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Move</th><th>Question it answers</th><th>Example</th></tr></thead><tbody><tr><td>Context</td><td>What area, and why does it matter?</td><td>Retrieval augmented generation depends on the quality of its source documents.</td></tr><tr><td>Gap</td><td>What is unknown or broken?</td><td>How specific data defects degrade retrieval is rarely measured.</td></tr><tr><td>What we did</td><td>What did you do, concretely?</td><td>We inject four defect types at controlled rates into a public corpus and measure retrieval and answer quality over five seeds.</td></tr><tr><td>What we found</td><td>What is the result, with a number?</td><td>Duplicates at 20 percent lower recall at 5 by 4 points; simple deduplication recovers most of the loss. Code is released.</td></tr></tbody></table></div>
+<h2>Try it: check your abstract</h2>
+<p>Paste a draft abstract. The checklist flags common problems. It is a crude set of rules, not a judge of quality, and nothing you type leaves your browser.</p>
+<div class="widget"><textarea class="sim-ta" id="ab-text" placeholder="Paste your abstract here..."></textarea><div class="sim-out" id="ab-out"></div></div>
+<h2>Order of writing</h2>
+<ol><li>Results figure and main table: the evidence</li><li>Abstract: the claim in four sentences</li><li>Method: enough to reimplement</li><li>Experiments and ablations</li><li>Introduction: problem, gap, contributions list</li><li>Related work: where you sit among neighbours</li><li>Limitations and conclusion: be honest</li></ol>
+<h2>Which sentence is stronger?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Pick the better result sentence for an abstract.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Our novel approach achieves excellent results on all benchmarks</button><button type="button" class="ch-opt" data-correct="false">Results were very promising</button><button type="button" class="ch-opt" data-correct="true">Duplicate documents at 20 percent reduce recall at 5 by 4 points (95 percent interval 2.8 to 5.1) over five seeds</button></div><div class="ch-explain">Concrete numbers, an interval and a seed count let the reader check. The others are empty claims.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which should you write first?</div><div class="q-options"><button class="q-option" data-correct="false">The acknowledgements</button><button class="q-option" data-correct="true">The main results figure and table</button><button class="q-option" data-correct="false">The related work section</button></div><div class="q-explain">The evidence determines what the rest of the paper can claim.</div></div>
+<div class="q-block"><div class="q-prompt">2. What are the four moves of an abstract?</div><div class="q-options"><button class="q-option" data-correct="false">Title, author, date, venue</button><button class="q-option" data-correct="false">Method, code, licence, funding</button><button class="q-option" data-correct="true">Context, gap, what you did, what you found</button></div><div class="q-explain">This structure delivers the claim to a one pass reader.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why avoid words like novel and groundbreaking?</div><div class="q-options"><button class="q-option" data-correct="false">They are banned by venues</button><button class="q-option" data-correct="false">They lengthen the abstract</button><button class="q-option" data-correct="true">They claim without evidence; numbers and specifics convince</button></div><div class="q-explain">Readers trust specific results, not adjectives.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos561/papers/HowToRead05.pdf">How to Read a Paper (Keshav)</a>; <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a></p>
+
+  <div class="pager">
+    <a href="../phase-06-projects-that-produce-an-artifact/6-4-project-d-lineage-capture-benchmark.html">&larr; 6.4 Project D: a lineage capture benchmark</a>
+    <a href="7-2-figures-tables-and-honest-results.html">7.2 Figures, tables and honest results &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var ta=document.getElementById("ab-text");
+  function upd(){
+    var t=ta.value.trim();var w=t?t.split(/\s+/).length:0;
+    var checks=[
+      ["Length 100 to 220 words",w>=100&&w<=220,w+" words"],
+      ["Contains a concrete number or result",/\d/.test(t),""],
+      ["States the problem or gap",/(problem|gap|challenge|however|fail|lack|despite|unclear)/i.test(t),""],
+      ["States what you did",/\b(we|this paper|this work|i)\b.*(propose|present|introduce|show|study|evaluate|reproduce|build|measure|find)/i.test(t),""],
+      ["Mentions code, data or release",/(code|repository|repo|dataset|open source|released|available)/i.test(t),""],
+      ["No empty hype words",!/(novel|state-of-the-art|groundbreaking|revolutionary|very|extremely)/i.test(t),"avoid: novel, state-of-the-art, groundbreaking"]
+    ];
+    var n=checks.filter(function(c){return c[1];}).length;
+    var h="";checks.forEach(function(c){h+=(c[1]?"<span class='badge-ok'>&#10003;</span> ":"<span class='badge-no'>&#10007;</span> ")+c[0]+(c[2]?" <span style='color:var(--text-muted)'>("+c[2]+")</span>":"")+"<br>";});
+    document.getElementById("ab-out").innerHTML=h+"<br>Score: <b>"+n+" / "+checks.length+"</b> (a crude checklist, not a judge of quality)";
+  }
+  ta.addEventListener("input",upd);upd();
+})();
+
+</script>
+</body>
+</html>

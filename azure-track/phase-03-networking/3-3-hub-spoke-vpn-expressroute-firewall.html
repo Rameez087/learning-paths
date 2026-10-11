@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.3 Hub and spoke, VPN, ExpressRoute and Firewall | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Networking</div>
+  <h1>3.3 Hub and spoke, VPN, ExpressRoute and Firewall</h1>
+  <p class="subtitle">Real organisations connect many networks. Hub and spoke is the common shape, and a few services build the links.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    In <strong>hub and spoke</strong>, a central hub VNet holds shared services (firewall, gateways, DNS), and workload <strong>spoke</strong> VNets peer to it. <strong>VNet peering</strong> connects networks privately. <strong>VPN Gateway</strong> links over the internet with encryption, <strong>ExpressRoute</strong> is a private circuit through a provider, and <strong>Azure Firewall</strong> inspects and filters traffic centrally. <strong>Virtual WAN</strong> manages large hub networks for you.
+  </div>
+
+<h2>The shape</h2>
+<div class="figure"><svg viewBox="0 0 680 140" width="100%" role="img" aria-label="Hub and spoke layout" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10.0" y="6" width="210.7" height="128" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="115.3" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">On premises</text><text x="115.3" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Office or datacentre</text><text x="115.3" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">VPN or ExpressRoute</text><rect x="234.7" y="6" width="210.7" height="128" rx="8" fill="var(--surface-2)" stroke="var(--accent)"/><text x="340.0" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-text)">Hub VNet</text><text x="340.0" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Firewall</text><text x="340.0" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Gateway</text><text x="340.0" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">DNS resolver</text><text x="340.0" y="110" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Bastion</text><rect x="459.3" y="6" width="210.7" height="128" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="564.7" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">Spoke VNets</text><text x="564.7" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Workload A</text><text x="564.7" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Workload B</text><text x="564.7" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Peered to the hub</text></svg><div class="figure-caption">Spokes talk to each other and to on premises through the hub, where traffic can be inspected.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Service</th><th>Use it to</th><th>Watch out for</th></tr></thead><tbody><tr><td>VNet peering</td><td>Connect two VNets with low latency</td><td>Not transitive by default. Spoke to spoke needs routing through the hub</td></tr><tr><td>VPN Gateway</td><td>Encrypted tunnel to on premises over the internet</td><td>Throughput limits by SKU, takes time to deploy</td></tr><tr><td>ExpressRoute</td><td>Private, predictable connection through a provider</td><td>Cost and lead time, plan a backup path</td></tr><tr><td>Azure Firewall</td><td>Central filtering, FQDN rules, logging</td><td>Meaningful fixed cost, needs user defined routes to steer traffic</td></tr><tr><td>Azure Bastion</td><td>Browser based RDP and SSH without public IPs</td><td>Priced per hour, needs its own subnet</td></tr><tr><td>Virtual WAN</td><td>Managed hubs for many branches and VNets</td><td>Different operating model from hand built hubs</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Transitive routing</div>Peering A to hub and B to hub does not let A reach B. You add routing through a firewall or gateway in the hub with user defined routes, or use Virtual WAN which handles it.</div>
+<h2>Choose the link</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A small team needs an encrypted link from one office to Azure at modest bandwidth.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Public IPs on every VM</button><button type="button" class="ch-opt" data-correct="true">Site to site VPN Gateway</button><button type="button" class="ch-opt" data-correct="false">ExpressRoute with a dedicated circuit</button></div><div class="ch-explain">VPN is the cheaper, faster way to start.</div></div><div class="ch-item"><div class="ch-q">A bank needs predictable latency and private connectivity to Azure.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">VNet peering</button><button type="button" class="ch-opt" data-correct="false">Point to site VPN</button><button type="button" class="ch-opt" data-correct="true">ExpressRoute</button></div><div class="ch-explain">ExpressRoute is a private circuit and gives predictable performance.</div></div><div class="ch-item"><div class="ch-q">Admins need to reach VMs without exposing RDP or SSH to the internet.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Give VMs public IPs</button><button type="button" class="ch-opt" data-correct="false">Open port 22 to all</button><button type="button" class="ch-opt" data-correct="true">Azure Bastion</button></div><div class="ch-explain">Bastion proxies sessions over TLS from the portal.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Is VNet peering transitive by default?</div><div class="q-options"><button class="q-option" data-correct="false">Yes</button><button class="q-option" data-correct="false">Only within one region</button><button class="q-option" data-correct="false">Only with a firewall</button><button class="q-option" data-correct="true">No</button></div><div class="q-explain">Spoke to spoke traffic needs routing through the hub.</div></div>
+<div class="q-block"><div class="q-prompt">2. What goes in the hub?</div><div class="q-options"><button class="q-option" data-correct="false">Every workload</button><button class="q-option" data-correct="true">Shared services such as firewall, gateways and DNS</button><button class="q-option" data-correct="false">Only databases</button><button class="q-option" data-correct="false">Nothing</button></div><div class="q-explain">The hub centralises common network services.</div></div>
+<div class="q-block"><div class="q-prompt">3. What is ExpressRoute?</div><div class="q-options"><button class="q-option" data-correct="false">A DNS service</button><button class="q-option" data-correct="false">A load balancer</button><button class="q-option" data-correct="false">An encrypted internet tunnel</button><button class="q-option" data-correct="true">A private connection to Azure through a connectivity provider</button></div><div class="q-explain">It does not traverse the public internet.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/architecture/networking/architecture/hub-spoke">Hub-spoke network topology (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/firewall/overview">Azure Firewall overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-about">What is Azure Virtual WAN (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="3-2-private-endpoints-and-dns.html">&larr; 3.2 Private endpoints and DNS</a>
+    <a href="3-4-load-balancing-options.html">3.4 Load balancing options &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

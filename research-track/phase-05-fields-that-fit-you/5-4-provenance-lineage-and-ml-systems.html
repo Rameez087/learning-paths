@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.4 Provenance, lineage and ML systems | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 &middot; Fields that fit you</div>
+  <h1>5.4 Provenance, lineage and ML systems</h1>
+  <p class="subtitle">When existing lineage tools hit a practical limit, that gap is where systems research starts.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Lineage</strong> records where data came from and how it was derived, at table, column or row level. Finer granularity is more useful and harder to capture. <strong>ML systems</strong> research asks what breaks when pipelines retrain models on changing data. Sculley and colleagues showed that data dependencies are a major source of hidden technical debt in ML systems.
+  </div>
+
+<h2>Lineage granularity</h2>
+<div class="figure"><svg viewBox="0 0 680 218" width="100%" role="img" aria-label="Lineage granularity from coarse to fine" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10" y="5" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="25" font-size="12" font-weight="700" fill="var(--text)">Job level</text><text x="26" y="42" font-size="10.5" fill="var(--text-secondary)">Which pipeline produced which output (easy, coarse)</text><rect x="10" y="57" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="77" font-size="12" font-weight="700" fill="var(--text)">Table level</text><text x="26" y="94" font-size="10.5" fill="var(--text-secondary)">Which tables fed which tables</text><rect x="10" y="109" width="660" height="46" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="26" y="129" font-size="12" font-weight="700" fill="var(--text)">Column level</text><text x="26" y="146" font-size="10.5" fill="var(--text-secondary)">Which source columns fed each derived column (harder)</text><rect x="10" y="161" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="181" font-size="12" font-weight="700" fill="var(--text)">Row or cell level</text><text x="26" y="198" font-size="10.5" fill="var(--text-secondary)">Which input rows produced each output value (hardest, costly)</text></svg><div class="figure-caption">Column level is where open integrations often have gaps for custom transformations.</div></div>
+<h2>Research angles</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Capture quality</button><button type="button" class="tab-btn" data-t="1">Cost of capture</button><button type="button" class="tab-btn" data-t="2">Using lineage</button></div><div class="tab-pane active" data-t="0"><p>How completely do OpenLineage style integrations capture column level lineage for PySpark transformations, joins and UDFs? Benchmark against known ground truth on public or synthetic pipelines.</p></div><div class="tab-pane" data-t="1"><p>How much overhead does finer granularity add, and can sampling or static analysis reduce it?</p></div><div class="tab-pane" data-t="2"><p>Can lineage help debug data defects faster, or find which upstream change broke a model? Measure time to root cause with and without it.</p></div></div>
+<h2>ML systems questions</h2>
+<ul><li>What breaks when a pipeline retrains a model on drifting data, and how soon do monitors notice?</li><li>Which data dependencies create hidden coupling between models and upstream systems (Sculley et al.)?</li><li>How should pipelines validate data before training to avoid silent failures?</li></ul>
+<div class="callout"><div class="callout-label">Protect your employer</div>If you built a lineage tool at work, do not publish it or any client details without permission. A public benchmark on synthetic PySpark pipelines gives you the same research question with no confidentiality risk.</div>
+<h2>Which granularity?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You need to know which source column contributed to a wrong figure in a dashboard measure.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">No lineage is needed</button><button type="button" class="ch-opt" data-correct="true">Column level lineage</button><button type="button" class="ch-opt" data-correct="false">Job level lineage</button></div><div class="ch-explain">Job or table level shows which pipeline ran, not which column caused the error.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does column level lineage record?</div><div class="q-options"><button class="q-option" data-correct="false">Which jobs ran last night</button><button class="q-option" data-correct="true">Which source columns each derived column was computed from</button><button class="q-option" data-correct="false">Which users queried a table</button></div><div class="q-explain">It traces derivations at the column level, finer than table or job lineage.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why does finer lineage granularity cost more?</div><div class="q-options"><button class="q-option" data-correct="false">Columns are bigger than tables</button><button class="q-option" data-correct="true">It must trace how each value was produced through transformations</button><button class="q-option" data-correct="false">Tables have no lineage</button></div><div class="q-explain">Capturing derivation inside transformations needs deeper instrumentation or analysis.</div></div>
+<div class="q-block"><div class="q-prompt">3. How can you study lineage without exposing employer data?</div><div class="q-options"><button class="q-option" data-correct="false">Publish the work code anyway</button><button class="q-option" data-correct="true">Use public or synthetic pipelines for a benchmark</button><button class="q-option" data-correct="false">Avoid the topic</button></div><div class="q-explain">Public or synthetic data keeps the research question and removes confidentiality risk.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://papers.nips.cc/paper/2015/hash/86df7dcfd896fcaf2674f757a2463eba-Abstract.html">Hidden Technical Debt in Machine Learning Systems (Sculley et al.)</a>; <a href="https://openlineage.io/">OpenLineage</a>; <a href="https://arxiv.org/abs/2301.04819">Data-centric AI: Perspectives and Challenges (Zha et al.)</a></p>
+
+  <div class="pager">
+    <a href="5-3-rag-evaluation-and-data-defects.html">&larr; 5.3 RAG evaluation and data defects</a>
+    <a href="../phase-06-projects-that-produce-an-artifact/6-1-project-a-reproduce-and-extend.html">6.1 Project A: reproduce and extend one paper &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

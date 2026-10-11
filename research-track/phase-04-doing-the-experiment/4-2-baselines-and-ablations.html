@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 Baselines and ablations | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Doing the experiment</div>
+  <h1>4.2 Baselines and ablations</h1>
+  <p class="subtitle">A result means nothing until you say what it is better than. Baselines set the bar, and ablations show which part of your idea earned the gain.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Always compare against the <strong>simplest strong baseline</strong> that could explain your gain, tuned as carefully as your own method. Then run <strong>ablations</strong>: remove one component at a time and see what you lose. If a simple baseline matches your result, that is a finding worth reporting, not a failure.
+  </div>
+
+<h2>Why simple baselines matter</h2>
+<p>Many published gains shrink or vanish when the baseline is tuned as hard as the new method. Lipton and Steinhardt describe, among other troubling trends, failure to identify the source of empirical gains. Starting with the simplest model that could do the job tells you how much headroom there is, and the comparison protects you from crediting a clever idea for what a good learning rate did.</p>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Task</th><th>Simple baseline to try first</th></tr></thead><tbody><tr><td>Text retrieval</td><td>BM25 keyword search</td></tr><tr><td>Classification</td><td>Logistic regression on simple features</td></tr><tr><td>Entity matching</td><td>String similarity with a threshold</td></tr><tr><td>Time series</td><td>Predict the last value or a seasonal average</td></tr><tr><td>Cleaning rules</td><td>A hand written rule set</td></tr></tbody></table></div>
+<h2>Read an ablation table</h2>
+<div class="figure"><svg viewBox="0 0 680 164" width="100%" role="img" aria-label="Bar chart of ablation results by removed component" style="font-family:-apple-system,Segoe UI,sans-serif"><text x="10" y="23" font-size="11" fill="var(--text-secondary)">Full method</text><rect x="190" y="12" width="350.5" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><text x="548.5" y="24" font-size="11" font-weight="600" fill="var(--text)">78.4 </text><text x="10" y="53" font-size="11" fill="var(--text-secondary)">Without component A</text><rect x="190" y="42" width="348.3" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><text x="546.3" y="54" font-size="11" font-weight="600" fill="var(--text)">77.9 </text><text x="10" y="83" font-size="11" fill="var(--text-secondary)">Without component B</text><rect x="190" y="72" width="318.3" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><text x="516.3" y="84" font-size="11" font-weight="600" fill="var(--text)">71.2 </text><text x="10" y="113" font-size="11" fill="var(--text-secondary)">Without component C</text><rect x="190" y="102" width="349.2" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><text x="547.2" y="114" font-size="11" font-weight="600" fill="var(--text)">78.1 </text><text x="10" y="143" font-size="11" fill="var(--text-secondary)">Baseline (simple)</text><rect x="190" y="132" width="315.2" height="16" rx="3" fill="var(--accent)" opacity="0.85"/><text x="513.2" y="144" font-size="11" font-weight="600" fill="var(--text)">70.5 </text></svg><div class="figure-caption">Illustrative ablation, made-up numbers. Removing B costs the most, so B carries the gain. A and C barely matter.</div></div>
+<h2>What does the table say?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Using the figure above: which component should the paper credit for most of the improvement?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">All components equally</button><button type="button" class="ch-opt" data-correct="false">Component A, because it is listed first</button><button type="button" class="ch-opt" data-correct="true">Component B, because removing it drops performance close to the baseline</button></div><div class="ch-explain">Removing B takes the score from 78.4 to 71.2, nearly the baseline, so B is responsible for most of the gain.</div></div><div class="ch-item"><div class="ch-q">Removing a component changes the score by 0.1 points across seeds that vary by 0.5. What can you say?</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">The experiment must be rerun with fewer seeds</button><button type="button" class="ch-opt" data-correct="true">The effect is within noise, so you cannot claim the component helps</button><button type="button" class="ch-opt" data-correct="false">The component is crucial</button></div><div class="ch-explain">Differences smaller than seed to seed variance are not evidence. This links back to 3.2.</div></div></div>
+<h2>A fair comparison</h2>
+<div class="widget checklist" data-w="checklist" data-key="fair-cmp"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Baseline gets the same tuning budget as the new method</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>Same data splits, preprocessing and metrics for every method</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Several seeds for each, with spread reported</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>At least one ablation per claimed component</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>A trivial or simple model is included as a floor</span></label></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why start with a simple baseline?</div><div class="q-options"><button class="q-option" data-correct="false">It makes your method look worse</button><button class="q-option" data-correct="true">It shows how much of your gain a simple method already explains</button><button class="q-option" data-correct="false">It is required by every venue's template</button></div><div class="q-explain">If a simple baseline matches your method, the extra complexity is not justified.</div></div>
+<div class="q-block"><div class="q-prompt">2. What does an ablation do?</div><div class="q-options"><button class="q-option" data-correct="false">Replaces the metric</button><button class="q-option" data-correct="false">Adds random noise to the data</button><button class="q-option" data-correct="true">Removes one component at a time to see what each contributes</button></div><div class="q-explain">Ablations attribute the improvement to specific components.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which practice makes a comparison unfair?</div><div class="q-options"><button class="q-option" data-correct="false">Using the same splits</button><button class="q-option" data-correct="false">Reporting spread across seeds</button><button class="q-option" data-correct="true">Heavily tuning your method and leaving the baseline at defaults</button></div><div class="q-explain">Unequal tuning is a common way gains get inflated.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/1807.03341">Troubling Trends in ML Scholarship (Lipton, Steinhardt)</a>; <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a>; <a href="https://github.com/dorianbrown/rank_bm25">Rank-bm25 baseline library</a></p>
+
+  <div class="pager">
+    <a href="4-1-asking-a-falsifiable-question.html">&larr; 4.1 Asking a falsifiable question</a>
+    <a href="4-3-reproducibility-and-tracking.html">4.3 Reproducibility and tracking &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

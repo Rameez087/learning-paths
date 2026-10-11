@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.3 Cosmos DB | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Storage and databases</div>
+  <h1>4.3 Cosmos DB</h1>
+  <p class="subtitle">Cosmos DB is a globally distributed NoSQL database. You design for the partition key, or you pay for it.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Cosmos DB</strong> stores JSON style items in containers and is billed in <strong>request units (RU)</strong>, a normalised cost of each operation. Data is split into <strong>logical partitions</strong> by the <strong>partition key</strong> you choose. A good key spreads data and requests evenly, and lets most queries target a single partition. You can pick from five <strong>consistency levels</strong> between strong and eventual.
+  </div>
+
+<h2>Partition key thinking</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Property</th><th>Good key</th><th>Bad key</th></tr></thead><tbody><tr><td>Cardinality</td><td>Many distinct values (user id, tenant id)</td><td>A few values (country with 3 values, status)</td></tr><tr><td>Distribution</td><td>Requests spread evenly</td><td>One value gets most traffic (hot partition)</td></tr><tr><td>Query fit</td><td>Most queries filter on it</td><td>Queries fan out across all partitions (expensive)</td></tr></tbody></table></div>
+<h2>Consistency levels</h2>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Consistency spectrum" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Strong</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Bounded</text><text x="202.79999999999998" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">staleness</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Session</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="477.2" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Consistent</text><text x="477.2" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">prefix</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Eventual</text></svg><div class="figure-caption">Session is the default and fits most apps. Stronger means higher latency and cost, weaker means more speed and availability.</div></div>
+<div class="callout"><div class="callout-label">RU thinking</div>Point reads by id and partition key are the cheapest operation. Cross partition queries cost more RUs. Model your data around your access patterns, often denormalising, rather than copying a relational design.</div>
+<p>Capacity can be provisioned throughput, autoscale, or serverless for spiky small workloads. Cosmos DB also offers vector search for AI applications. Check current feature support per API before relying on it.</p>
+<h2>Is Cosmos DB right?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Per user profile documents read by user id at global scale, with low latency.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Blob storage</button><button type="button" class="ch-opt" data-correct="false">A single SQL table</button><button type="button" class="ch-opt" data-correct="true">Cosmos DB partitioned by user id</button></div><div class="ch-explain">Point reads by key on a high cardinality partition key are ideal.</div></div><div class="ch-item"><div class="ch-q">Heavy relational reporting with many joins across tables.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Queues</button><button type="button" class="ch-opt" data-correct="false">Cosmos DB with cross partition joins</button><button type="button" class="ch-opt" data-correct="true">Azure SQL or a warehouse</button></div><div class="ch-explain">Relational engines handle joins and aggregation better.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is an RU?</div><div class="q-options"><button class="q-option" data-correct="false">A region unit</button><button class="q-option" data-correct="false">A replication unit</button><button class="q-option" data-correct="false">A role</button><button class="q-option" data-correct="true">A normalised unit of cost for a database operation</button></div><div class="q-explain">Request units measure throughput consumed.</div></div>
+<div class="q-block"><div class="q-prompt">2. What makes a good partition key?</div><div class="q-options"><button class="q-option" data-correct="false">A timestamp only</button><button class="q-option" data-correct="true">High cardinality, even traffic and matches common queries</button><button class="q-option" data-correct="false">The same value everywhere</button><button class="q-option" data-correct="false">A boolean field</button></div><div class="q-explain">That avoids hot partitions and fan out queries.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which operation is cheapest?</div><div class="q-options"><button class="q-option" data-correct="false">A join</button><button class="q-option" data-correct="false">A cross partition query</button><button class="q-option" data-correct="false">A full scan</button><button class="q-option" data-correct="true">A point read by id and partition key</button></div><div class="q-explain">Direct key lookups cost the least.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/cosmos-db/introduction">Azure Cosmos DB introduction (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/cosmos-db/partitioning-overview">Partitioning in Azure Cosmos DB (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="4-2-azure-sql.html">&larr; 4.2 Azure SQL</a>
+    <a href="4-4-postgresql-pgvector-choosing-a-database.html">4.4 PostgreSQL, pgvector and choosing a database &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.5 Compute budgets and cheap experiments | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Doing the experiment</div>
+  <h1>4.5 Compute budgets and cheap experiments</h1>
+  <p class="subtitle">You do not need a cluster for a first paper. You need to design experiments small enough to repeat many times.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Plan your <strong>compute budget</strong> before you start: configurations times seeds times minutes per run. Shrink the problem until a full experiment takes hours, not weeks. Use subsets, smaller models and cached features. Many strong reproductions and benchmark papers run on a laptop or a free notebook service, but check each provider's current limits.
+  </div>
+
+<h2>Try it: will your experiment fit?</h2>
+<p>Enter your plan. The page estimates total runs and wall clock time. Experiments that cannot be repeated several times are not good first projects.</p>
+<div class="widget">
+<div class="sim-row"><label>Configurations to compare</label><input type="range" id="bg-cfg" min="1" max="40" value="6"><span id="bg-cfg-v"></span></div>
+<div class="sim-row"><label>Seeds per configuration</label><input type="range" id="bg-seeds" min="1" max="10" value="5"><span id="bg-seeds-v"></span></div>
+<div class="sim-row"><label>Minutes per run</label><input type="range" id="bg-min" min="1" max="120" value="10"><span id="bg-min-v"></span></div>
+<div class="sim-row"><label>Parallel jobs</label><input type="range" id="bg-par" min="1" max="8" value="1"><span id="bg-par-v"></span></div>
+<div class="sim-out" id="bg-out"></div></div>
+<h2>Ways to shrink an experiment</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Technique</th><th>How it saves time</th><th>Caveat</th></tr></thead><tbody><tr><td>Subsample the data</td><td>Fewer rows per run</td><td>Say so, and check the trend holds at two sizes</td></tr><tr><td>Smaller model</td><td>Faster training and inference</td><td>Conclusions may not transfer to larger models</td></tr><tr><td>Cache features and embeddings</td><td>Compute expensive steps once</td><td>Invalidate the cache when inputs change</td></tr><tr><td>Fewer configurations</td><td>Narrower grid</td><td>Choose the grid by reasoning, not by trying everything</td></tr><tr><td>API rather than training</td><td>No training cost for evaluation work</td><td>Watch per call cost and model version changes</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Report your compute</div>The NeurIPS checklist asks authors to describe the compute used. Reporting your hardware and total hours is part of honest reproducibility, and it tells readers your result is within reach of others.</div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why plan compute before starting?</div><div class="q-options"><button class="q-option" data-correct="false">Providers require a plan</button><button class="q-option" data-correct="false">It makes the paper longer</button><button class="q-option" data-correct="true">Experiments that cannot be repeated several times are weak evidence and may never finish</button></div><div class="q-explain">Repeating runs across seeds is essential, so total cost must be affordable.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is a risk of subsampling data?</div><div class="q-options"><button class="q-option" data-correct="false">It always breaks the metric</button><button class="q-option" data-correct="false">It makes results unreproducible</button><button class="q-option" data-correct="true">Conclusions may not hold at full scale, so check the trend at more than one size</button></div><div class="q-explain">Subsampling is fine if you state it and test whether the effect holds across sizes.</div></div>
+<div class="q-block"><div class="q-prompt">3. What should you report about compute?</div><div class="q-options"><button class="q-option" data-correct="false">Only the electricity bill</button><button class="q-option" data-correct="false">Nothing</button><button class="q-option" data-correct="true">Hardware and total hours used</button></div><div class="q-explain">Compute reporting is part of the reproducibility checklist.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a>; <a href="https://arxiv.org/abs/2003.12206">Improving Reproducibility in ML Research (Pineau et al.)</a></p>
+
+  <div class="pager">
+    <a href="4-4-data-hygiene-and-leakage.html">&larr; 4.4 Data hygiene and leakage</a>
+    <a href="../phase-05-fields-that-fit-you/5-1-data-centric-ai-and-data-quality.html">5.1 Data-centric AI and data quality &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var ids=["bg-cfg","bg-seeds","bg-min","bg-par"];
+  function upd(){
+    var c=+document.getElementById("bg-cfg").value,s=+document.getElementById("bg-seeds").value,m=+document.getElementById("bg-min").value,par=+document.getElementById("bg-par").value;
+    document.getElementById("bg-cfg-v").textContent=c;document.getElementById("bg-seeds-v").textContent=s;document.getElementById("bg-min-v").textContent=m;document.getElementById("bg-par-v").textContent=par;
+    var runs=c*s,mins=runs*m,wall=mins/par/60;
+    var verdict=wall<=24?"<span class='badge-ok'>Fits comfortably in a few days of evenings.</span>":(wall<=120?"<span class='badge-no'>Heavy. Cut configurations or subsample the data.</span>":"<span class='badge-no'>Too large for a first project. Shrink the grid.</span>");
+    document.getElementById("bg-out").innerHTML="Total runs: <b>"+runs+"</b><br>Compute time: <b>"+(mins/60).toFixed(1)+"</b> machine hours<br>Wall clock with "+par+" parallel job(s): <b>"+wall.toFixed(1)+"</b> hours<br>"+verdict;
+  }
+  ids.forEach(function(i){document.getElementById(i).addEventListener("input",upd);});upd();
+})();
+
+</script>
+</body>
+</html>

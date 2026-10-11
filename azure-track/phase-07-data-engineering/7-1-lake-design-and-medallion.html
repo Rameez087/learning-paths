@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.1 Lake design and the medallion pattern | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.1 Lake design and the medallion pattern</h1>
+  <p class="subtitle">A data lake without structure becomes a swamp. A few conventions keep it usable.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Organise a lake into <strong>layers</strong> of increasing quality. The common <strong>medallion</strong> pattern uses <strong>bronze</strong> (raw, as received), <strong>silver</strong> (cleaned, conformed, deduplicated) and <strong>gold</strong> (business ready, modelled). Store in open table formats such as <strong>Delta Lake</strong> for transactions and schema enforcement. Separate storage accounts or containers by layer and environment, and apply ACLs and RBAC per zone.
+  </div>
+
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Medallion flow" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Sources</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Bronze: raw</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Silver: clean</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="477.2" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Gold: modelled</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">BI, ML, APIs</text></svg><div class="figure-caption">Each hop adds quality and removes surprises for consumers.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Layer</th><th>Contents</th><th>Rules</th></tr></thead><tbody><tr><td>Bronze</td><td>Raw data exactly as ingested, with load metadata</td><td>Append only, keep history, no business logic</td></tr><tr><td>Silver</td><td>Typed, deduplicated, validated, conformed keys</td><td>Enforce schema, quarantine bad rows</td></tr><tr><td>Gold</td><td>Aggregates and dimensional models for specific uses</td><td>Named and documented for consumers</td></tr></tbody></table></div>
+<h2>Folder and naming conventions</h2>
+<pre><code>abfss://bronze@lakeprod.dfs.core.windows.net/sales/orders/ingest_date=2026-10-11/
+abfss://silver@lakeprod.dfs.core.windows.net/sales/orders/
+abfss://gold@lakeprod.dfs.core.windows.net/sales/fact_orders/</code></pre>
+<ul><li>Partition by a column that matches how data is filtered, usually a date, and avoid millions of tiny files.</li><li>Keep raw data immutable so you can always rebuild downstream layers.</li><li>Use Delta or similar for ACID writes, time travel and merges instead of bare Parquet when you update data.</li><li>Record lineage and ownership for every dataset (7.6).</li></ul>
+<div class="callout"><div class="callout-label">Medallion is a pattern, not a law</div>Some teams use more layers or different names. The point is staged quality with clear contracts between stages.</div>
+<h2>Which layer?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Deduplicate orders and cast types, but keep every field.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Gold</button><button type="button" class="ch-opt" data-correct="true">Silver</button><button type="button" class="ch-opt" data-correct="false">Bronze</button></div><div class="ch-explain">Silver is cleaned and conformed.</div></div><div class="ch-item"><div class="ch-q">A monthly revenue table built for dashboards.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Silver</button><button type="button" class="ch-opt" data-correct="false">Bronze</button><button type="button" class="ch-opt" data-correct="true">Gold</button></div><div class="ch-explain">Gold is shaped for a consumer.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What belongs in bronze?</div><div class="q-options"><button class="q-option" data-correct="false">Final dashboards</button><button class="q-option" data-correct="false">Only aggregates</button><button class="q-option" data-correct="false">Secrets</button><button class="q-option" data-correct="true">Raw data as received</button></div><div class="q-explain">Bronze preserves the source.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why use Delta over bare Parquet?</div><div class="q-options"><button class="q-option" data-correct="false">It is smaller always</button><button class="q-option" data-correct="false">It needs no compute</button><button class="q-option" data-correct="true">ACID transactions, schema enforcement and merges</button><button class="q-option" data-correct="false">It avoids storage</button></div><div class="q-explain">Table formats add reliability to files.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why partition by date?</div><div class="q-options"><button class="q-option" data-correct="false">It makes data private</button><button class="q-option" data-correct="false">Azure requires it</button><button class="q-option" data-correct="false">Dates are unique</button><button class="q-option" data-correct="true">Queries filter by date, so it prunes data read</button></div><div class="q-explain">Partition for the common filter.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/databricks/lakehouse/medallion">Medallion lakehouse architecture (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction">Azure Data Lake Storage Gen2 introduction (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-06-infrastructure-as-code/6-5-ci-cd-github-actions-azure-devops-azd.html">&larr; 6.5 CI/CD: GitHub Actions, Azure DevOps and azd</a>
+    <a href="7-2-orchestration.html">7.2 Orchestration: Data Factory, Synapse, Fabric and workflows &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.2 RAG on Azure: AI Search or pgvector | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; AI and ML</div>
+  <h1>8.2 RAG on Azure: AI Search or pgvector</h1>
+  <p class="subtitle">Retrieval augmented generation needs a retrieval layer. Azure gives you two good routes, with different trade offs.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    RAG retrieves relevant chunks and passes them to a model. On Azure, <strong>Azure AI Search</strong> is a managed search service with keyword, vector and <strong>hybrid</strong> search, semantic ranking, filters and built in ingestion helpers. <strong>PostgreSQL with pgvector</strong> (4.4) keeps vectors beside relational data with SQL filters. Pick based on scale, ranking needs and operations.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th></th><th>Azure AI Search</th><th>PostgreSQL + pgvector</th></tr></thead><tbody><tr><td>Search types</td><td>Keyword, vector, hybrid, semantic reranking</td><td>Vector similarity, plus Postgres full text if you build it</td></tr><tr><td>Operations</td><td>Managed search service, capacity in units</td><td>A database you may already run</td></tr><tr><td>Joins and filters</td><td>Filter on fields, limited joins</td><td>Full SQL joins and transactions</td></tr><tr><td>Scale</td><td>Built for large indexes and high query load</td><td>Good at moderate scale, tune indexes</td></tr><tr><td>Cost</td><td>Separate service charge</td><td>Shares your database cost</td></tr><tr><td>Best fit</td><td>Document heavy apps, strong ranking quality</td><td>Small teams, relational data, simple stack</td></tr></tbody></table></div>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="RAG pipeline" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="72.0" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="46.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Documents</text><line x1="84.0" y1="45" x2="105.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="108.0" y="20" width="72.0" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="144.0" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Chunk and</text><text x="144.0" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">embed</text><line x1="182.0" y1="45" x2="203.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="206.0" y="20" width="72.0" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="242.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Index</text><line x1="280.0" y1="45" x2="301.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="304.0" y="20" width="72.0" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="340.0" y="34.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Query:</text><text x="340.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">hybrid</text><text x="340.0" y="62.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">retrieve</text><line x1="378.0" y1="45" x2="399.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="402.0" y="20" width="72.0" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="438.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Rerank</text><line x1="476.0" y1="45" x2="497.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="500.0" y="20" width="72.0" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="536.0" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Prompt model</text><line x1="574.0" y1="45" x2="595.0" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="598.0" y="20" width="72.0" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="634.0" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Answer with</text><text x="634.0" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">citations</text></svg><div class="figure-caption">Retrieval quality limits answer quality, so measure it (8.6).</div></div>
+<h2>Choices that matter more than the database</h2>
+<ul><li>Chunk size and overlap, and keeping headings with their text.</li><li>Hybrid search often beats vector alone, because exact terms like IDs and names matter.</li><li>Metadata filters for tenant, language, date and permissions.</li><li>Security trimming: never retrieve documents the user is not allowed to see.</li><li>An evaluation set to measure retrieval and answers (8.6).</li></ul>
+<div class="callout"><div class="callout-label">Research link</div>RAG evaluation and defects are a project area in the Research Track, if you want to turn this into a measurable study.</div>
+<h2>Pick the retrieval layer</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">500,000 PDFs, need strong ranking, hybrid search and semantic reranking.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Cosmos DB only</button><button type="button" class="ch-opt" data-correct="true">Azure AI Search</button><button type="button" class="ch-opt" data-correct="false">A single pgvector table with no tuning</button></div><div class="ch-explain">Search is purpose built for large document ranking.</div></div><div class="ch-item"><div class="ch-q">A department app with 20,000 chunks and rich relational filters already in Postgres.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A new search cluster</button><button type="button" class="ch-opt" data-correct="false">A data lake only</button><button type="button" class="ch-opt" data-correct="true">PostgreSQL with pgvector</button></div><div class="ch-explain">Simplicity wins at modest scale.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why hybrid search?</div><div class="q-options"><button class="q-option" data-correct="false">It is always cheaper</button><button class="q-option" data-correct="true">Exact terms matter as well as meaning</button><button class="q-option" data-correct="false">It needs no index</button><button class="q-option" data-correct="false">It removes embeddings</button></div><div class="q-explain">Combining keyword and vector often improves recall.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is security trimming?</div><div class="q-options"><button class="q-option" data-correct="false">Cutting costs</button><button class="q-option" data-correct="false">Compressing storage</button><button class="q-option" data-correct="true">Only retrieving documents the user may see</button><button class="q-option" data-correct="false">Shortening prompts</button></div><div class="q-explain">Retrieval must respect permissions.</div></div>
+<div class="q-block"><div class="q-prompt">3. When is pgvector a fit?</div><div class="q-options"><button class="q-option" data-correct="false">No database allowed</button><button class="q-option" data-correct="false">Billions of documents</button><button class="q-option" data-correct="true">Modest scale with relational data and a small team</button><button class="q-option" data-correct="false">Image rendering</button></div><div class="q-explain">It keeps the stack simple.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search">What is Azure AI Search (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview">Hybrid search in Azure AI Search (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/postgresql/extensions/how-to-use-pgvector">pgvector on Azure Database for PostgreSQL (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="8-1-foundry-and-model-access.html">&larr; 8.1 Foundry and model access</a>
+    <a href="8-3-agents-on-azure.html">8.3 Agents on Azure &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

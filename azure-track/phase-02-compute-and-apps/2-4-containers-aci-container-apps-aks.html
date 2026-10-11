@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.4 Containers: ACI, Container Apps and AKS | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Compute and apps</div>
+  <h1>2.4 Containers: ACI, Container Apps and AKS</h1>
+  <p class="subtitle">Azure has several ways to run containers. The choice is how much of the platform you want to manage.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Container Instances</strong> runs a single container quickly. <strong>Container Apps</strong> runs containerised apps and jobs on a managed platform built on Kubernetes, with autoscaling (including to zero) and no cluster to manage. <strong>AKS</strong> is managed Kubernetes where you control the cluster. Start with the simplest that meets your needs.
+  </div>
+
+<h2>The spectrum</h2>
+<div class="figure"><svg viewBox="0 0 680 120" width="100%" role="img" aria-label="Container hosting options from simplest to most control" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10.0" y="6" width="210.7" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="115.3" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">ACI</text><text x="115.3" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Single containers</text><text x="115.3" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Fastest start</text><text x="115.3" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Minimal features</text><rect x="234.7" y="6" width="210.7" height="108" rx="8" fill="var(--surface-2)" stroke="var(--accent)"/><text x="340.0" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-text)">Container Apps</text><text x="340.0" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Apps, APIs, jobs</text><text x="340.0" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Scale to zero</text><text x="340.0" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">No cluster to run</text><rect x="459.3" y="6" width="210.7" height="108" rx="8" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="564.7" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">AKS</text><text x="564.7" y="50" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Full Kubernetes</text><text x="564.7" y="70" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">Maximum control</text><text x="564.7" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-secondary)">You operate more</text></svg><div class="figure-caption">More control means more to operate. Most web workloads fit the middle option.</div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Need</th><th>ACI</th><th>Container Apps</th><th>AKS</th></tr></thead><tbody><tr><td>Quick one off container</td><td>Best fit</td><td>Possible</td><td>Overkill</td></tr><tr><td>Autoscaling web app or API</td><td>No</td><td>Best fit</td><td>Possible</td></tr><tr><td>Scale to zero</td><td>Not applicable</td><td>Yes</td><td>Needs extra setup</td></tr><tr><td>Custom Kubernetes features, operators, service mesh choice</td><td>No</td><td>Limited</td><td>Best fit</td></tr><tr><td>Operational effort</td><td>Low</td><td>Low</td><td>Highest</td></tr></tbody></table></div>
+<h2>Choose by questions</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Is it a single short lived container?</h3><p>Yes: ACI, or a Container Apps job. No: continue.</p></div><div class="st-step"><h3>2. Is it a web app, API or background worker with scaling needs?</h3><p>Yes: Container Apps. It handles ingress, revisions and event driven scaling with KEDA.</p></div><div class="st-step"><h3>3. Do you need Kubernetes APIs, custom operators or a team that already runs Kubernetes?</h3><p>Yes: AKS. Budget for upgrades, networking, node pools and security.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<pre><code># deploy a container app (CLI)
+az containerapp env create -g rg-demo -n env-demo -l westeurope
+az containerapp create -g rg-demo -n api-demo --environment env-demo \
+  --image mcr.microsoft.com/k8se/quickstart:latest --target-port 80 --ingress external \
+  --min-replicas 0 --max-replicas 5</code></pre>
+<h2>Pick one</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A team of three wants to run a containerised API that scales with queue length and sometimes idles overnight.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">AKS with custom operators</button><button type="button" class="ch-opt" data-correct="false">A large VM</button><button type="button" class="ch-opt" data-correct="true">Container Apps</button></div><div class="ch-explain">Container Apps offers event driven scaling including to zero without a cluster to manage.</div></div><div class="ch-item"><div class="ch-q">A platform team needs custom CNI plugins, admission controllers and strict node level control.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Functions</button><button type="button" class="ch-opt" data-correct="false">ACI</button><button type="button" class="ch-opt" data-correct="true">AKS</button></div><div class="ch-explain">Deep Kubernetes control is what AKS provides.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which option needs no Kubernetes cluster to manage and can scale to zero?</div><div class="q-options"><button class="q-option" data-correct="false">A VM</button><button class="q-option" data-correct="true">Container Apps</button><button class="q-option" data-correct="false">AKS</button></div><div class="q-explain">Container Apps abstracts the cluster and supports scale to zero.</div></div>
+<div class="q-block"><div class="q-prompt">2. When is AKS the right choice?</div><div class="q-options"><button class="q-option" data-correct="false">When you want zero operations</button><button class="q-option" data-correct="false">For every container</button><button class="q-option" data-correct="true">When you need full Kubernetes control and have the skills to operate it</button></div><div class="q-explain">AKS gives control at the cost of operational effort.</div></div>
+<div class="q-block"><div class="q-prompt">3. What drives event based scaling in Container Apps?</div><div class="q-options"><button class="q-option" data-correct="false">Manual restarts</button><button class="q-option" data-correct="false">DNS changes</button><button class="q-option" data-correct="true">KEDA scale rules</button></div><div class="q-explain">Container Apps uses KEDA for event driven autoscaling.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/container-apps/overview">Container Apps overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/aks/what-is-aks">What is AKS (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/architecture/guide/technology-choices/compute-decision-tree">Choose an Azure compute service (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="2-3-azure-functions.html">&larr; 2.3 Azure Functions</a>
+    <a href="../phase-03-networking/3-1-virtual-networks-subnets-nsgs.html">3.1 Virtual networks, subnets and NSGs &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

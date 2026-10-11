@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.4 Training and serving ML: Azure ML or Databricks | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; AI and ML</div>
+  <h1>8.4 Training and serving ML: Azure ML or Databricks</h1>
+  <p class="subtitle">Two strong platforms cover the model lifecycle. Both support MLflow, so skills transfer.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Machine Learning</strong> provides workspaces, compute clusters, pipelines, model registry, managed online endpoints and MLOps integration. <strong>Azure Databricks</strong> offers notebooks, MLflow tracking and registry in Unity Catalog, Feature Store and model serving next to your data. Both let you track experiments, register models, deploy endpoints and automate retraining.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th></th><th>Azure Machine Learning</th><th>Databricks</th></tr></thead><tbody><tr><td>Centre of gravity</td><td>ML lifecycle, enterprise MLOps, Azure integration</td><td>Data and ML on one lakehouse</td></tr><tr><td>Experiment tracking</td><td>MLflow compatible</td><td>Managed MLflow</td></tr><tr><td>Registry</td><td>Workspace and registry</td><td>Unity Catalog models</td></tr><tr><td>Serving</td><td>Managed online and batch endpoints</td><td>Model Serving endpoints</td></tr><tr><td>Pipelines</td><td>Azure ML pipelines, CLI v2 or SDK v2</td><td>Jobs and Workflows</td></tr><tr><td>Choose when</td><td>ML team separate from data platform, Azure native governance</td><td>Data engineers and ML engineers share lakehouse tables</td></tr></tbody></table></div>
+<h2>The lifecycle</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Data and features</h3><p>Versioned datasets and reusable features. Avoid leakage (Research Track 4.4).</p></div><div class="st-step"><h3>2. Train and track</h3><p>Log parameters, metrics and artifacts with MLflow. Compare runs, not memories.</p></div><div class="st-step"><h3>3. Register and approve</h3><p>Store the model with lineage to code and data. Promote through stages with checks.</p></div><div class="st-step"><h3>4. Deploy</h3><p>Real time endpoint or batch scoring. Use blue green rollout and autoscaling.</p></div><div class="st-step"><h3>5. Monitor and retrain</h3><p>Watch data drift, performance and cost. Trigger retraining on evidence.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="callout"><div class="callout-label">Infrastructure for ML</div>Training needs compute quotas, GPUs in specific regions, private networking to data and managed identities for access. Plan these early with the networking and security phases.</div>
+<h2>Pick one</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Your data and features already live as Delta tables in Databricks.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Export CSVs to laptops</button><button type="button" class="ch-opt" data-correct="false">Move everything to a new platform</button><button type="button" class="ch-opt" data-correct="true">Train and serve on Databricks</button></div><div class="ch-explain">Keep compute near the data.</div></div><div class="ch-item"><div class="ch-q">A central ML platform team serves many business units with Azure RBAC and managed endpoints.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Excel</button><button type="button" class="ch-opt" data-correct="false">A single notebook</button><button type="button" class="ch-opt" data-correct="true">Azure Machine Learning</button></div><div class="ch-explain">Azure ML fits enterprise MLOps.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What do both platforms support for tracking?</div><div class="q-options"><button class="q-option" data-correct="false">NSG</button><button class="q-option" data-correct="true">MLflow</button><button class="q-option" data-correct="false">Policy</button><button class="q-option" data-correct="false">Excel</button></div><div class="q-explain">MLflow is a shared standard.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why monitor after deployment?</div><div class="q-options"><button class="q-option" data-correct="false">Azure forces it</button><button class="q-option" data-correct="false">It is optional always</button><button class="q-option" data-correct="false">Models never change</button><button class="q-option" data-correct="true">Data drift and performance decay appear over time</button></div><div class="q-explain">Production data shifts.</div></div>
+<div class="q-block"><div class="q-prompt">3. What is a registry for?</div><div class="q-options"><button class="q-option" data-correct="false">Billing</button><button class="q-option" data-correct="false">DNS</button><button class="q-option" data-correct="false">Subnets</button><button class="q-option" data-correct="true">Versioned, governed models ready for deployment</button></div><div class="q-explain">It gives traceability.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/machine-learning/overview-what-is-azure-machine-learning">What is Azure Machine Learning (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/machine-learning/concept-mlflow">MLflow and Azure Machine Learning (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/databricks/introduction/">What is Azure Databricks (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="8-3-agents-on-azure.html">&larr; 8.3 Agents on Azure</a>
+    <a href="8-5-prebuilt-ai-services-vs-llms.html">8.5 Prebuilt AI services versus LLMs &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

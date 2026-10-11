@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.2 Key Vault and App Configuration | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 5</a> &nbsp;/&nbsp; 5.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 5 &middot; Security</div>
+  <h1>5.2 Key Vault and App Configuration</h1>
+  <p class="subtitle">Secrets, keys and settings each have a proper home. Keep them out of code and out of source control.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Key Vault</strong> stores secrets, keys and certificates with access control and audit logs. Use the RBAC permission model, soft delete and purge protection. <strong>Azure App Configuration</strong> holds non secret settings and feature flags, and can reference Key Vault secrets. Apps read both with a managed identity.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Store</th><th>Holds</th><th>Notes</th></tr></thead><tbody><tr><td>Key Vault secrets</td><td>Passwords, connection strings, API keys</td><td>Versioned, with expiry and rotation support</td></tr><tr><td>Key Vault keys</td><td>Encryption keys, optionally HSM backed</td><td>Operations happen in the vault so the key never leaves</td></tr><tr><td>Key Vault certificates</td><td>TLS certificates with lifecycle management</td><td>Can auto renew with supported issuers</td></tr><tr><td>App Configuration</td><td>Settings and feature flags</td><td>Not for secrets, but supports Key Vault references</td></tr></tbody></table></div>
+<h2>Good practice</h2>
+<ul><li>Use one vault per application and environment, so access is narrow and blast radius is small.</li><li>Use RBAC roles such as Key Vault Secrets User instead of legacy access policies for new vaults.</li><li>Enable soft delete and purge protection so deletions are recoverable.</li><li>Restrict network access and use private endpoints for sensitive vaults.</li><li>Prefer not to need a secret at all: managed identity to the target service beats a stored password.</li></ul>
+<pre><code># Bicep: a vault with RBAC and protection
+resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: 'kv-${uniqueString(resourceGroup().id)}'
+  location: resourceGroup().location
+  properties: {
+    sku: { family: 'A', name: 'standard' }
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true
+    enableSoftDelete: true
+    enablePurgeProtection: true
+  }
+}</code></pre>
+<div class="callout"><div class="callout-label">API versions</div>The API version in the sample may be older than the newest. Check the template reference for current versions when you write real templates.</div>
+<h2>Where does it go?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A third party API key.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">App Configuration value</button><button type="button" class="ch-opt" data-correct="true">Key Vault secret</button><button type="button" class="ch-opt" data-correct="false">Source control</button></div><div class="ch-explain">Secrets belong in a vault with access control and audit.</div></div><div class="ch-item"><div class="ch-q">A feature flag that turns on a new page for 10 percent of users.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Hard coded constant</button><button type="button" class="ch-opt" data-correct="false">Key Vault secret</button><button type="button" class="ch-opt" data-correct="true">App Configuration feature flag</button></div><div class="ch-explain">Feature management is a built in App Configuration capability.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does purge protection do?</div><div class="q-options"><button class="q-option" data-correct="false">Encrypts disks</button><button class="q-option" data-correct="true">Stops permanent deletion during the retention period</button><button class="q-option" data-correct="false">Adds regions</button><button class="q-option" data-correct="false">Speeds up reads</button></div><div class="q-explain">Deleted vaults and objects stay recoverable.</div></div>
+<div class="q-block"><div class="q-prompt">2. Where should feature flags live?</div><div class="q-options"><button class="q-option" data-correct="false">Key Vault keys</button><button class="q-option" data-correct="false">NSG rules</button><button class="q-option" data-correct="true">App Configuration</button><button class="q-option" data-correct="false">Resource group names</button></div><div class="q-explain">It supports feature management.</div></div>
+<div class="q-block"><div class="q-prompt">3. Preferred permission model for new vaults?</div><div class="q-options"><button class="q-option" data-correct="false">Shared passwords</button><button class="q-option" data-correct="false">Public keys in the repo</button><button class="q-option" data-correct="false">Anonymous access</button><button class="q-option" data-correct="true">Azure RBAC</button></div><div class="q-explain">RBAC is consistent with the rest of Azure.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/key-vault/general/overview">About Azure Key Vault (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-app-configuration/overview">Azure App Configuration overview (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="5-1-managed-identities-and-workload-identity-federation.html">&larr; 5.1 Managed identities and workload identity federation</a>
+    <a href="5-3-policy-defender-and-security-posture.html">5.3 Policy, Defender and security posture &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

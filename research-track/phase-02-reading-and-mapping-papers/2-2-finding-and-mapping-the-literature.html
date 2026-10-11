@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.2 Finding and mapping the literature | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Reading and mapping papers</div>
+  <h1>2.2 Finding and mapping the literature</h1>
+  <p class="subtitle">You cannot find a good question without knowing what has already been asked. A literature map built in an afternoon beats weeks of scattered reading.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Start from <strong>one recent, well cited paper or a survey</strong>, then chain <strong>backward</strong> through its references and <strong>forward</strong> through who cites it. Use Google Scholar, Semantic Scholar, DBLP and arXiv together. Stop when new papers keep citing the same ones. Check that your exact question is not already answered before you invest weeks.
+  </div>
+
+<h2>Search tools and what each is good at</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Tool</th><th>Good for</th><th>Watch out for</th></tr></thead><tbody><tr><td>Google Scholar</td><td>Broad search, the Cited by link and Related articles</td><td>Mixes papers, theses and duplicates; counts include noise</td></tr><tr><td>Semantic Scholar</td><td>Citation context, recommended papers, filtering by field</td><td>Coverage varies by area</td></tr><tr><td>DBLP</td><td>A clean index of computer science venues and authors</td><td>Titles and venues only, no abstracts</td></tr><tr><td>arXiv</td><td>The newest work, often before publication</td><td>No peer review, so quality varies</td></tr><tr><td>OpenReview</td><td>Submissions and reviews for venues that publish them</td><td>Only venues that use it</td></tr><tr><td>ACL Anthology</td><td>Natural language processing papers</td><td>Specific to that community</td></tr></tbody></table></div>
+<h2>Citation chaining</h2>
+<p>Pick a seed paper, ideally a recent survey or a paper everyone in the area cites. Go <strong>backward</strong> by reading its related work and reference list. Go <strong>forward</strong> by opening its Cited by list and sorting by date to find the newest work. Papers that appear in several reference lists are the foundations. Papers that cite the seed recently show where the field is moving.</p>
+<h2>Build a literature map in an afternoon</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Pick the seed</h3><p>Search your topic plus the word survey, or pick the most cited recent paper in the area. Write the topic in one sentence first so you can tell which papers are off topic.</p></div><div class="st-step"><h3>2. Collect 20 titles</h3><p>From the seed's references and citations, collect about twenty titles. Skim titles and abstracts only. Put each into a reference manager such as Zotero, which is free.</p></div><div class="st-step"><h3>3. Cluster</h3><p>Sort the papers into three to five groups by approach, such as methods, benchmarks and analyses. A cluster with only old papers may be a closed question. A cluster of very recent papers is where the action is.</p></div><div class="st-step"><h3>4. Find the shared citations</h3><p>Note which earlier papers appear in many of the lists. Read those first. They define the vocabulary of the field.</p></div><div class="st-step"><h3>5. Check novelty</h3><p>Search for your exact question with several phrasings on Scholar and arXiv. If someone has answered it, you have found either a reproduction target or a reason to refine the question.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<h2>Which move fits?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You found one excellent recent paper and want to know what came after it.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Read its reference list only</button><button type="button" class="ch-opt" data-correct="false">Search for its title on arXiv</button><button type="button" class="ch-opt" data-correct="true">Open its Cited by list and sort by date</button></div><div class="ch-explain">Forward chaining through citations shows follow-up and competing work, which the reference list cannot.</div></div><div class="ch-item"><div class="ch-q">You need the standard background papers for a subfield you do not know.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Ask a chatbot to list foundational papers and trust it without checking</button><button type="button" class="ch-opt" data-correct="false">Read only the newest arXiv preprints</button><button type="button" class="ch-opt" data-correct="true">Backward chain through a survey's references and note papers that appear repeatedly</button></div><div class="ch-explain">Papers repeated across reference lists are the foundations. Any AI generated list must be verified, because fabricated references are a known failure.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is backward citation chaining?</div><div class="q-options"><button class="q-option" data-correct="false">Finding who has cited the paper since</button><button class="q-option" data-correct="false">Searching for the paper's title in reverse</button><button class="q-option" data-correct="true">Reading the references of a paper to find what it builds on</button></div><div class="q-explain">Backward means older work the paper cites. Forward means newer work that cites the paper.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why check novelty before investing weeks in a project?</div><div class="q-options"><button class="q-option" data-correct="false">Novelty is the only thing that matters</button><button class="q-option" data-correct="true">Your exact question may already be answered, or may be better framed as a reproduction</button><button class="q-option" data-correct="false">Reviewers never read related work</button></div><div class="q-explain">A quick search with several phrasings can save weeks and sometimes reveals the better version of your question.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which signal suggests a paper is a foundation of a subfield?</div><div class="q-options"><button class="q-option" data-correct="false">It has a long title</button><button class="q-option" data-correct="false">It was posted most recently</button><button class="q-option" data-correct="true">It appears in the reference lists of many recent papers on the topic</button></div><div class="q-explain">Repeated citation across independent papers is a good proxy for foundational status.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos561/papers/HowToRead05.pdf">How to Read a Paper (Keshav)</a>; <a href="https://www.semanticscholar.org/">Semantic Scholar</a>; <a href="https://dblp.org/">DBLP</a>; <a href="https://www.zotero.org/">Zotero</a></p>
+
+  <div class="pager">
+    <a href="2-1-the-three-pass-method.html">&larr; 2.1 The three-pass method</a>
+    <a href="2-3-notes-and-a-reading-log.html">2.3 Notes and a reading log &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

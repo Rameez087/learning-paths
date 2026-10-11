@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 Virtual machines and scale sets | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Compute and apps</div>
+  <h1>2.1 Virtual machines and scale sets</h1>
+  <p class="subtitle">A VM is the most flexible compute option and the one that asks the most of you. Use it when you need control, and use something higher level when you do not.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    A <strong>virtual machine</strong> gives you an operating system you manage (patching, scaling, security). Choose a <strong>size family</strong> for the workload, use <strong>managed disks</strong>, spread across <strong>availability zones</strong> for resilience, and use <strong>scale sets</strong> to run many identical VMs that scale automatically. Pricing options include pay as you go, reservations, savings plans and spot.
+  </div>
+
+<h2>What you choose when you create a VM</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Choice</th><th>Options</th><th>Guidance</th></tr></thead><tbody><tr><td>Size family</td><td>General purpose, compute optimised, memory optimised, storage optimised, GPU</td><td>Match to the bottleneck: CPU, RAM, IO or GPU</td></tr><tr><td>Image</td><td>Marketplace images, custom images</td><td>Start from a maintained image and patch regularly</td></tr><tr><td>Disk</td><td>Standard HDD, Standard SSD, Premium SSD, Ultra</td><td>Premium SSD for production databases; cheaper tiers for dev</td></tr><tr><td>Placement</td><td>Single instance, availability zone, availability set</td><td>Zones for datacentre level resilience where supported</td></tr><tr><td>Pricing model</td><td>Pay as you go, reservation, savings plan, spot</td><td>Reservations for steady use; spot for interruptible work</td></tr><tr><td>Access</td><td>Public IP, Bastion, private only</td><td>Avoid public SSH or RDP; use Bastion or a private path</td></tr></tbody></table></div>
+<h2>From one VM to a scale set</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. One VM</h3><p>Simple and fast to start. A single point of failure and you resize by hand.</p></div><div class="st-step"><h3>2. Zones and a load balancer</h3><p>Two or more VMs across zones behind a load balancer. One failing does not stop the service.</p></div><div class="st-step"><h3>3. Virtual machine scale set</h3><p>Identical VMs managed as one group. Autoscale rules add and remove instances based on metrics or a schedule.</p></div><div class="st-step"><h3>4. Move up the stack</h3><p>If you are only running a web app, App Service or Container Apps removes patching and scaling from your plate (2.2, 2.4).</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="callout"><div class="callout-label">Responsibility</div>With a VM you own the operating system, patches, antivirus, backups and most security configuration. Platform services take much of that off you. Reach for a VM when you need a specific OS, custom software, legacy applications or full control.</div>
+<h2>VM or something else?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You need to run a legacy Windows application that requires a specific installed driver.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Azure Functions</button><button type="button" class="ch-opt" data-correct="false">A static website</button><button type="button" class="ch-opt" data-correct="true">A virtual machine</button></div><div class="ch-explain">Custom OS level requirements are the classic case for VMs.</div></div><div class="ch-item"><div class="ch-q">You run a stateless web API and do not want to patch servers.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A GPU VM</button><button type="button" class="ch-opt" data-correct="true">App Service or Container Apps</button><button type="button" class="ch-opt" data-correct="false">A VM you manage</button></div><div class="ch-explain">Platform services remove operating system management.</div></div><div class="ch-item"><div class="ch-q">A batch job can be interrupted and restarted, and you want the lowest cost.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Reserved VMs</button><button type="button" class="ch-opt" data-correct="false">Ultra disks</button><button type="button" class="ch-opt" data-correct="true">Spot VMs</button></div><div class="ch-explain">Spot capacity is cheap but can be evicted, so it suits interruptible work.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What does a virtual machine scale set do?</div><div class="q-options"><button class="q-option" data-correct="false">Stores data</button><button class="q-option" data-correct="false">Routes DNS</button><button class="q-option" data-correct="true">Manages many identical VMs as a group with autoscaling</button></div><div class="q-explain">Scale sets handle instance count and scaling rules for identical VMs.</div></div>
+<div class="q-block"><div class="q-prompt">2. Who patches the operating system on a standard Azure VM?</div><div class="q-options"><button class="q-option" data-correct="false">Nobody</button><button class="q-option" data-correct="false">Microsoft always does it</button><button class="q-option" data-correct="true">You do, unless you use managed patching features</button></div><div class="q-explain">IaaS means the customer manages the OS.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which pricing model suits steady, long running workloads?</div><div class="q-options"><button class="q-option" data-correct="false">Pay per second serverless</button><button class="q-option" data-correct="true">Reservations or savings plans</button><button class="q-option" data-correct="false">Spot</button></div><div class="q-explain">Commitments reduce cost when usage is predictable.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/virtual-machines/overview">Virtual Machines overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/architecture/guide/technology-choices/compute-decision-tree">Choose an Azure compute service (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/overview">Virtual machine scale sets (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-01-cloud-foundations/1-4-ways-to-drive-azure.html">&larr; 1.4 Ways to drive Azure</a>
+    <a href="2-2-app-service.html">2.2 App Service &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

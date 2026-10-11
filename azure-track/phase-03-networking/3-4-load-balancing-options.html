@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.4 Load balancing options | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Networking</div>
+  <h1>3.4 Load balancing options</h1>
+  <p class="subtitle">Azure has four load balancing services. Two questions pick the right one: is it HTTP, and is it regional or global?</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Load Balancer</strong> is layer 4 (TCP and UDP), regional. <strong>Application Gateway</strong> is layer 7 (HTTP) with WAF, regional. <strong>Front Door</strong> is layer 7 and global, with CDN and WAF at the edge. <strong>Traffic Manager</strong> is DNS based routing across regions for any protocol.
+  </div>
+
+<h2>Two axes</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th></th><th>Regional</th><th>Global</th></tr></thead><tbody><tr><td>HTTP and HTTPS (layer 7)</td><td>Application Gateway</td><td>Front Door</td></tr><tr><td>Any protocol (layer 4 or DNS)</td><td>Load Balancer</td><td>Traffic Manager (DNS)</td></tr></tbody></table></div>
+<h2>Each one</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Load Balancer</button><button type="button" class="tab-btn" data-t="1">Application Gateway</button><button type="button" class="tab-btn" data-t="2">Front Door</button><button type="button" class="tab-btn" data-t="3">Traffic Manager</button></div><div class="tab-pane active" data-t="0"><p>High throughput, low latency TCP and UDP distribution inside a region. Public or internal. Health probes decide which backends receive traffic. No understanding of HTTP paths.</p></div><div class="tab-pane" data-t="1"><p>Understands HTTP: URL path routing, host headers, TLS termination, cookie affinity, and an optional web application firewall. Regional, and sits inside a VNet.</p></div><div class="tab-pane" data-t="2"><p>Global entry point at Microsoft edge locations. Accelerates and routes HTTP traffic to the nearest healthy origin, with caching and WAF.</p></div><div class="tab-pane" data-t="3"><p>Returns a DNS answer based on health and routing method (priority, performance, geographic). Clients then connect directly, so there is no inline proxy and no HTTP features.</p></div></div>
+<div class="callout"><div class="callout-label">They combine</div>A common pattern is Front Door in front for global routing and WAF, with Application Gateway or an internal load balancer per region behind it. Do not add layers you do not need.</div>
+<h2>Pick one</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Distribute a TCP database protocol across VMs in one region.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Front Door</button><button type="button" class="ch-opt" data-correct="true">Load Balancer</button><button type="button" class="ch-opt" data-correct="false">Application Gateway</button></div><div class="ch-explain">Layer 4 distribution inside a region is Load Balancer's job.</div></div><div class="ch-item"><div class="ch-q">A web app in two regions needs global routing, caching and a WAF.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Load Balancer</button><button type="button" class="ch-opt" data-correct="false">Traffic Manager alone</button><button type="button" class="ch-opt" data-correct="true">Front Door</button></div><div class="ch-explain">Front Door is the global layer 7 service with WAF and caching.</div></div><div class="ch-item"><div class="ch-q">Route /api to one pool and /images to another in a single region.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Traffic Manager</button><button type="button" class="ch-opt" data-correct="false">Load Balancer</button><button type="button" class="ch-opt" data-correct="true">Application Gateway</button></div><div class="ch-explain">Path based routing is layer 7.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which service works at layer 4?</div><div class="q-options"><button class="q-option" data-correct="false">Front Door</button><button class="q-option" data-correct="true">Azure Load Balancer</button><button class="q-option" data-correct="false">Azure Firewall</button><button class="q-option" data-correct="false">Application Gateway</button></div><div class="q-explain">Load Balancer handles TCP and UDP.</div></div>
+<div class="q-block"><div class="q-prompt">2. Which is a global HTTP entry point with edge caching?</div><div class="q-options"><button class="q-option" data-correct="false">Bastion</button><button class="q-option" data-correct="false">Application Gateway</button><button class="q-option" data-correct="false">Load Balancer</button><button class="q-option" data-correct="true">Front Door</button></div><div class="q-explain">Front Door runs at Microsoft edge locations.</div></div>
+<div class="q-block"><div class="q-prompt">3. How does Traffic Manager route?</div><div class="q-options"><button class="q-option" data-correct="false">By rewriting URLs</button><button class="q-option" data-correct="false">By editing NSGs</button><button class="q-option" data-correct="false">By proxying every packet</button><button class="q-option" data-correct="true">By answering DNS queries</button></div><div class="q-explain">Clients connect directly after the DNS answer.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/architecture/guide/technology-choices/load-balancing-overview">Load-balancing options (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="3-3-hub-spoke-vpn-expressroute-firewall.html">&larr; 3.3 Hub and spoke, VPN, ExpressRoute and Firewall</a>
+    <a href="../phase-04-storage-and-databases/4-1-storage-accounts-and-data-lake-gen2.html">4.1 Storage accounts and Data Lake Gen2 &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.1 How Azure is organised | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 1</a> &nbsp;/&nbsp; 1.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 1 &middot; Cloud foundations</div>
+  <h1>1.1 How Azure is organised</h1>
+  <p class="subtitle">Before any service, learn the containers everything lives in. Most Azure confusion comes from not knowing which level you are working at.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Azure is a hierarchy: a <strong>Microsoft Entra tenant</strong> holds identities, <strong>management groups</strong> organise subscriptions, a <strong>subscription</strong> is the billing and access boundary, a <strong>resource group</strong> holds related resources, and the <strong>resources</strong> sit inside. Policy and access set high in the tree flow down. Resources live in a <strong>region</strong>, and some regions offer <strong>availability zones</strong>.
+  </div>
+
+<h2>The hierarchy</h2>
+<div class="figure"><svg viewBox="0 0 680 270" width="100%" role="img" aria-label="Azure management hierarchy" style="font-family:-apple-system,Segoe UI,sans-serif"><rect x="10" y="5" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="25" font-size="12" font-weight="700" fill="var(--text)">Entra tenant</text><text x="26" y="42" font-size="10.5" fill="var(--text-secondary)">Identities and directory for the organisation</text><rect x="10" y="57" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="77" font-size="12" font-weight="700" fill="var(--text)">Management groups</text><text x="26" y="94" font-size="10.5" fill="var(--text-secondary)">Optional folders that group subscriptions; policy and access inherit downward</text><rect x="10" y="109" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="129" font-size="12" font-weight="700" fill="var(--text)">Subscriptions</text><text x="26" y="146" font-size="10.5" fill="var(--text-secondary)">Billing boundary and a limit on many resources</text><rect x="10" y="161" width="660" height="46" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="26" y="181" font-size="12" font-weight="700" fill="var(--text)">Resource groups</text><text x="26" y="198" font-size="10.5" fill="var(--text-secondary)">A logical container; resources share a lifecycle</text><rect x="10" y="213" width="660" height="46" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="26" y="233" font-size="12" font-weight="700" fill="var(--text)">Resources</text><text x="26" y="250" font-size="10.5" fill="var(--text-secondary)">VMs, storage accounts, databases, networks</text></svg><div class="figure-caption">Access and policy inherit down this tree. Delete a resource group and everything inside goes with it.</div></div>
+<h2>Each level in practice</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Tenant</button><button type="button" class="tab-btn" data-t="1">Management groups</button><button type="button" class="tab-btn" data-t="2">Subscription</button><button type="button" class="tab-btn" data-t="3">Resource group</button></div><div class="tab-pane active" data-t="0"><p>A tenant is an instance of Microsoft Entra ID. It is where users, groups and applications are defined. One organisation usually has one tenant, with many subscriptions attached to it.</p></div><div class="tab-pane" data-t="1"><p>Containers above subscriptions. Assign a policy or role on a management group and it applies to every subscription beneath it. This is how organisations enforce rules at scale, and it is the basis of landing zones (9.3).</p></div><div class="tab-pane" data-t="2"><p>The unit of billing and a boundary for access and quotas. Common patterns separate production from non-production, or one subscription per team or workload. A subscription belongs to exactly one tenant at a time.</p></div><div class="tab-pane" data-t="3"><p>Every resource lives in exactly one resource group. Group by lifecycle: things deployed and deleted together. Deleting a resource group deletes its resources, which makes it handy for tearing down a practice project.</p></div></div>
+<h2>Regions and availability zones</h2>
+<p>A <strong>region</strong> is a geographic area with datacentres, such as West Europe or Central India. Choose regions for latency, data residency rules, service availability and price. Within many regions, <strong>availability zones</strong> are physically separate locations with independent power, cooling and networking. Spreading a workload across zones protects against a single datacentre failure. Not every region has zones and not every service supports them, so check before you design. Many regions are also paired for disaster recovery planning.</p>
+<h2>Where does it belong?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You want one policy, 'allowed regions only', to apply to every subscription in the company.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Assign it separately inside each resource group</button><button type="button" class="ch-opt" data-correct="false">Assign it on a single VM</button><button type="button" class="ch-opt" data-correct="true">Assign it at a management group above the subscriptions</button></div><div class="ch-explain">Management groups exist to apply policy and access across many subscriptions with one assignment.</div></div><div class="ch-item"><div class="ch-q">You are practising and want to delete everything from a tutorial in one command.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Delete the subscription</button><button type="button" class="ch-opt" data-correct="false">Spread resources across many resource groups</button><button type="button" class="ch-opt" data-correct="true">Put the tutorial's resources in one dedicated resource group and delete it</button></div><div class="ch-explain">Resource groups share a lifecycle, so deleting the group removes its resources.</div></div><div class="ch-item"><div class="ch-q">You need your app to survive the loss of a single datacentre in a region.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Use a bigger VM</button><button type="button" class="ch-opt" data-correct="false">Add a second resource group</button><button type="button" class="ch-opt" data-correct="true">Deploy across availability zones where supported</button></div><div class="ch-explain">Zones are separate physical locations within a region, giving datacentre level resilience.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the billing and quota boundary in Azure?</div><div class="q-options"><button class="q-option" data-correct="false">The resource group</button><button class="q-option" data-correct="true">The subscription</button><button class="q-option" data-correct="false">The region</button></div><div class="q-explain">Billing, access and many limits are scoped to the subscription.</div></div>
+<div class="q-block"><div class="q-prompt">2. What happens when you delete a resource group?</div><div class="q-options"><button class="q-option" data-correct="false">Only the group label is removed</button><button class="q-option" data-correct="false">Nothing, resources are kept</button><button class="q-option" data-correct="true">Everything inside it is deleted</button></div><div class="q-explain">Resources in the group are deleted with it, which is a useful cleanup tool and a risk.</div></div>
+<div class="q-block"><div class="q-prompt">3. What is an availability zone?</div><div class="q-options"><button class="q-option" data-correct="false">A type of subscription</button><button class="q-option" data-correct="true">A physically separate location within a region with independent power and networking</button><button class="q-option" data-correct="false">A billing category</button></div><div class="q-explain">Zones give resilience against single datacentre failures.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview">Azure Resource Manager overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/reliability/availability-zones-overview">Azure regions and availability zones (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/governance/management-groups/overview">Management groups (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../index.html">&larr; Track overview</a>
+    <a href="1-2-identity-and-rbac.html">1.2 Identity and RBAC &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

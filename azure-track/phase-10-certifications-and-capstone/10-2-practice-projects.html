@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.2 Practice projects | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 10</a> &nbsp;/&nbsp; 10.2</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 10 &middot; Certifications and capstone</div>
+  <h1>10.2 Practice projects</h1>
+  <p class="subtitle">Seven small builds that each exercise a phase. Keep each in its own resource group and delete it when finished.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Do these in order. Each fits in a free account or a small budget if you clean up. Put every project in Git, deploy with Bicep or Terraform, and write a short README with a diagram.
+  </div>
+
+<h2>Project checklist</h2>
+<p>Tick off as you complete each one. Progress is saved in your browser.</p>
+<div class="widget checklist" data-w="checklist" data-key="az-projects"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span><strong>1. Hello cloud.</strong> Resource group, storage account and a web app deployed from Git with a budget alert. (Phases 1 to 2)</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span><strong>2. Private network.</strong> A VNet with three subnets and NSGs, a VM reachable only through Bastion. (Phase 3)</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span><strong>3. Private data.</strong> Storage and Key Vault behind private endpoints with working private DNS, accessed by a managed identity. (Phases 3 to 5)</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span><strong>4. Pipeline.</strong> GitHub Actions deploying Bicep with OIDC, what-if on pull requests. Then redo the stack in Terraform and compare. (Phase 6)</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span><strong>5. Mini lakehouse.</strong> Bronze, silver, gold layers on ADLS Gen2, a daily pipeline and a star schema with one type 2 dimension. (Phase 7)</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span><strong>6. RAG with evaluation.</strong> Index documents, build a retrieval and answer pipeline, and measure it on 50 questions. (Phase 8)</span></label><label class="cl-item"><input type="checkbox" data-i="6"><span><strong>7. Observability and cost.</strong> Diagnostic settings to Log Analytics, three KQL alerts and a cost dashboard. (Phase 9)</span></label></div>
+<div class="callout"><div class="callout-label">Clean up</div>Deleting the resource group stops the charges. Set a budget alert before you start, and check the portal for anything left running.</div>
+<p>Write about each build: what you chose, what you tried and rejected, what broke. That write up is what makes the project worth showing in an interview.</p>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the safest way to stop charges after a practice project?</div><div class="q-options"><button class="q-option" data-correct="false">Close the browser</button><button class="q-option" data-correct="false">Do nothing</button><button class="q-option" data-correct="false">Rename the project</button><button class="q-option" data-correct="true">Delete the resource group</button></div><div class="q-explain">Resources in the group are removed.</div></div>
+<div class="q-block"><div class="q-prompt">2. What should every project include?</div><div class="q-options"><button class="q-option" data-correct="false">Secrets in the repo</button><button class="q-option" data-correct="false">Nothing</button><button class="q-option" data-correct="false">Only screenshots</button><button class="q-option" data-correct="true">Code in Git and a short README</button></div><div class="q-explain">It makes the work reviewable.</div></div>
+<div class="q-block"><div class="q-prompt">3. What makes a project interview ready?</div><div class="q-options"><button class="q-option" data-correct="false">Copied tutorial code</button><button class="q-option" data-correct="false">A long list of tools</button><button class="q-option" data-correct="true">A write up of choices and what broke</button><button class="q-option" data-correct="false">No explanation</button></div><div class="q-explain">It shows judgement.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/">Cloud Adoption Framework (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/credentials/certifications/">Microsoft Learn certifications (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="10-1-certification-path.html">&larr; 10.1 Certification path</a>
+    <a href="10-3-capstone-landing-zone-from-code.html">10.3 Capstone: a landing zone from code &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

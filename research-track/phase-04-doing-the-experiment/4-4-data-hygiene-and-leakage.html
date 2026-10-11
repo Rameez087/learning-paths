@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.4 Data hygiene and leakage | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 4</a> &nbsp;/&nbsp; 4.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 4 &middot; Doing the experiment</div>
+  <h1>4.4 Data hygiene and leakage</h1>
+  <p class="subtitle">Leakage is the most common way a result looks wonderful and turns out to be wrong. Learning to spot it is one of the most valuable skills in empirical work.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Leakage</strong> means information from outside the training data, usually from the test set, influences the model. Split <strong>first</strong>, before any step that learns from the data (scaling, imputation, feature selection, deduplication). Watch for duplicates across splits, future information in time series and features that encode the label.
+  </div>
+
+<h2>Four common leaks</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Leak</th><th>What happens</th><th>Fix</th></tr></thead><tbody><tr><td>Preprocessing before the split</td><td>Scaler or imputer is fit on all data, so test statistics leak into training</td><td>Fit preprocessing on the training set only, inside a pipeline</td></tr><tr><td>Duplicates across splits</td><td>The same or near identical record appears in train and test</td><td>Deduplicate before splitting, or split by group</td></tr><tr><td>Temporal leakage</td><td>The model sees the future when predicting the past</td><td>Split by time, never randomly, for time dependent data</td></tr><tr><td>Target leakage</td><td>A feature is derived from or only available after the label</td><td>Review every feature for when it would exist in production</td></tr></tbody></table></div>
+<p>Kapoor and Narayanan surveyed papers across fields that use machine learning and found leakage widespread, affecting the reliability of many reported results. Your enterprise experience helps here: you already ask when a field is populated and who populates it.</p>
+<pre><code># safe pattern: preprocessing inside a pipeline, split first
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0, stratify=y)
+model = make_pipeline(StandardScaler(), LogisticRegression())
+model.fit(X_train, y_train)         # scaler sees only training data
+print(model.score(X_test, y_test))</code></pre>
+<h2>Spot the leak</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">You scale all features using the mean and standard deviation of the full dataset, then split into train and test.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Target leakage</button><button type="button" class="ch-opt" data-correct="false">No problem; scaling is harmless</button><button type="button" class="ch-opt" data-correct="true">Preprocessing leak: the test set influenced the scaler</button></div><div class="ch-explain">Statistics learned from all data include the test set. Fit the scaler on training data only.</div></div><div class="ch-item"><div class="ch-q">A churn model uses a feature called days_since_cancellation_request. Churn is the label.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">No leak</button><button type="button" class="ch-opt" data-correct="false">Temporal leakage</button><button type="button" class="ch-opt" data-correct="true">Target leakage: the feature is only known after the outcome begins</button></div><div class="ch-explain">The feature would not exist at prediction time for most customers, and it nearly encodes the label.</div></div><div class="ch-item"><div class="ch-q">You predict next month's sales with a random 80/20 split of daily rows over three years.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Duplicate leakage</button><button type="button" class="ch-opt" data-correct="false">No leak; randomness is good</button><button type="button" class="ch-opt" data-correct="true">Temporal leakage: random splits let the model see the future</button></div><div class="ch-explain">Time dependent data must be split by time, with training before testing.</div></div><div class="ch-item"><div class="ch-q">The same support ticket text, with trivial edits, appears 400 times, and the random split puts copies in both train and test.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Fine, the copies are different strings</button><button type="button" class="ch-opt" data-correct="false">Temporal leakage</button><button type="button" class="ch-opt" data-correct="true">Duplicate leakage: copies in the test set inflate the score</button></div><div class="ch-explain">Near duplicates across splits let the model memorise answers. Deduplicate or split by group.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. When should you split data relative to preprocessing steps that learn from data?</div><div class="q-options"><button class="q-option" data-correct="false">Preprocess everything, then split</button><button class="q-option" data-correct="true">Split first, then fit preprocessing on the training set only</button><button class="q-option" data-correct="false">Order does not matter</button></div><div class="q-explain">Fitting on all data lets test information leak into training.</div></div>
+<div class="q-block"><div class="q-prompt">2. Why is a random split wrong for forecasting?</div><div class="q-options"><button class="q-option" data-correct="false">They remove too many rows</button><button class="q-option" data-correct="false">Random splits are slower</button><button class="q-option" data-correct="true">The model can learn from future data, so test results are optimistic</button></div><div class="q-explain">In time dependent problems the test period must come after the training period.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which is an example of target leakage?</div><div class="q-options"><button class="q-option" data-correct="false">A feature with missing values</button><button class="q-option" data-correct="true">A feature that is only populated after the outcome you are predicting</button><button class="q-option" data-correct="false">A categorical feature</button></div><div class="q-explain">If the feature would not be available at prediction time, it should not be used.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/2207.07048">Leakage and the Reproducibility Crisis in ML-based Science (Kapoor, Narayanan)</a>; <a href="https://scikit-learn.org/stable/common_pitfalls.html">scikit-learn common pitfalls</a>; <a href="https://karpathy.github.io/2019/04/25/recipe/">A Recipe for Training Neural Networks (Karpathy)</a></p>
+
+  <div class="pager">
+    <a href="4-3-reproducibility-and-tracking.html">&larr; 4.3 Reproducibility and tracking</a>
+    <a href="4-5-compute-budgets-and-cheap-experiments.html">4.5 Compute budgets and cheap experiments &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

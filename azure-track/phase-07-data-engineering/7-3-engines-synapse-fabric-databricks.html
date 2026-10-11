@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.3 Engines: Synapse, Fabric and Databricks | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.3 Engines: Synapse, Fabric and Databricks</h1>
+  <p class="subtitle">Three platforms dominate Azure analytics. Know what each is for, and what has changed.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Databricks</strong> is an Apache Spark based lakehouse platform with Delta Lake, Unity Catalog and strong ML tooling. <strong>Microsoft Fabric</strong> is a SaaS analytics platform with OneLake, Spark, warehouse, real time and Power BI together. <strong>Azure Synapse Analytics</strong> is the earlier integrated service; Microsoft has described it as in maintenance mode, so new projects usually choose Fabric or Databricks. Verify the current status before designing.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th></th><th>Databricks</th><th>Fabric</th><th>Synapse</th></tr></thead><tbody><tr><td>Model</td><td>PaaS lakehouse on your cloud account</td><td>SaaS with capacity based pricing</td><td>PaaS workspace with pools</td></tr><tr><td>Strength</td><td>Spark performance, ML, open formats, multi cloud</td><td>All in one with Power BI, low setup</td><td>Existing investments, dedicated SQL pools</td></tr><tr><td>Storage</td><td>Your ADLS with Delta</td><td>OneLake (Delta)</td><td>Your ADLS</td></tr><tr><td>Direction</td><td>Active investment</td><td>Active investment</td><td>Maintenance mode per Microsoft statements</td></tr><tr><td>Governance</td><td>Unity Catalog</td><td>Purview integration and OneLake security</td><td>Purview</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Verify, do not assume</div>Product roadmaps move quickly. Read the current Microsoft and Databricks documentation, and ask for the current migration guidance, before choosing for a long lived system.</div>
+<h2>A decision path</h2>
+<h2>Pick an engine</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Is Power BI the main consumer and the team small?</h3><p>Fabric reduces moving parts, since lakehouse, warehouse and semantic models share OneLake.</p></div><div class="st-step"><h3>2. Is heavy Spark engineering or ML central, or is multi cloud a goal?</h3><p>Databricks has the deeper engineering and ML toolset and works with open formats.</p></div><div class="st-step"><h3>3. Do you already run Synapse?</h3><p>Plan a migration path rather than a rewrite, and check current guidance for dedicated SQL pools.</p></div><div class="st-step"><h3>4. Can you use both?</h3><p>Many organisations do: Databricks for engineering, Fabric or Power BI for consumption, sharing Delta data through shortcuts or mirrored access.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<h2>Choose</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A small team wants lakehouse, warehouse and dashboards with minimal setup.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A custom Spark cluster on VMs</button><button type="button" class="ch-opt" data-correct="true">Microsoft Fabric</button><button type="button" class="ch-opt" data-correct="false">A new Synapse dedicated pool</button></div><div class="ch-explain">Fabric is the integrated SaaS option.</div></div><div class="ch-item"><div class="ch-q">A data engineering team builds Spark pipelines and ML models, wants Unity Catalog and open Delta tables.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A SQL Database</button><button type="button" class="ch-opt" data-correct="false">Logic Apps</button><button type="button" class="ch-opt" data-correct="true">Azure Databricks</button></div><div class="ch-explain">Databricks is built for this.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is OneLake?</div><div class="q-options"><button class="q-option" data-correct="false">A Databricks cluster</button><button class="q-option" data-correct="true">Fabric's single logical data lake</button><button class="q-option" data-correct="false">A VPN</button><button class="q-option" data-correct="false">A NSG</button></div><div class="q-explain">It stores Fabric data in Delta format.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is Synapse's described status?</div><div class="q-options"><button class="q-option" data-correct="false">Retired entirely overnight</button><button class="q-option" data-correct="false">Free forever</button><button class="q-option" data-correct="false">The new flagship</button><button class="q-option" data-correct="true">Maintenance mode, per Microsoft statements</button></div><div class="q-explain">New projects generally choose Fabric or Databricks, but verify current guidance.</div></div>
+<div class="q-block"><div class="q-prompt">3. What is Unity Catalog?</div><div class="q-options"><button class="q-option" data-correct="false">A DNS zone</button><button class="q-option" data-correct="false">A VM series</button><button class="q-option" data-correct="false">A storage tier</button><button class="q-option" data-correct="true">Databricks governance for data and AI assets</button></div><div class="q-explain">It centralises access control and lineage.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/microsoft-fabric-overview">What is Microsoft Fabric (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/databricks/introduction/">What is Azure Databricks (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/synapse-analytics/overview-what-is">What is Azure Synapse Analytics (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="7-2-orchestration.html">&larr; 7.2 Orchestration: Data Factory, Synapse, Fabric and workflows</a>
+    <a href="7-4-data-modeling-scd.html">7.4 Data modeling: facts, dimensions and slowly changing data &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

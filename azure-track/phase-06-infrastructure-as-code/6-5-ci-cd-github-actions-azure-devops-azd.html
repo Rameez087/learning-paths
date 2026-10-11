@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.5 CI/CD: GitHub Actions, Azure DevOps and azd | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Infrastructure as code</div>
+  <h1>6.5 CI/CD: GitHub Actions, Azure DevOps and azd</h1>
+  <p class="subtitle">Infrastructure belongs in a pipeline: reviewed, previewed, and applied with an identity that has no stored secret.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Treat infrastructure like code: pull request, automated checks, preview, approval, apply. Sign in with <strong>OIDC federation</strong> rather than a stored secret. <strong>GitHub Actions</strong> and <strong>Azure Pipelines</strong> both do this. The <strong>Azure Developer CLI (azd)</strong> bundles infrastructure and app deployment for a project template.
+  </div>
+
+<h2>A minimal workflow</h2>
+<pre><code>name: deploy
+on:
+  push:
+    branches: [main]
+permissions:
+  id-token: write   # needed for OIDC
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: What-if
+        run: az deployment group what-if -g rg-app -f infra/main.bicep
+      - name: Deploy
+        run: az deployment group create -g rg-app -f infra/main.bicep</code></pre>
+<div class="figure"><svg viewBox="0 0 680 90" width="100%" role="img" aria-label="Infrastructure pipeline" style="font-family:-apple-system,Segoe UI,sans-serif"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/></marker></defs><rect x="10.0" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="65.6" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Pull request</text><line x1="123.2" y1="45" x2="144.2" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="147.2" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="202.79999999999998" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Lint and</text><text x="202.79999999999998" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">validate</text><line x1="260.4" y1="45" x2="281.4" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="284.4" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="340.0" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">What-if or</text><text x="340.0" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">plan</text><line x1="397.6" y1="45" x2="418.6" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="421.6" y="20" width="111.2" height="50" rx="7" fill="var(--accent-bg)" stroke="var(--accent)"/><text x="477.2" y="48.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Approval</text><line x1="534.8" y1="45" x2="555.8" y2="45" stroke="var(--text-muted)" stroke-width="1.5" marker-end="url(#ar)"/><rect x="558.8" y="20" width="111.2" height="50" rx="7" fill="var(--surface-2)" stroke="var(--border-strong, #3a4356)"/><text x="614.4" y="41.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Deploy to</text><text x="614.4" y="55.7" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">environment</text></svg><div class="figure-caption">Previews run on every pull request, deployment needs an approval for production.</div></div>
+<ul><li>Use separate identities and federated credentials per environment, each with only the roles it needs.</li><li>Protect the production environment with required reviewers.</li><li>Keep Terraform state access limited to the pipeline identity.</li><li>Run policy checks and linters before the preview step.</li></ul>
+<h2>Which pipeline system</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">GitHub Actions</button><button type="button" class="tab-btn" data-t="1">Azure Pipelines</button><button type="button" class="tab-btn" data-t="2">azd</button></div><div class="tab-pane active" data-t="0"><p>Code and pipeline in one place. Federated credentials trust a repository, branch or environment.</p></div><div class="tab-pane" data-t="1"><p>Part of Azure DevOps. Service connections can use workload identity federation instead of secrets.</p></div><div class="tab-pane" data-t="2"><p>A developer focused CLI. <code>azd up</code> provisions infrastructure from Bicep or Terraform and deploys the app. Useful for templates and demos, and it can generate a pipeline.</p></div></div>
+<div class="callout"><div class="callout-label">Never commit credentials</div>If a client secret ever reaches a repository, rotate it immediately. Federation removes the secret altogether, so prefer it.</div>
+<h2>Pipeline choice</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Pipeline needs to deploy to Azure with no stored secret.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A client secret in repo secrets</button><button type="button" class="ch-opt" data-correct="true">OIDC federation with azure/login</button><button type="button" class="ch-opt" data-correct="false">A personal password</button></div><div class="ch-explain">Federation issues short lived tokens.</div></div><div class="ch-item"><div class="ch-q">A new developer wants to stand up a sample app and its infrastructure in one command.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Manual portal setup</button><button type="button" class="ch-opt" data-correct="true">azd up</button><button type="button" class="ch-opt" data-correct="false">ARM JSON by hand</button></div><div class="ch-explain">azd bundles provisioning and deployment.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why use OIDC for deployments?</div><div class="q-options"><button class="q-option" data-correct="false">It is faster at compiling</button><button class="q-option" data-correct="true">No long lived secret to store or leak</button><button class="q-option" data-correct="false">It bypasses approvals</button><button class="q-option" data-correct="false">It removes RBAC</button></div><div class="q-explain">The pipeline exchanges a short lived token.</div></div>
+<div class="q-block"><div class="q-prompt">2. When should what-if or plan run?</div><div class="q-options"><button class="q-option" data-correct="false">Never</button><button class="q-option" data-correct="false">After production breaks</button><button class="q-option" data-correct="false">Only manually once a year</button><button class="q-option" data-correct="true">On pull requests, before merging and deploying</button></div><div class="q-explain">Previews catch surprises early.</div></div>
+<div class="q-block"><div class="q-prompt">3. What does azd do?</div><div class="q-options"><button class="q-option" data-correct="false">Replace Git</button><button class="q-option" data-correct="false">Manage billing</button><button class="q-option" data-correct="true">Provision infrastructure and deploy an app from a template</button><button class="q-option" data-correct="false">Host DNS</button></div><div class="q-explain">It streamlines the full developer workflow.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect">Deploy from GitHub Actions (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview">Azure Developer CLI overview (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="6-4-choosing-bicep-terraform-azapi-avm.html">&larr; 6.4 Choosing: Bicep, Terraform, AzAPI and Verified Modules</a>
+    <a href="../phase-07-data-engineering/7-1-lake-design-and-medallion.html">7.1 Lake design and the medallion pattern &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

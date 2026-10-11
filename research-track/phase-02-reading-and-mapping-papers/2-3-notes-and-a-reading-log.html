@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 Notes and a reading log | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 2</a> &nbsp;/&nbsp; 2.3</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 2 &middot; Reading and mapping papers</div>
+  <h1>2.3 Notes and a reading log</h1>
+  <p class="subtitle">Reading without notes evaporates in a week. A fixed template turns every paper into a reusable record and exposes what you have not understood.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Keep <strong>one log row per paper</strong> with the same columns every time: the question, the method, the data, the result, the limits and what you could reuse. Add a one paragraph summary in your own words. If you cannot write that paragraph, you have not finished pass two.
+  </div>
+
+<h2>A template that works</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Field</th><th>What to write</th><th>Example</th></tr></thead><tbody><tr><td>Citation</td><td>Authors, year, venue, link</td><td>Zha et al. 2023, arXiv, Data-centric AI</td></tr><tr><td>Question</td><td>The one question the paper answers</td><td>How should the field organise data-centric work?</td></tr><tr><td>Method</td><td>What they did, in two lines</td><td>Survey that groups tasks into three goals</td></tr><tr><td>Data</td><td>Datasets, sizes, licences</td><td>None (position paper)</td></tr><tr><td>Result</td><td>The headline number or finding</td><td>A taxonomy and open problems</td></tr><tr><td>Limits</td><td>What the authors admit and what you spotted</td><td>Broad, few experiments</td></tr><tr><td>Reuse</td><td>A figure, a dataset, a baseline or a citation you will use</td><td>Use the three goal taxonomy to frame my project</td></tr></tbody></table></div>
+<p>Write the summary last and in your own words, in at most five sentences. Copying the abstract is a way of avoiding understanding. A useful test: could you explain the paper's evidence to a friend who works in data engineering without opening it?</p>
+<pre><code># Paper log template (one row per paper)
+citation:
+question:
+method:
+data:
+result:
+limits:
+reuse:
+summary (5 sentences, own words):
+open questions I still have:</code></pre>
+<h2>Your reading log setup</h2>
+<p>Set this up once and the habit takes care of itself.</p>
+<div class="widget checklist" data-w="checklist" data-key="log-setup"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Install Zotero and add the browser connector</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>Create one folder per project, not per topic</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Copy the template above into a notes file</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>Log your first three papers using pass one</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>Mark one paper for pass two and write its five sentence summary</span></label></div>
+<h2>Recall: what to capture</h2>
+<div class="widget flips" data-w="flip"><button type="button" class="flip-card"><span class="flip-front">Why log the limits?</span><span class="flip-back">They show gaps that become your own research questions.</span></button><button type="button" class="flip-card"><span class="flip-front">Why write the summary in your own words?</span><span class="flip-back">It exposes what you do not yet understand.</span></button><button type="button" class="flip-card"><span class="flip-front">Why log the reuse field?</span><span class="flip-back">It links each paper to your project so reading stays purposeful.</span></button><button type="button" class="flip-card"><span class="flip-front">What is an open question?</span><span class="flip-back">Something the paper leaves unclear that you could test or ask an author.</span></button></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Why write the paper summary in your own words rather than copying the abstract?</div><div class="q-options"><button class="q-option" data-correct="false">It saves time</button><button class="q-option" data-correct="false">Abstracts are always wrong</button><button class="q-option" data-correct="true">It reveals whether you actually understood the paper</button></div><div class="q-explain">If you cannot rephrase the contribution, you probably need another pass.</div></div>
+<div class="q-block"><div class="q-prompt">2. Which log field most directly produces future research questions?</div><div class="q-options"><button class="q-option" data-correct="false">Venue</button><button class="q-option" data-correct="true">Limits</button><button class="q-option" data-correct="false">Citation</button></div><div class="q-explain">Limitations and open questions point at what has not been tested, which is where new work lives.</div></div>
+<div class="q-block"><div class="q-prompt">3. How should you organise a reference manager?</div><div class="q-options"><button class="q-option" data-correct="false">By the year you downloaded them</button><button class="q-option" data-correct="false">Alphabetically only</button><button class="q-option" data-correct="true">By project, so papers connect to the work you are doing</button></div><div class="q-explain">Project folders keep reading tied to a purpose and make writing related work easier.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos561/papers/HowToRead05.pdf">How to Read a Paper (Keshav)</a>; <a href="https://www.zotero.org/support/">Zotero documentation</a></p>
+
+  <div class="pager">
+    <a href="2-2-finding-and-mapping-the-literature.html">&larr; 2.2 Finding and mapping the literature</a>
+    <a href="../phase-03-foundations-you-must-own/3-1-the-math-map.html">3.1 The math map &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

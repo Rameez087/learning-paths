@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.4 Cost optimisation | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 &middot; Operations</div>
+  <h1>9.4 Cost optimisation</h1>
+  <p class="subtitle">Cloud bills grow quietly. A few habits and a few discounts keep them in check.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Cost control is a loop: <strong>see</strong> costs with tags and budgets, <strong>remove waste</strong> (idle resources, oversized VMs, orphaned disks), <strong>right size</strong>, then <strong>commit</strong> for steady usage through <strong>reservations</strong> or <strong>savings plans</strong>. Use <strong>spot</strong> capacity for interruptible work and <strong>dev/test schedules</strong> to stop non production overnight. Azure Advisor lists recommendations.
+  </div>
+
+<h2>Try it: is a reservation worth it?</h2>
+<p>A reservation discounts a steady resource in return for a one or three year commitment. You pay for every hour whether you use it or not. Enter an example hourly price and discount (use your real figures from the pricing page) and see the break even.</p>
+<div class="widget">
+<div class="sim-row"><label>On demand price per hour</label><input type="number" id="ri-pay" value="0.40" step="0.01" min="0.01" style="width:100px"></div>
+<div class="sim-row"><label>Reservation discount</label><input type="range" id="ri-dis" min="5" max="70" value="35"><span id="ri-dis-v"></span></div>
+<div class="sim-row"><label>Share of hours the resource really runs</label><input type="range" id="ri-use" min="5" max="100" value="60"><span id="ri-use-v"></span></div>
+<div class="sim-out" id="ri-out"></div></div>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Lever</th><th>Saves on</th><th>Trade off</th></tr></thead><tbody><tr><td>Reservations</td><td>Specific VM sizes, databases, storage and more, in one region</td><td>Commitment, less flexibility</td></tr><tr><td>Savings plans</td><td>Compute spend across services, flexible by hourly commitment</td><td>Commitment, smaller discount than reservations in some cases</td></tr><tr><td>Spot VMs</td><td>Interruptible batch and test work</td><td>Can be evicted with little notice</td></tr><tr><td>Auto shutdown and scale to zero</td><td>Non production resources</td><td>Cold starts</td></tr><tr><td>Storage tiering</td><td>Cold data</td><td>Retrieval cost and delay</td></tr><tr><td>Right sizing</td><td>Over provisioned resources</td><td>Needs monitoring data</td></tr></tbody></table></div>
+<ul><li>Tag every resource with owner, environment and cost centre, and enforce it with policy.</li><li>Set budgets with alerts at a few thresholds.</li><li>Review Advisor and Cost analysis monthly.</li><li>Delete tutorial resource groups when finished.</li></ul>
+<div class="callout"><div class="callout-label">Verify the discounts</div>Discount percentages vary by service, term and region and change over time. The slider uses an example number. Use the current pricing calculator for real decisions.</div>
+<h2>Pick the lever</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A production database that runs 24/7 for years.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Spot VMs</button><button type="button" class="ch-opt" data-correct="false">Delete it</button><button type="button" class="ch-opt" data-correct="true">A reservation or savings plan</button></div><div class="ch-explain">Steady usage benefits from commitment.</div></div><div class="ch-item"><div class="ch-q">A nightly batch job that can restart if interrupted.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A three year reservation</button><button type="button" class="ch-opt" data-correct="true">Spot capacity</button><button type="button" class="ch-opt" data-correct="false">A bigger on demand VM</button></div><div class="ch-explain">Spot is cheap for interruptible work.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. When is a reservation worth it?</div><div class="q-options"><button class="q-option" data-correct="false">Only for tests</button><button class="q-option" data-correct="false">Always</button><button class="q-option" data-correct="false">Never</button><button class="q-option" data-correct="true">When utilisation stays above the break even level</button></div><div class="q-explain">You pay for all hours.</div></div>
+<div class="q-block"><div class="q-prompt">2. Which suits interruptible work?</div><div class="q-options"><button class="q-option" data-correct="false">Reservations</button><button class="q-option" data-correct="false">Key Vault</button><button class="q-option" data-correct="false">ExpressRoute</button><button class="q-option" data-correct="true">Spot VMs</button></div><div class="q-explain">Spot can be evicted.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why tag resources?</div><div class="q-options"><button class="q-option" data-correct="false">To rename them</button><button class="q-option" data-correct="false">To encrypt them</button><button class="q-option" data-correct="false">To change regions</button><button class="q-option" data-correct="true">To attribute and control cost</button></div><div class="q-explain">Tags enable showback and policy.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/cost-management-billing/reservations/save-compute-costs-reservations">Azure Reservations (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/advisor/advisor-overview">Azure Advisor (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/cost-mgt-best-practices">Cost Management best practices (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="9-3-landing-zones.html">&larr; 9.3 Landing zones and governance at scale</a>
+    <a href="../phase-10-certifications-and-capstone/10-1-certification-path.html">10.1 Certification path &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+<script>
+
+(function(){
+  var pay=document.getElementById("ri-pay"), dis=document.getElementById("ri-dis"), use=document.getElementById("ri-use"), out=document.getElementById("ri-out");
+  if(!pay||!dis||!use||!out) return;
+  function run(){
+    var p=parseFloat(pay.value), d=parseFloat(dis.value)/100, u=parseFloat(use.value)/100;
+    document.getElementById("ri-dis-v").textContent=Math.round(d*100)+"%";
+    document.getElementById("ri-use-v").textContent=Math.round(u*100)+"%";
+    var hours=730*12, ondemand=p*hours*u, reserved=p*(1-d)*hours;
+    var be=(1-d);
+    var html="<strong>On demand per year (used "+Math.round(u*100)+"% of the time):</strong> "+ondemand.toFixed(0)+"<br><strong>Reserved per year (paid always):</strong> "+reserved.toFixed(0)+"<br>";
+    html+= reserved<ondemand ? "<strong>Reservation saves "+(ondemand-reserved).toFixed(0)+" per year.</strong>" : "<strong>Reservation costs "+(reserved-ondemand).toFixed(0)+" more per year.</strong>";
+    html+="<br>Break even utilisation: "+Math.round(be*100)+"% of hours. Below that, on demand is cheaper.";
+    out.innerHTML=html;
+  }
+  [pay,dis,use].forEach(function(e){e.addEventListener("input",run);}); run();
+})();
+
+</script>
+</body>
+</html>

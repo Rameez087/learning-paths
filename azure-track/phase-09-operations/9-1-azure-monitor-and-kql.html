@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.1 Azure Monitor and KQL | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 9</a> &nbsp;/&nbsp; 9.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 9 &middot; Operations</div>
+  <h1>9.1 Azure Monitor and KQL</h1>
+  <p class="subtitle">You cannot run what you cannot see. Azure Monitor collects the signals, and KQL is how you ask questions of them.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure Monitor</strong> gathers <strong>metrics</strong> (numbers over time), <strong>logs</strong> (events and records in a Log Analytics workspace) and <strong>traces</strong> (Application Insights). Resources send logs through <strong>diagnostic settings</strong>. Query logs with <strong>Kusto Query Language (KQL)</strong>, create <strong>alerts</strong> and <strong>dashboards</strong>, and route notifications through action groups.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Signal</th><th>Where</th><th>Use for</th></tr></thead><tbody><tr><td>Metrics</td><td>Azure Monitor metrics store</td><td>Near real time charts and fast alerts</td></tr><tr><td>Logs</td><td>Log Analytics workspace</td><td>Investigation, rich queries, audits</td></tr><tr><td>Traces and requests</td><td>Application Insights</td><td>App performance, dependencies, failures</td></tr><tr><td>Activity log</td><td>Subscription level</td><td>Who changed what in Azure</td></tr></tbody></table></div>
+<h2>KQL in five lines</h2>
+<pre><code>AppRequests
+| where TimeGenerated &gt; ago(1h)
+| where Success == false
+| summarize failures = count() by Name, ResultCode
+| order by failures desc
+| take 10</code></pre>
+<p>KQL reads top to bottom: start with a table, then pipe it through <code>where</code>, <code>summarize</code>, <code>project</code>, <code>join</code> and <code>render</code>. Table names differ by data source and configuration, so explore your workspace's schema first.</p>
+<div class="callout"><div class="callout-label">Mind the bill</div>Log ingestion is billed by volume. Send only needed logs, use basic or archive tiers for rarely queried data, and set retention deliberately. Cost often surprises teams here.</div>
+<h2>Which signal?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Alert when CPU stays over 90 percent for 5 minutes.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">An email from a colleague</button><button type="button" class="ch-opt" data-correct="true">A metric alert</button><button type="button" class="ch-opt" data-correct="false">A KQL query run by hand each week</button></div><div class="ch-explain">Metrics suit fast threshold alerts.</div></div><div class="ch-item"><div class="ch-q">Find who deleted a resource last night.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Metrics</button><button type="button" class="ch-opt" data-correct="false">Application Insights</button><button type="button" class="ch-opt" data-correct="true">The activity log</button></div><div class="ch-explain">Activity log records control plane operations.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What language queries Log Analytics?</div><div class="q-options"><button class="q-option" data-correct="false">SQL only</button><button class="q-option" data-correct="false">Bicep</button><button class="q-option" data-correct="false">YAML</button><button class="q-option" data-correct="true">KQL</button></div><div class="q-explain">Kusto Query Language.</div></div>
+<div class="q-block"><div class="q-prompt">2. What sends resource logs to a workspace?</div><div class="q-options"><button class="q-option" data-correct="false">Budgets</button><button class="q-option" data-correct="false">NSGs</button><button class="q-option" data-correct="false">Subnets</button><button class="q-option" data-correct="true">Diagnostic settings</button></div><div class="q-explain">They route logs and metrics.</div></div>
+<div class="q-block"><div class="q-prompt">3. What drives Log Analytics cost?</div><div class="q-options"><button class="q-option" data-correct="false">Tag count</button><button class="q-option" data-correct="true">Ingestion volume and retention</button><button class="q-option" data-correct="false">Region name</button><button class="q-option" data-correct="false">Subnet count</button></div><div class="q-explain">Control what you send.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/overview">Azure Monitor overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/kusto/query/">Kusto Query Language overview (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="../phase-08-ai-and-ml/8-6-evaluate-and-observe-ai-apps.html">&larr; 8.6 Evaluate and observe AI apps</a>
+    <a href="9-2-reliability-and-waf.html">9.2 Reliability and the Well-Architected Framework &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

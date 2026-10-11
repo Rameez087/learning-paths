@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7.7 Serving to BI: Import, DirectQuery and Direct Lake | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 7</a> &nbsp;/&nbsp; 7.7</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 7 &middot; Data engineering</div>
+  <h1>7.7 Serving to BI: Import, DirectQuery and Direct Lake</h1>
+  <p class="subtitle">The last mile decides whether anyone uses your data. Power BI offers modes with different trade offs.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Power BI semantic models can <strong>Import</strong> data into memory (fast, scheduled refresh), use <strong>DirectQuery</strong> (query the source live, always fresh, slower and load on the source), or use <strong>Direct Lake</strong> on Fabric (reads Delta files from OneLake directly with import like speed and no copy). A semantic model should define measures once so all reports agree.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Mode</th><th>Speed</th><th>Freshness</th><th>Watch out for</th></tr></thead><tbody><tr><td>Import</td><td>Fastest, in memory</td><td>As fresh as the last refresh</td><td>Size limits and refresh time</td></tr><tr><td>DirectQuery</td><td>Depends on the source</td><td>Live</td><td>Source load, slower visuals, fewer features</td></tr><tr><td>Direct Lake</td><td>Near import</td><td>Reads current Delta data</td><td>Needs Fabric, check fallback to DirectQuery behaviour</td></tr></tbody></table></div>
+<ul><li>Model a star schema (7.4) for the semantic layer. It is faster and clearer.</li><li>Put business logic into measures in the semantic model, not in each report.</li><li>Use row level security for per user data access.</li><li>Aggregate large facts to the grain dashboards need.</li></ul>
+<div class="callout"><div class="callout-label">Check current capabilities</div>Direct Lake and DirectQuery features change often. Review the current docs on limitations and fallback before deciding.</div>
+<h2>Pick a mode</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A 2 GB dataset, refreshed nightly, many report users.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A spreadsheet export</button><button type="button" class="ch-opt" data-correct="true">Import</button><button type="button" class="ch-opt" data-correct="false">DirectQuery with no aggregation</button></div><div class="ch-explain">Import is fastest for moderate data with scheduled freshness.</div></div><div class="ch-item"><div class="ch-q">Gold tables already live as Delta in a Fabric lakehouse and you want fast reports without copying.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">CSV files</button><button type="button" class="ch-opt" data-correct="false">Import copies</button><button type="button" class="ch-opt" data-correct="true">Direct Lake</button></div><div class="ch-explain">Direct Lake reads Delta files in OneLake.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which mode queries the source live?</div><div class="q-options"><button class="q-option" data-correct="false">Cached only</button><button class="q-option" data-correct="true">DirectQuery</button><button class="q-option" data-correct="false">Offline</button><button class="q-option" data-correct="false">Import</button></div><div class="q-explain">Every visual sends queries.</div></div>
+<div class="q-block"><div class="q-prompt">2. Where should business measures be defined?</div><div class="q-options"><button class="q-option" data-correct="false">In an email</button><button class="q-option" data-correct="false">In each report</button><button class="q-option" data-correct="false">In DNS</button><button class="q-option" data-correct="true">In the semantic model</button></div><div class="q-explain">One definition keeps numbers consistent.</div></div>
+<div class="q-block"><div class="q-prompt">3. What does Direct Lake read?</div><div class="q-options"><button class="q-option" data-correct="false">CSV by email</button><button class="q-option" data-correct="true">Delta files in OneLake</button><button class="q-option" data-correct="false">Redis</button><button class="q-option" data-correct="false">Blob SAS only</button></div><div class="q-explain">It avoids copying data into the model.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/fabric/fundamentals/direct-lake-overview">Direct Lake overview (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/power-bi/connect-data/service-dataset-modes-understand">Power BI semantic model modes (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="7-6-governance-and-lineage.html">&larr; 7.6 Governance and lineage: Purview, Unity Catalog and OpenLineage</a>
+    <a href="../phase-08-ai-and-ml/8-1-foundry-and-model-access.html">8.1 Foundry and model access &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

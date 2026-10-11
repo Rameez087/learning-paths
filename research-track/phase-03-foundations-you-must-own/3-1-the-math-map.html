@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 The math map | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 3</a> &nbsp;/&nbsp; 3.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 3 &middot; Foundations you must own</div>
+  <h1>3.1 The math map</h1>
+  <p class="subtitle">You do not need all of mathematics. You need the specific pieces that appear in method sections, and a way to tell when you are missing one.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Four areas cover most machine learning papers: <strong>linear algebra</strong> (vectors, matrices, SVD), <strong>calculus</strong> (gradients, the chain rule), <strong>probability and statistics</strong> (likelihood, Bayes, tests) and <strong>optimisation</strong> (gradient descent and its variants). For each, aim to be able to <em>do</em> a specific task, not just recognise the words.
+  </div>
+
+<h2>What to be able to do</h2>
+<h2>Four areas, four tests</h2>
+<div class="widget tabs" data-w="tabs"><div class="tab-btns" role="tablist"><button type="button" class="tab-btn active" data-t="0">Linear algebra</button><button type="button" class="tab-btn" data-t="1">Calculus</button><button type="button" class="tab-btn" data-t="2">Probability and statistics</button><button type="button" class="tab-btn" data-t="3">Optimisation</button></div><div class="tab-pane active" data-t="0"><p><strong>Be able to:</strong> multiply matrices and say what the shapes mean; explain what an eigenvector is; describe what SVD does and why it is used for compression and embeddings; write a dense layer as a matrix product.</p><p><strong>Why it matters:</strong> embeddings, attention and every neural network layer are matrix operations.</p></div><div class="tab-pane" data-t="1"><p><strong>Be able to:</strong> take a gradient of a simple function; apply the chain rule through a composition; explain backpropagation as the chain rule applied systematically.</p><p><strong>Why it matters:</strong> training is following gradients, and you will read papers that derive new ones.</p></div><div class="tab-pane" data-t="2"><p><strong>Be able to:</strong> define likelihood and maximum likelihood estimation; apply Bayes rule; explain a confidence interval and a hypothesis test; say what a p value is and what it is not.</p><p><strong>Why it matters:</strong> every claim of improvement is a statistical claim. See 3.2.</p></div><div class="tab-pane" data-t="3"><p><strong>Be able to:</strong> explain gradient descent and what the learning rate changes; describe momentum and Adam at a high level; explain regularisation as a penalty on complexity.</p><p><strong>Why it matters:</strong> training instability is one of the most common reasons reproductions disagree with papers.</p></div></div>
+<h2>A study route</h2>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Area</th><th>Start with</th><th>Then</th></tr></thead><tbody><tr><td>Linear algebra and calculus</td><td>Mathematics for Machine Learning, chapters 2 to 5</td><td>Implement a tiny autograd engine yourself</td></tr><tr><td>Probability and statistics</td><td>Mathematics for Machine Learning, chapter 6, then a statistics text</td><td>Use 3.2 in this track to practise intervals</td></tr><tr><td>Optimisation</td><td>Mathematics for Machine Learning, chapter 7</td><td>Add SGD and Adam to your autograd project</td></tr><tr><td>Machine learning core</td><td>Stanford CS229 public notes</td><td>Reproduce a classic result from scratch</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">A practical rule</div>When a method section loses you, find the single symbol or step you cannot read and learn only that. Collecting such gaps in your reading log (2.3) gives you a personal syllabus far more efficient than studying maths in the abstract.</div>
+<h2>Which piece is missing?</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A paper writes the update as theta minus eta times the gradient of the loss. You do not know what eta controls.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Linear algebra: eta is an eigenvalue</button><button type="button" class="ch-opt" data-correct="false">Probability: eta is the variance</button><button type="button" class="ch-opt" data-correct="true">Optimisation: eta is the learning rate, the step size</button></div><div class="ch-explain">This is the gradient descent update rule. Eta, often alpha, is the learning rate.</div></div><div class="ch-item"><div class="ch-q">A paper reports that method A beat B by 0.4 points and calls it significant, but gives only one run each.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Calculus: the gradient is wrong</button><button type="button" class="ch-opt" data-correct="false">Linear algebra: the matrices are too small</button><button type="button" class="ch-opt" data-correct="true">Statistics: you need intervals or tests over several runs</button></div><div class="ch-explain">Whether a difference is larger than run to run noise is a statistical question, taken up in 3.2.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the most efficient way to fill a maths gap that blocks a paper?</div><div class="q-options"><button class="q-option" data-correct="false">Skip the method section entirely</button><button class="q-option" data-correct="true">Find the exact symbol or step you cannot read and learn that piece first</button><button class="q-option" data-correct="false">Study a whole maths textbook before reading any paper</button></div><div class="q-explain">Targeted learning tied to a real paper sticks better than studying in the abstract.</div></div>
+<div class="q-block"><div class="q-prompt">2. Training a neural network is, in essence:</div><div class="q-options"><button class="q-option" data-correct="false">Sorting the training data</button><button class="q-option" data-correct="false">Solving a closed form equation once</button><button class="q-option" data-correct="true">Following gradients of a loss to reduce it</button></div><div class="q-explain">Gradient based optimisation is the core loop. Backpropagation computes the gradients.</div></div>
+<div class="q-block"><div class="q-prompt">3. Which area does a claim like 'our method is better' mostly depend on?</div><div class="q-options"><button class="q-option" data-correct="false">Matrix transposes</button><button class="q-option" data-correct="false">Tokenisation</button><button class="q-option" data-correct="true">Statistics</button></div><div class="q-explain">An improvement claim is statistical, because results vary between runs and datasets.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://mml-book.github.io/">Mathematics for Machine Learning (free book)</a>; <a href="https://cs229.stanford.edu/">Stanford CS229 course notes</a></p>
+
+  <div class="pager">
+    <a href="../phase-02-reading-and-mapping-papers/2-3-notes-and-a-reading-log.html">&larr; 2.3 Notes and a reading log</a>
+    <a href="3-2-statistics-for-experiments.html">3.2 Statistics for experiments &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

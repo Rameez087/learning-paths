@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.1 Project A: reproduce and extend one paper | Research Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Research <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.1</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Projects that produce an artifact</div>
+  <h1>6.1 Project A: reproduce and extend one paper</h1>
+  <p class="subtitle">Your first project. It finishes on a deadline, teaches the whole loop and gives you a public artifact to point to in every email.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Choose <strong>one recent paper</strong> with released code or enough detail, reproduce its main table, record every gap between your numbers and theirs, then add <strong>one</strong> extension: an ablation, a new dataset or a stronger baseline. Publish the repo and a two page report. Plan 6 to 9 weeks.
+  </div>
+
+<h2>Choose the paper</h2>
+<h2>A good paper to reproduce</h2>
+<div class="widget checklist" data-w="checklist" data-key="pick-paper"><div class="cl-bar"><div class="cl-fill"></div></div><div class="cl-count"></div><label class="cl-item"><input type="checkbox" data-i="0"><span>Published in the last three years in your target area (data quality, RAG evaluation or data management for ML)</span></label><label class="cl-item"><input type="checkbox" data-i="1"><span>Code or a detailed appendix is available</span></label><label class="cl-item"><input type="checkbox" data-i="2"><span>Datasets are public and licensed for reuse</span></label><label class="cl-item"><input type="checkbox" data-i="3"><span>The main result runs in hours on a laptop or free notebook, not weeks on a cluster</span></label><label class="cl-item"><input type="checkbox" data-i="4"><span>You can state its main claim in one sentence</span></label><label class="cl-item"><input type="checkbox" data-i="5"><span>No private or employer data is needed</span></label></div>
+<h2>The nine week path</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>Weeks 1 to 2: read and plan</h3><p>Do passes one and two on the paper (2.1). Write its claim table (1.2). Decide the exact table you will reproduce and write the environment plan: language version, libraries, data download.</p></div><div class="st-step"><h3>Weeks 3 to 4: get it running</h3><p>Run the authors' code on the smallest setup that works. Log seeds and config (4.3). Do not fix anything yet, just record what happens, including failures.</p></div><div class="st-step"><h3>Weeks 5 to 6: match the numbers</h3><p>Run the main experiment over several seeds (3.2). Compare your table with theirs. For every gap, note a hypothesis: different library version, unreported hyperparameter, different split. Test the likely ones.</p></div><div class="st-step"><h3>Weeks 7 to 8: the extension</h3><p>Add exactly one thing: an ablation they skipped, a second dataset, or a tougher baseline. State the claim and falsifier first (4.1).</p></div><div class="st-step"><h3>Week 9: write and publish</h3><p>Write the two page report (7.1). Clean the repo so it reproduces with one command. Publish it with a licence. Now you have the artifact for outreach (8.2).</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<h2>The gap log</h2>
+<p>Keep a running table of every difference you meet. It becomes the most valuable section of your report, because it records what the paper did not say.</p>
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Gap</th><th>Their number</th><th>Your number</th><th>Likely cause</th><th>Tested?</th></tr></thead><tbody><tr><td>Main accuracy</td><td>78.4</td><td>76.9 (mean of 5 seeds)</td><td>Unreported learning rate warmup</td><td>Yes, closes half the gap</td></tr><tr><td>Training time</td><td>2 h</td><td>5 h</td><td>Smaller GPU</td><td>n/a</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">What counts as success</div>A match is not required. A clear, documented explanation of why you did or did not match is the contribution. A rigorous report that the result is fragile is more useful than a lucky match.</div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. What is the minimum extension to add to a reproduction?</div><div class="q-options"><button class="q-option" data-correct="false">A new architecture</button><button class="q-option" data-correct="true">One well-defined change with a stated claim and falsifier</button><button class="q-option" data-correct="false">Three unrelated changes</button></div><div class="q-explain">One focused extension keeps the project finishable and the result interpretable.</div></div>
+<div class="q-block"><div class="q-prompt">2. What if your numbers do not match the paper's?</div><div class="q-options"><button class="q-option" data-correct="false">Delete the experiment</button><button class="q-option" data-correct="false">Adjust seeds until they match</button><button class="q-option" data-correct="true">Document every gap and test the likely causes; that is a result</button></div><div class="q-explain">Honest documentation of discrepancies is itself the contribution.</div></div>
+<div class="q-block"><div class="q-prompt">3. Why avoid papers that need private data?</div><div class="q-options"><button class="q-option" data-correct="false">Papers never use private data</button><button class="q-option" data-correct="false">Private data is always dirty</button><button class="q-option" data-correct="true">Others cannot check your reproduction and you may breach confidentiality</button></div><div class="q-explain">Public data keeps the work checkable and safe to publish.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://arxiv.org/abs/2003.12206">Improving Reproducibility in ML Research (Pineau et al.)</a>; <a href="https://www.cs.princeton.edu/courses/archive/fall18/cos561/papers/HowToRead05.pdf">How to Read a Paper (Keshav)</a>; <a href="https://neurips.cc/public/guides/PaperChecklist">NeurIPS Paper Checklist</a></p>
+
+  <div class="pager">
+    <a href="../phase-05-fields-that-fit-you/5-4-provenance-lineage-and-ml-systems.html">&larr; 5.4 Provenance, lineage and ML systems</a>
+    <a href="6-2-project-b-data-defects-in-rag.html">6.2 Project B: data defects in RAG &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

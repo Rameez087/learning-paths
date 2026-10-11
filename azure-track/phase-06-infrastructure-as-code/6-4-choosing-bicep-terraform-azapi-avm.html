@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.4 Choosing: Bicep, Terraform, AzAPI and Verified Modules | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 6</a> &nbsp;/&nbsp; 6.4</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 6 &middot; Infrastructure as code</div>
+  <h1>6.4 Choosing: Bicep, Terraform, AzAPI and Verified Modules</h1>
+  <p class="subtitle">None of them is the right answer everywhere. Here is how to decide, and how to stay productive whichever you pick.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    Pick <strong>Bicep</strong> for Azure only estates that want first day feature support and no state file. Pick <strong>Terraform</strong> for multi cloud estates, an existing team skill base, or a rich module ecosystem. Use <strong>AzAPI</strong> inside Terraform for features azurerm lacks. <strong>Azure Verified Modules (AVM)</strong> give Microsoft supported, well tested modules for both Bicep and Terraform, so you do not write everything from scratch.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Question</th><th>Bicep</th><th>Terraform</th></tr></thead><tbody><tr><td>Clouds supported</td><td>Azure only</td><td>Many</td></tr><tr><td>State file</td><td>None. Azure is the source of truth</td><td>Required, must be managed and protected</td></tr><tr><td>New Azure features</td><td>Same day (it targets ARM directly)</td><td>azurerm may lag. AzAPI closes the gap</td></tr><tr><td>Cleanup of removed resources</td><td>Deployment stacks</td><td>Plan shows destroys automatically</td></tr><tr><td>Preview</td><td>What-if</td><td>Plan</td></tr><tr><td>Ecosystem</td><td>Registry, AVM, community</td><td>Huge registry, AVM, many providers beyond Azure (GitHub, Entra, Databricks)</td></tr><tr><td>Learning curve for Azure folks</td><td>Low</td><td>Medium, plus state concepts</td></tr></tbody></table></div>
+<h2>A practical decision path</h2>
+<h2>Decide</h2>
+<div class="widget stepper" data-w="stepper"><div class="st-head"><span class="st-count"></span></div><div class="st-step active"><h3>1. Do you manage other clouds or SaaS with IaC?</h3><p>Yes: favour Terraform so you have one workflow. No: continue.</p></div><div class="st-step"><h3>2. Does your team already know one of them well?</h3><p>Existing skill and existing code usually outweigh theoretical advantages.</p></div><div class="st-step"><h3>3. Do you need new preview Azure features immediately?</h3><p>Bicep supports them first. With Terraform, add AzAPI.</p></div><div class="st-step"><h3>4. Who will operate state?</h3><p>If nobody wants to own state storage, locking and access, Bicep removes that burden.</p></div><div class="st-nav"><button type="button" class="st-prev">&larr; Back</button><button type="button" class="st-next">Next &rarr;</button></div></div>
+<div class="callout"><div class="callout-label">Mixing is allowed but costly</div>Some teams use Bicep for the Azure landing zone and Terraform for Databricks or SaaS resources. That works, but two toolchains mean two sets of pipelines and skills. Mix only with a reason.</div>
+<p>Whichever you choose, start from Azure Verified Modules where they exist, pin versions, and read each module's inputs and defaults. Check the AVM index for current coverage and maturity before depending on a module.</p>
+<h2>Make the call</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">A startup deploying only to Azure, two engineers, no existing IaC.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">ARM JSON by hand</button><button type="button" class="ch-opt" data-correct="true">Bicep</button><button type="button" class="ch-opt" data-correct="false">Terraform with a complex multi state layout</button></div><div class="ch-explain">Simple, stateless and well supported for Azure only.</div></div><div class="ch-item"><div class="ch-q">A company managing Azure, GitHub and Databricks workspaces from one repo.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Bicep for all</button><button type="button" class="ch-opt" data-correct="false">Portal</button><button type="button" class="ch-opt" data-correct="true">Terraform</button></div><div class="ch-explain">Terraform providers cover all three.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. Which tool has no state file?</div><div class="q-options"><button class="q-option" data-correct="false">Neither</button><button class="q-option" data-correct="false">Both</button><button class="q-option" data-correct="false">Terraform</button><button class="q-option" data-correct="true">Bicep</button></div><div class="q-explain">Bicep relies on Azure as the source of truth.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is AVM?</div><div class="q-options"><button class="q-option" data-correct="false">A billing plan</button><button class="q-option" data-correct="false">A VM size</button><button class="q-option" data-correct="true">Verified, supported reusable modules for Bicep and Terraform</button><button class="q-option" data-correct="false">A database</button></div><div class="q-explain">Microsoft maintained building blocks.</div></div>
+<div class="q-block"><div class="q-prompt">3. When does Terraform win?</div><div class="q-options"><button class="q-option" data-correct="false">You need no preview</button><button class="q-option" data-correct="false">You dislike plans</button><button class="q-option" data-correct="false">Azure only, nobody knows Terraform</button><button class="q-option" data-correct="true">Multi cloud or multi provider estates and existing Terraform skills</button></div><div class="q-explain">Fit to team and estate matters most.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/developer/terraform/azure-verified-modules">Azure Verified Modules (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview">What is Bicep (Microsoft Learn)</a>; <a href="https://learn.microsoft.com/en-us/azure/developer/terraform/overview">Terraform on Azure (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="6-3-terraform-on-azure.html">&larr; 6.3 Terraform on Azure</a>
+    <a href="6-5-ci-cd-github-actions-azure-devops-azd.html">6.5 CI/CD: GitHub Actions, Azure DevOps and azd &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>

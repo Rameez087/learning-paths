@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8.5 Prebuilt AI services versus LLMs | Azure Track</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="../index.html">Azure <span>Track</span></a>
+  <div class="crumbs"><a href="../index.html">Phase 8</a> &nbsp;/&nbsp; 8.5</div>
+</nav>
+<main class="page">
+  <div class="phase-label">Phase 8 &middot; AI and ML</div>
+  <h1>8.5 Prebuilt AI services versus LLMs</h1>
+  <p class="subtitle">Not every AI task needs a large language model. Prebuilt services can be cheaper, faster and more predictable.</p>
+
+  <div class="callout tldr">
+    <div class="callout-label">TL;DR</div>
+    <strong>Azure AI services</strong> include Vision, Speech, Language, Translator and <strong>Document Intelligence</strong> for extracting structured fields from documents. They return consistent, specialised results at predictable cost. <strong>LLMs</strong> are flexible and handle open ended tasks but cost more per call and vary in output. Many solutions combine them: extract with a specialised service, reason with an LLM.
+  </div>
+
+<div class="tbl-wrap"><table class="data-table"><thead><tr><th>Task</th><th>Prebuilt service</th><th>LLM</th></tr></thead><tbody><tr><td>Read invoice fields</td><td>Document Intelligence, strong and consistent</td><td>Possible, check accuracy and cost</td></tr><tr><td>Transcribe audio</td><td>Speech service</td><td>Some models can, check latency and price</td></tr><tr><td>Translate fixed text at scale</td><td>Translator</td><td>Possible, costlier</td></tr><tr><td>Summarise or answer open questions</td><td>Limited</td><td>Strong fit</td></tr><tr><td>Classify with a fixed label set</td><td>Language service or small model</td><td>Works, often overkill</td></tr></tbody></table></div>
+<div class="callout"><div class="callout-label">Cost and determinism</div>A prebuilt service with a fixed price per page and stable output is easier to budget and audit than an LLM call whose tokens and answers vary.</div>
+<h2>Choose</h2>
+<div class="widget chooser" data-w="chooser"><div class="ch-item"><div class="ch-q">Extract total and date from thousands of identical receipts.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">A general LLM prompt for each</button><button type="button" class="ch-opt" data-correct="false">Manual typing</button><button type="button" class="ch-opt" data-correct="true">Document Intelligence</button></div><div class="ch-explain">A specialised extractor is cheaper and more consistent.</div></div><div class="ch-item"><div class="ch-q">Answer free form questions over internal policy documents.</div><div class="ch-opts"><button type="button" class="ch-opt" data-correct="false">Speech service</button><button type="button" class="ch-opt" data-correct="false">OCR only</button><button type="button" class="ch-opt" data-correct="true">An LLM with retrieval</button></div><div class="ch-explain">Open ended reasoning fits LLMs.</div></div></div>
+<div class="quiz" id="quiz"><h3>Check your understanding</h3>
+<div class="q-block"><div class="q-prompt">1. When is a prebuilt service attractive?</div><div class="q-options"><button class="q-option" data-correct="false">Never</button><button class="q-option" data-correct="false">Open ended chat</button><button class="q-option" data-correct="true">Narrow, repeated tasks needing consistent, cheap output</button><button class="q-option" data-correct="false">Creative writing</button></div><div class="q-explain">Specialised tools shine on fixed tasks.</div></div>
+<div class="q-block"><div class="q-prompt">2. What is Document Intelligence for?</div><div class="q-options"><button class="q-option" data-correct="false">Billing</button><button class="q-option" data-correct="false">Hosting VMs</button><button class="q-option" data-correct="true">Extracting structured data from documents</button><button class="q-option" data-correct="false">Routing DNS</button></div><div class="q-explain">It reads forms and invoices.</div></div>
+<div class="q-block"><div class="q-prompt">3. Can they combine?</div><div class="q-options"><button class="q-option" data-correct="false">Only offline</button><button class="q-option" data-correct="false">No</button><button class="q-option" data-correct="false">Only in one region</button><button class="q-option" data-correct="true">Yes, extract first then reason with an LLM</button></div><div class="q-explain">Hybrid designs are common.</div></div>
+</div>
+
+  <p class="sources" style="margin-top:32px">Sources: <a href="https://learn.microsoft.com/en-us/azure/ai-services/what-are-ai-services">What are Azure AI services (Microsoft Learn)</a></p>
+
+  <div class="pager">
+    <a href="8-4-training-and-serving-ml.html">&larr; 8.4 Training and serving ML: Azure ML or Databricks</a>
+    <a href="8-6-evaluate-and-observe-ai-apps.html">8.6 Evaluate and observe AI apps &rarr;</a>
+  </div>
+</main>
+<script src="../assets/nav.js" defer></script>
+<script src="../assets/widgets.js" defer></script>
+</body>
+</html>
